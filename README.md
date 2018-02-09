@@ -1,5 +1,23 @@
-# YangDotNet
-Parser and .NET type generator for YANG model
+# YangDotNet: Yang parser and type generator for .NET
+
+Parser and .NET type generator for YANG model.
+
+## Build instructions
+
+Running the `.\build.bat` should do the job. The output will be placed in the `.\build` directory.
+This uses the `FAKE` build system (which is based on F\#).
+
+You can also open the Visual Studio solution file in `.\src\YANG\Yang.sln`. However, before doing
+so do restore the dependencies if necessary. We use the `paket` system for package management.
+So, you will need to do:
+
+```cmd
+.paket\paket.exe restore
+```
+
+## Status
+
+Very early: Just skeleton files and pointers to interesting resources.
 
 ## Folder structure
 
@@ -10,3 +28,11 @@ This repo contains the following directories:
   for development. To retrieve them run the `Download.ps1` PowerShell script from
   that directory.
 
+- `Documents`: Contains various resources and notes related to the project.
+
+- `Documents\References`: Contains useful reference material (e.g. specs).
+
+## License
+
+See the `LICENSE` file. We are using the Apache License.
+Let us know, if you have other specific needs.
