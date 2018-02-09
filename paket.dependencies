@@ -1,0 +1,7 @@
+source https://nuget.org/api/v2
+
+nuget FAKE
+nuget System.Collections.Immutable
+nuget FSharp.TypeProviders.StarterPack
+nuget FSharp.Data
+nuget FSharp.Data.TypeProviders
