@@ -1,0 +1,5 @@
+leaf host-name {
+    type string;
+    description
+        "Hostname for this system.";
+}

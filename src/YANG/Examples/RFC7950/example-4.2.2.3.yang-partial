@@ -1,0 +1,9 @@
+container system {
+    container login {
+        leaf message {
+            type string;
+            description
+                "Message given at start of login session.";
+        }
+    }
+}
