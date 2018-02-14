@@ -44,11 +44,6 @@ let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
 
 
 
-test Identifier.parse_identifier "example-system"
-
-
-
-
 type Statement =
 | Unparsed of string
 
