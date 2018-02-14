@@ -56,7 +56,8 @@ function Get-WorkItems {
         $work | ForEach-Object -Process {
             $message = $_.Line.Trim()
 
-            $work = [regex]::Match($y, "// (?<label>[A-z]+): (?<comment>.*)")
+            $work = [regex]::Match($message, "// (?<label>[A-z]+): (?<comment>.*)")
+            Write-Verbose $work
 
             [PSCustomObject]@{
                 Filename = $_.Filename

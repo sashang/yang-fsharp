@@ -71,3 +71,5 @@ function global:Build {
     .\build.bat
     Pop-Location
 }
+
+Import-Module $PSScriptRoot\src\YangDevHelper
