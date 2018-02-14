@@ -9,6 +9,15 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Parser.Tests.xunit", "Parse
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Parser.performance", "Parser.performance\Parser.performance.fsproj", "{95D1E6BD-D5D1-4653-9E2B-00B544084A21}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{77A6A766-2DE3-4494-A78A-5143C45B7A5C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RFC7950", "RFC7950", "{593B96D9-1C12-4EBB-80F5-3D50ACAA40B3}"
+	ProjectSection(SolutionItems) = preProject
+		Examples\RFC7950\example-4.2.2.1.yang-partial = Examples\RFC7950\example-4.2.2.1.yang-partial
+		Examples\RFC7950\example-4.2.2.3.yang-partial = Examples\RFC7950\example-4.2.2.3.yang-partial
+		Examples\RFC7950\example-system.yang = Examples\RFC7950\example-system.yang
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +39,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{593B96D9-1C12-4EBB-80F5-3D50ACAA40B3} = {77A6A766-2DE3-4494-A78A-5143C45B7A5C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CE0415DE-6021-4B20-BFED-2BC32AA9635E}

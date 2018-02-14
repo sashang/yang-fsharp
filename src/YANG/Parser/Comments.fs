@@ -41,6 +41,19 @@ module Comments =
     open System
     open System.IO
     open System.Text
+    open NLog
+
+    /// Logger for this module
+    let private _logger = LogManager.GetCurrentClassLogger()
+
+#if INTERACTIVE
+    // The following are used only in interactive (fsi) to help with enabling disabling
+    // logging for particular modules.
+
+    type internal Marker = interface end
+    let _full_name = typeof<Marker>.DeclaringType.FullName
+    let _name = typeof<Marker>.DeclaringType.Name
+#endif
 
     /// State of the parser
     type private State =
@@ -62,8 +75,7 @@ module Comments =
             if c = -1 then
                 // end of input
                 if state = BlockComment then
-                    // we have reached the end of file without reading the end of the comment block ("*/")
-                    // TODO: write a warning here
+                    _logger.Warn("Reached end of file before finding end of comment block (*/); the comment will be ignored")
                     ()
                 ()
             else
@@ -111,9 +123,8 @@ module Comments =
                         // reached escape character
                         let next_c = input.Read()
                         if next_c = -1 then
-                            // nothing follows the escape character; end of file reached
-                            // TODO: write a warning here
-                            ()
+                            _logger.Error("End of file reached while trying to read escape character")
+                            raise (new YangParserException("Error in cleaning comments: end of file reached while parsing string"))
                         else
                             output.Write(char next_c)
                             advance DoubleQuotedString
@@ -128,8 +139,7 @@ module Comments =
                     if c = int '*' then
                         let next_c = input.Peek()
                         if next_c = -1 then
-                            // reached end of file without reading the closing block comment ("*/")
-                            // TODO: write a warning here
+                            _logger.Warn("Reached end of file before finding end of comment block (*/); the comment will be ignored")
                             ()
                         elif next_c = int '/' then
                             input.Read() |> ignore
@@ -160,11 +170,17 @@ module Comments =
         /// </summary>
         /// <param name="input">Input stream</param>
         /// <param name="output">Output stream</param>
-        static member Remove(input, output) = SlowRemove input output
+        static member Remove(input, output) =
+            if input = null then raise (new System.ArgumentNullException("input"))
+            if output = null then raise (new System.ArgumentNullException("output"))
+            SlowRemove input output
 
         /// <summary>
         /// Remove comments from a string input
         /// </summary>
         /// <param name="input">Input model</param>
         /// <returns>Model without comments</returns>
-        static member Remove input = SlowRemoveFromString input
+        static member Remove input =
+            if String.IsNullOrWhiteSpace(input) then
+                raise (new System.ArgumentException("Input string cannot be null or empty", "input"))
+            SlowRemoveFromString input
