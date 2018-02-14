@@ -4,6 +4,9 @@ Parser and .NET type generator for YANG model.
 
 ## Build instructions
 
+First, run `.\init.ps1` from PowerShell. This will download `paket` and setup a few other
+things. It is advised (although not required) to run this script for every shell.
+
 Running the `.\build.bat` should do the job. The output will be placed in the `.\build` directory.
 This uses the `FAKE` build system (which is based on F\#).
 

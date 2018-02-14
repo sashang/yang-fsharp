@@ -1,4 +1,5 @@
 Paket.Restore.targets
 # We do not need this since we already have paket.exe which is the same as the bootstrapper.
-paket.bootstrapper.exe
+paket.exe
 load/
+.load.checksum
