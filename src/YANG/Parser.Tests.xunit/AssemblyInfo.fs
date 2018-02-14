@@ -1,4 +1,4 @@
-﻿namespace Parser.AssemblyInfo
+﻿namespace Parser.Tests.xunit.AssemblyInfo
 
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -7,11 +7,11 @@ open System.Runtime.InteropServices
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[<assembly: AssemblyTitle("Parser")>]
-[<assembly: AssemblyDescription("Parser for Yang syntax")>]
+[<assembly: AssemblyTitle("Parser.Tests.xunit")>]
+[<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
-[<assembly: AssemblyCompany("Microsoft Research")>]
-[<assembly: AssemblyProduct("Parser")>]
+[<assembly: AssemblyCompany("")>]
+[<assembly: AssemblyProduct("Parser.Tests.xunit")>]
 [<assembly: AssemblyCopyright("Copyright ©  2018")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
@@ -22,7 +22,7 @@ open System.Runtime.InteropServices
 [<assembly: ComVisible(false)>]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[<assembly: Guid("e273db40-799e-44a9-8d73-602698e15e7c")>]
+[<assembly: Guid("0b6616d9-a031-4826-b6f9-5bad08196157")>]
 
 // Version information for an assembly consists of the following four values:
 // 
