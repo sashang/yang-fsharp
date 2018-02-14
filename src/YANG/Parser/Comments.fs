@@ -38,6 +38,11 @@ module Comments =
     // However, even in big files (Juniper YANG configuration model -- 7.5MB), it takes around 210ms in a
     // reasonable old machine, including reading the file and writing to text.
 
+    // DIVERGENCE: Replace comments with single space.
+    // RFC 7950 states in page 184 that "This grammar assumes that the scanner replaces
+    // YANG comments with a single space character." Below we do not do that, and it seems unlikely
+    // that it will make any difference.
+
     open System
     open System.IO
     open System.Text
