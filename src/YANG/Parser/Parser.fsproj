@@ -54,6 +54,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Comments.fs" />
+    <Compile Include="Identifier.fs" />
     <Compile Include="Parser.fs" />
     <None Include="Playground.fsx" />
     <Content Include="packages.config" />
