@@ -7,6 +7,8 @@ Parser and .NET type generator for YANG model.
 Running the `.\build.bat` should do the job. The output will be placed in the `.\build` directory.
 This uses the `FAKE` build system (which is based on F\#).
 
+To run the unit tests, use `.\build.bat Test`.
+
 You can also open the Visual Studio solution file in `.\src\YANG\Yang.sln`. However, before doing
 so do restore the dependencies if necessary. We use the `paket` system for package management.
 So, you will need to do:
@@ -21,7 +23,7 @@ Very early: Just skeleton files and pointers to interesting resources.
 
 ## Folder structure
 
-This repo contains the following directories:
+This repository contains the following directories (in addition to `src` which contains the source code):
 
 - `Models-External`: Contains repos to sources of YANG models. These are not linked
   as submodules, since some of them are quite big, and they are not always needed
@@ -31,6 +33,12 @@ This repo contains the following directories:
 - `Documents`: Contains various resources and notes related to the project.
 
 - `Documents\References`: Contains useful reference material (e.g. specs).
+
+The build output is written in:
+
+- `build`: final binaries (release builds by default)
+
+- `test`: binaries for testing (debug build)
 
 ## License
 

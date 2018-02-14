@@ -150,6 +150,10 @@ module Comments =
         let output' = sb.ToString()
         output'
 
+    // The API to remove comments is defined below.
+    // We define them in a type to be able to reuse the same method name
+    // (by overloading the arguments)
+
     type Comments =
         /// <summary>
         /// Removes comments from a YANG input; caller provides input and output streams
@@ -164,23 +168,3 @@ module Comments =
         /// <param name="input">Input model</param>
         /// <returns>Model without comments</returns>
         static member Remove input = SlowRemoveFromString input
-
-//module CommentsTest =
-
-//    let duration f = 
-//        let timer = new System.Diagnostics.Stopwatch()
-//        timer.Start()
-//        let returnValue = f()
-//        printfn "Elapsed Time: %i" timer.ElapsedMilliseconds
-//        returnValue
-
-//    let oo = duration (
-//                fun () ->
-//                    let input = new StreamReader(@"D:\Users\chrisgk\Stable\Repos\Me\Universe\PL\Parsers\YangDotNet\Models-External\Juniper\16.1\configuration.yang")
-//                    let sb = StringBuilder()
-//                    let output = new StringWriter(sb)
-//                    Comments.Remove (input, output)
-//                    sb.ToString()
-//            ) 
-
-
