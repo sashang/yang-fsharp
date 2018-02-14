@@ -14,7 +14,7 @@ if (Get-Command -Name npm -ErrorAction SilentlyContinue) {
 
     if (Test-Path -Path $commitizen_path) {
         $commitizen_bin = Join-Path -Path $commitizen_path -ChildPath bin
-        if ($Env:PATH -notcontains $commitizen_bin) {
+        if (-not $Env:PATH.Contains($commitizen_bin)) {
             Write-Verbose -Message "Adding commitizen to path"
             $Env:PATH += ";$commitizen_bin"
         }
@@ -29,3 +29,6 @@ if (Get-Command -Name npm -ErrorAction SilentlyContinue) {
 } else {
     Write-Warning -Message "node.js is not installed; this is not a problem, but when present gives better options for structuring git commit messages"
 }
+
+& "$PSScriptRoot\.paket\paket.exe" restore
+& "$PSScriptRoot\.paket\paket.exe" generate-load-scripts -t fsx
