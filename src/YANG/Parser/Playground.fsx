@@ -40,8 +40,36 @@ let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
         printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
         reply
 
+type TextState =
+| Normal
+| SingleQuotedString
+| DoubleQuotedString
+| Escaped
 
+let unparsed_block_literal<'a> : Parser<string, 'a> =
+    let mutable opened = 0
+    let mutable state : TextState = Normal
 
+    let closing c : bool =
+        match state, c with
+        | SingleQuotedString, '\''  -> state <- Normal; true
+        | SingleQuotedString, _     -> true
+        | DoubleQuotedString, '"'   -> state <- Normal; true
+        | DoubleQuotedString, '\\'  -> state <- Escaped; true
+        | DoubleQuotedString, _     -> true
+        | Escaped, _                -> state <- DoubleQuotedString; true
+        | Normal, '\''              -> state <- SingleQuotedString; true
+        | Normal, '"'               -> state <- DoubleQuotedString; true
+        | Normal, '}'               ->
+            if opened = 0 then
+                false
+            else
+                opened <- opened - 1
+                true
+        | Normal, _else             -> true
+
+    let normalChar = satisfy closing
+    manyChars normalChar
 
 
 type Statement =
@@ -53,4 +81,20 @@ type Module =
         Statement : Statement list
     }
 
+let module_parser<'a> : Parser<Module, 'a> =
+    let parser =
+        spaces >>. skipStringCI "module" >>. spaces >>.
+        Identifier.parse_identifier .>> spaces .>>
+        skipChar '{' .>> spaces .>>.
+        unparsed_block_literal .>> spaces .>>
+        skipChar '}' .>> spaces
+    parser |>> (
+        fun (identifier, block) ->
+            {
+                Name = identifier
+                Statement = [ Unparsed block ]
+            }
+    )
+
 let model = ReadAndClean example
+let parsed = test module_parser model
