@@ -6,6 +6,7 @@
 
 #load "Errors.fs"
 #load "Comments.fs"
+#load "Strings.fs"
 #load "Generic.fs"
 #load "Identifier.fs"
 #load "Module.fs"
@@ -35,6 +36,11 @@ let test p str =
     | Failure(errorMsg, _, _) ->
         printfn "Failure: %s" errorMsg
 
+let apply p str =
+    match run p str with
+    | Success(result, _, _ )    -> result
+    | Failure(errorMsg, _, _)   -> failwith errorMsg
+
 let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
     fun stream ->
         printfn "%A: Entering %s" stream.Position label
@@ -43,7 +49,9 @@ let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
         reply
 
 
-
+//test Identifier.parse_identifier "name"
+//test Identifier.parse_identifier_with_prefix "ns:name"
+//test Identifier.parse_identifier_with_prefix "ns:name"
 
 let model = ReadAndClean example
 let parsed = test Module.module_parser model

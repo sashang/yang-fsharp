@@ -67,8 +67,6 @@ module Module =
 
     /// Parser for the module statement
     let module_parser<'a> : Parser<Module, 'a> =
-
-
         let parser =
             spaces >>. skipStringCI "module" >>. spaces >>.
             Identifier.parse_identifier .>> spaces .>>.

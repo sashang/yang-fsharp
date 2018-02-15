@@ -5,6 +5,7 @@ namespace Yang.Parser
 /// Parsers for generic (i.e. uninterpreted) elements
 module Generic =
     open FParsec
+    open System.Reflection
 
     /// Tracks the state of a generic parser
     type private TextState =
@@ -64,3 +65,51 @@ module Generic =
         let normalChar = satisfy closing
         skipChar '{' >>. manyChars normalChar .>> skipChar '}'
 
+    // Parsing generic statements
+    // Statements are described in [RFC 7950, Section 6.3] as:
+    // statement = keyword [argument] (";" / "{" *statement "}")
+    //
+    // The argument is a string.
+
+    type Statement = {
+        Keyword : string
+        Argument : string option
+        Body: (Statement list) option
+    }
+
+    //let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
+    let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
+        createParserForwardedToRef<Statement, 'a>()
+
+    let parse_statement_implementation<'a> (input : CharStream<'a>) : Reply<Statement> =
+        // Below are the conditions for parsing the keyword which is either
+        // an identifier or an identifier with prefix. This is why the code
+        // below is slightly different from the one used in the Identifier parser.
+        let isAsciiIdStart c = isAsciiLetter c || c = '_'
+        let isAsciiIdContinue c =
+            isAsciiLetter c || isDigit c || c = '_' || c = '-' || c = '.' || c = ':'
+
+        let parser =
+            identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
+                                            isAsciiIdContinue = isAsciiIdContinue))
+            .>> spaces
+            .>>. (     (skipChar ';' |>> (fun _ -> None, None))
+                   <|> (skipChar '{' >>. (manyTill parse_statement (skipChar '}'))
+                        |>> (fun body -> None, Some body))
+                   <|> (Strings.parse_string .>> spaces .>> skipChar ';'
+                        |>> (fun argument -> Some argument, None))
+                   <|> (Strings.parse_string .>> spaces .>> skipChar '{' .>>. (manyTill parse_statement (skipChar '}'))
+                        |>> (fun (argument, body) -> Some argument, Some body))
+                 )
+            |>> ( fun (keyword, (argument, body)) ->
+                {
+                    Keyword     = keyword
+                    Argument    = argument
+                    Body        = body
+                }
+            )
+
+        parser input
+
+    do
+        parse_statement_ref := parse_statement_implementation
