@@ -1,7 +1,10 @@
 endif
 failwith
 forall
+optsep
 printfn
 sprintf
+stmt
+stmtsep
 typeof
 Xunit
