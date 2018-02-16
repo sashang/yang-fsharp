@@ -114,12 +114,11 @@ module Generic =
                 identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
                                                 isAsciiIdContinue = isAsciiIdContinue))
                 .>> spaces
-                .>>. (     (end_of_statement
-                            |>> (fun _                  -> None, None))
-                       <|> (read_keyword .>>. end_of_statement_or_block
-                            |>> (fun (argument, body)   -> Some argument, body))
-                       <|> (begin_block >>. read_block
-                            |>> (fun body               -> None, Some body))
+                .>>. ((end_of_statement_or_block
+                       |>> (fun body                  -> None, body))
+                      <|>
+                      (read_keyword .>>. end_of_statement_or_block
+                       |>> (fun (argument, body)   -> Some argument, body))
                      )
                 |>> ( fun (keyword, (argument, body))   ->
                     {

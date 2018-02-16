@@ -23,18 +23,14 @@ Directory.Exists(sample_dir)
 
 let example = Path.Combine(sample_dir, @"RFC7950/example-system.yang")
 
-let ReadAndClean filename =
-    use reader = new StreamReader(example)
+let ReadAndClean (filename : string) =
+    use reader = new StreamReader(filename)
     let sb = StringBuilder()
     use writer = new StringWriter(sb)
     Comments.Remove(reader, writer)
     sb.ToString()
 
 let model = ReadAndClean example
-let (ParserResult.Success (x, _, _)) = run Module.module_parser model
-let ((Module.Statement.Unparsed y) :: _) = x.Statement
-
-let z = run (many (Generic.statement_parser .>> spaces)) y
 
 let empty_module = """
 module empty {
@@ -104,10 +100,23 @@ keyword argument {
 
 run parse_many_statements ``simple body with argument and nested statements``
 
-
 run parse_many_statements model
 
+#time
+let big_model =
+    Path.Combine(__SOURCE_DIRECTORY__, @"../../../", @"Models-External\Juniper\16.1\configuration.yang")
+    |> ReadAndClean
 
+let apply parser input =
+    match (run parser input) with
+    | Success (result, _, _)    -> result
+    | Failure (message, _, _)   -> failwith "parsing failed"
+
+let juniper = apply parse_many_statements big_model |> List.head
+juniper.Keyword
+juniper.Argument
+juniper.Body
+#time
 
 run Strings.parse_string "test"
 run Strings.parse_string "'test 123 !£$%'"
