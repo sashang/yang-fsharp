@@ -4,6 +4,7 @@
 #load @"../../../.paket/load/net471/FParsec-Big-Data-Edition.fsx"
 #load @"../../../.paket/load/net471/NLog.fsx"
 
+#load "Utilities.fs"
 #load "Errors.fs"
 #load "Comments.fs"
 #load "Strings.fs"
@@ -29,36 +30,45 @@ let ReadAndClean filename =
     Comments.Remove(reader, writer)
     sb.ToString()
 
-
-let test p str =
-    match run p str with
-    | Success(result, _, _)   -> printfn "Success: %A" result
-    | Failure(errorMsg, _, _) ->
-        printfn "Failure: %s" errorMsg
-
-let apply p str =
-    match run p str with
-    | Success(result, _, _ )    -> result
-    | Failure(errorMsg, _, _)   -> failwith errorMsg
-
-let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
-    fun stream ->
-        printfn "%A: Entering %s" stream.Position label
-        let reply = p stream
-        printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
-        reply
-
-
-//test Identifier.parse_identifier "name"
-//test Identifier.parse_identifier_with_prefix "ns:name"
-//test Identifier.parse_identifier_with_prefix "ns:name"
-
 let model = ReadAndClean example
-let parsed = test Module.module_parser model
+run Module.module_parser model
 
 let empty_module = """
 module empty {
 }
 """
 
-test Module.module_parser empty_module
+run Module.module_parser empty_module
+
+run Strings.parse_string "test"
+run Strings.parse_string "'test 123 !£$%'"
+run Strings.parse_string "\"string with space\""
+run Strings.parse_string "\'string with space\'"
+run Strings.parse_string "\"Test \\\" string\""
+run Strings.parse_string "\"string A \" + \"and string B\""
+run Strings.parse_string "'string A ' + \"and string B\""
+run Strings.parse_string "'string A ' + 'and string B'"
+
+let multiline_string = """
+        "the message starts here and
+         continues to the next line"
+"""
+
+let multiline_string_2 = """
+        "the message starts here and " +
+        "continues to the next line" + " and a bit more"
+"""
+
+let multiline_string_concatenated = """
+        "the message starts here and
+         continues to the next line " +
+     "and continues here
+      and there"
+"""
+
+run (spaces >>. Strings.parse_double_quoted_string) multiline_string
+run (spaces >>. Strings.parse_string .>> spaces) multiline_string
+run (spaces >>. Strings.parse_string .>> spaces) multiline_string_2
+run (spaces >>. Strings.parse_string .>> spaces) multiline_string_concatenated
+
+

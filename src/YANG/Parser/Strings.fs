@@ -4,6 +4,7 @@
 namespace Yang.Parser
 
 module Strings =
+    open System.Text
     open FParsec
 
     // Parsing strings: strings can be unquoted, single-quoted, or double-quoted
@@ -52,17 +53,138 @@ module Strings =
     // first.  Any tab character in a succeeding line that must be examined
     // for stripping is first converted into 8 space characters.
 
+    /// Parses an unquoted string
     let parse_unquoted_string<'a> : Parser<string, 'a> =
-        failwith "Not implemented exception"
+        regex "[^ \t\r\n'\";{}]*"
+        |> resultSatisfies (
+            // Observe that we also need to guarantee that we are not returning the empty string
+            fun s -> System.String.IsNullOrWhiteSpace(s) = false &&
+                     s.Contains("//") = false && s.Contains("/*") = false && s.Contains("*/") = false
+        ) "Invalid unquoted string"
 
+    /// Parses a single quoted string
     let parse_single_quoted_string<'a> : Parser<string, 'a> =
-        failwith "Not implemented exception"
+        // Keep everything in a pair of quotes
+        skipChar '\'' >>. manySatisfy (fun c -> c <> '\'') .>> skipChar '\''
 
+    /// Removes the whitespace at the beginning of each line
+    let private trim_whitespace column (input : string) =
+        let strings = input.Split('\n')
+        let is_whitespace c = (c = ' ' || c = '\t')
+
+        let strings' =
+            strings
+            |> Array.map (
+                fun line ->
+                    if System.String.IsNullOrWhiteSpace(line) then line
+                    else
+                        let mutable index = 0
+                        while is_whitespace (line.Chars index) do
+                            index <- index + 1
+
+                        let characters_to_trim = min index column
+                        line.Substring(characters_to_trim)
+            )
+        System.String.Join("\n", strings')
+
+    /// Replaces the escaped control characters in the string with the real values
+    let private substitute_control_characters (input : string) =
+        input.Replace(@"\\", @"\")
+             .Replace(@"\n", "\n")
+             .Replace(@"\t", "\t")
+             .Replace("\\\"", "\"")
+
+    /// This is a helper structure for capturing the state of the reader when
+    /// inside a double quoted string; we need that to identity special characters.
+    type private DoubleQuoteParserState =
+    | NoEscape
+    | Escape
+    | EscapeError
+
+    /// Extracts the string inside the the double quotes, as it appears
+    let private parse_double_quoted_string_atom_pass1<'a> : Parser<string, 'a> =
+        let mutable state = NoEscape
+
+        /// Determine whether the current character is part of the string
+        let advance c =
+            match c, state with
+            // Escape sequence
+            | '\\', NoEscape    -> state <- Escape; true
+            // End of string
+            | '"',  NoEscape    -> false
+            // Ordinary character in string
+            | _,    NoEscape    -> true
+            // Input is \\
+            | '\\', Escape
+            // Input is \n
+            | 'n',  Escape
+            // Input is \t
+            | 't',  Escape
+            // Input is \"
+            | '"',  Escape
+                                -> state <- NoEscape; true
+            // Invalid escape character
+            | _,    Escape      -> state <- EscapeError; false
+            // We have already reached an erroneous escape character; why are we still parsing?
+            | _,    EscapeError ->
+                raise (new YangParserException("Internal error: parsing of string after determining an invalid special character"))
+
+        manySatisfy advance
+        |> resultSatisfies (fun _ -> state <> EscapeError) "Detected invalid control character in string"
+
+    /// Parses a double quoted string
     let parse_double_quoted_string<'a> : Parser<string, 'a> =
-        failwith "Not implemented exception"
+        // Parser extracts text from "text", without any formatting
+        let parser = skipChar '"' >>. parse_double_quoted_string_atom_pass1 .>> skipChar '"'
+        fun stream ->
+            let state = stream.State
+
+            // This is the position of the quoted string
+            let position = state.GetPosition(stream)
+
+            let reply =
+                (
+                    parser
+                    |>> trim_whitespace (int position.Column)
+                    |>> substitute_control_characters
+                ) stream
+            if reply.Status = Ok then
+                reply
+            else
+                stream.BacktrackTo(state) // backtrack to beginning
+                reply
 
     /// Parser that interprets the next token as string
     let parse_string<'a> : Parser<string, 'a> =
-        parse_unquoted_string <|> parse_single_quoted_string <|> parse_double_quoted_string
+        // Either there is a single unquoted string, or
+        // one or more quoted string concatenated with '+'
 
+        // Parser for quoted strings
+        let element : Parser<string, 'a> = parse_single_quoted_string <|> parse_double_quoted_string
 
+        // Next parser for separator.
+        // Even though we do not need the string of the separator, we need to consume it,
+        // otherwise we cannot parse multi-line text (I think)
+        let separator : Parser<string, 'a> = regex "\s+\+\s+"
+
+        // The following three accumulate the parsed strings
+        let start (str : string) =
+            let sb = StringBuilder()
+            sb.Append(str)
+        let append (sb : StringBuilder) _ (str : string) = sb.Append(str)
+        let finish (sb : StringBuilder) =
+            printfn "Finishing"
+            sb.ToString()
+
+        // Parses quoted strings that may be concatenated with '+'
+        let parse_quoted_strings : Parser<string, 'a> =
+            Inline.SepBy (
+                elementParser = element,
+                separatorParser = separator,
+                stateFromFirstElement = start,
+                foldState = append,
+                resultFromState = finish
+            )
+
+        // Finally, we either have an unquoted string, or one or more quoted strings
+        parse_unquoted_string <|> parse_quoted_strings

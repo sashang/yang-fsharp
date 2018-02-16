@@ -81,38 +81,42 @@ module Generic =
     // The type system complaints when generalizing the input type below (from unit to 'a).
     // In similar problems, a solution is to inline the definition.
 
-    let (parse_statement : Parser<Statement, unit>), (parse_statement_ref : Parser<Statement, unit> ref) =
-        createParserForwardedToRef<Statement, unit>()
+    type StatementParserGenerator =
+        static member inline Generate<'a>() = createParserForwardedToRef<Statement, 'a>()
 
-    let inline parse_statement_implementation (input : CharStream<unit>) : Reply<Statement> =
-        // Below are the conditions for parsing the keyword which is either
-        // an identifier or an identifier with prefix. This is why the code
-        // below is slightly different from the one used in the Identifier parser.
-        let isAsciiIdStart c = isAsciiLetter c || c = '_'
-        let isAsciiIdContinue c =
-            isAsciiLetter c || isDigit c || c = '_' || c = '-' || c = '.' || c = ':'
+    let inline statement_parser<'a> =
+        let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
+            createParserForwardedToRef<Statement, 'a>()
 
-        let parser =
-            identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
-                                            isAsciiIdContinue = isAsciiIdContinue))
-            .>> spaces
-            .>>. (     (skipChar ';' |>> (fun _ -> None, None))
-                   <|> (skipChar '{' >>. (manyTill parse_statement (skipChar '}'))
-                        |>> (fun body -> None, Some body))
-                   <|> (Strings.parse_string .>> spaces .>> skipChar ';'
-                        |>> (fun argument -> Some argument, None))
-                   <|> (Strings.parse_string .>> spaces .>> skipChar '{' .>>. (manyTill parse_statement (skipChar '}'))
-                        |>> (fun (argument, body) -> Some argument, Some body))
-                 )
-            |>> ( fun (keyword, (argument, body)) ->
-                {
-                    Keyword     = keyword
-                    Argument    = argument
-                    Body        = body
-                }
-            )
+        let inline parse_statement_implementation (input : CharStream<'a>) : Reply<Statement> =
+            // Below are the conditions for parsing the keyword which is either
+            // an identifier or an identifier with prefix. This is why the code
+            // below is slightly different from the one used in the Identifier parser.
+            let isAsciiIdStart c = isAsciiLetter c || c = '_'
+            let isAsciiIdContinue c =
+                isAsciiLetter c || isDigit c || c = '_' || c = '-' || c = '.' || c = ':'
 
-        parser input
+            let parser =
+                identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
+                                                isAsciiIdContinue = isAsciiIdContinue))
+                .>> spaces
+                .>>. (     (skipChar ';' |>> (fun _ -> None, None))
+                       <|> (skipChar '{' >>. (manyTill parse_statement (skipChar '}'))
+                            |>> (fun body -> None, Some body))
+                       <|> (Strings.parse_string .>> spaces .>> skipChar ';'
+                            |>> (fun argument -> Some argument, None))
+                       <|> (Strings.parse_string .>> spaces .>> skipChar '{' .>>. (manyTill parse_statement (skipChar '}'))
+                            |>> (fun (argument, body) -> Some argument, Some body))
+                     )
+                |>> ( fun (keyword, (argument, body)) ->
+                    {
+                        Keyword     = keyword
+                        Argument    = argument
+                        Body        = body
+                    }
+                )
 
-    do
+            parser input
+
         parse_statement_ref := parse_statement_implementation
+        parse_statement

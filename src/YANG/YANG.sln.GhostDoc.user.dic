@@ -1,8 +1,11 @@
+elif
 endif
 failwith
 forall
 optsep
+pchar
 printfn
+pstring
 sprintf
 stmt
 stmtsep
