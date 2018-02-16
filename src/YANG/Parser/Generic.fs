@@ -77,11 +77,14 @@ module Generic =
         Body: (Statement list) option
     }
 
-    //let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
-    let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
-        createParserForwardedToRef<Statement, 'a>()
+    // TODO: Generalize type below
+    // The type system complaints when generalizing the input type below (from unit to 'a).
+    // In similar problems, a solution is to inline the definition.
 
-    let parse_statement_implementation<'a> (input : CharStream<'a>) : Reply<Statement> =
+    let (parse_statement : Parser<Statement, unit>), (parse_statement_ref : Parser<Statement, unit> ref) =
+        createParserForwardedToRef<Statement, unit>()
+
+    let inline parse_statement_implementation (input : CharStream<unit>) : Reply<Statement> =
         // Below are the conditions for parsing the keyword which is either
         // an identifier or an identifier with prefix. This is why the code
         // below is slightly different from the one used in the Identifier parser.
