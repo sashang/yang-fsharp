@@ -173,7 +173,6 @@ module Strings =
             sb.Append(str)
         let append (sb : StringBuilder) _ (str : string) = sb.Append(str)
         let finish (sb : StringBuilder) =
-            printfn "Finishing"
             sb.ToString()
 
         // Parses quoted strings that may be concatenated with '+'

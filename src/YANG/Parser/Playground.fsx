@@ -31,7 +31,10 @@ let ReadAndClean filename =
     sb.ToString()
 
 let model = ReadAndClean example
-run Module.module_parser model
+let (ParserResult.Success (x, _, _)) = run Module.module_parser model
+let ((Module.Statement.Unparsed y) :: _) = x.Statement
+
+let z = run (many (Generic.statement_parser .>> spaces)) y
 
 let empty_module = """
 module empty {
@@ -39,6 +42,67 @@ module empty {
 """
 
 run Module.module_parser empty_module
+
+open Yang.Parser.Generic
+
+let ``simple body with just keywords`` = """
+keyword1;
+keyword2;
+keyword3;
+"""
+
+run parse_many_statements ``simple body with just keywords``
+
+let ``simple body with simple statements`` = """
+    yang-version 1.1;
+    namespace "urn:example:system";
+    prefix "sys";
+
+    organization "Example Inc.";
+    contact "joe@example.com";
+    description
+        "The module for entities implementing the Example system.";
+"""
+
+run parse_many_statements ``simple body with simple statements``
+
+let ``simple body with one nested statement`` = """
+keyword {
+    yang-version 1.1;
+}
+"""
+
+run parse_many_statements ``simple body with one nested statement``
+
+let ``simple body with nested statements`` = """
+keyword {
+    yang-version 1.1;
+    namespace "urn:example:system";
+    prefix "sys";
+
+    organization "Example Inc.";
+    contact "joe@example.com";
+    description
+        "The module for entities implementing the Example system.";
+}
+"""
+
+run parse_many_statements ``simple body with nested statements``
+
+let ``simple body with argument and nested statements`` = """
+keyword argument {
+    yang-version 1.1;
+    namespace "urn:example:system";
+    prefix "sys";
+
+    organization "Example Inc.";
+    contact "joe@example.com";
+    description
+        "The module for entities implementing the Example system.";
+}
+"""
+
+run parse_many_statements ``simple body with argument and nested statements``
 
 run Strings.parse_string "test"
 run Strings.parse_string "'test 123 !£$%'"

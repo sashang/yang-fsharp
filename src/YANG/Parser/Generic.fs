@@ -88,6 +88,12 @@ module Generic =
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
 
+        let end_of_statement = skipChar ';' >>. spaces
+        let read_keyword = Strings.parse_string .>> spaces
+        let begin_block = skipChar '{' .>> spaces
+        let end_block = spaces .>> skipChar '}' .>> spaces
+        let read_block = manyTill parse_statement end_block
+
         let inline parse_statement_implementation (input : CharStream<'a>) : Reply<Statement> =
             // Below are the conditions for parsing the keyword which is either
             // an identifier or an identifier with prefix. This is why the code
@@ -96,19 +102,22 @@ module Generic =
             let isAsciiIdContinue c =
                 isAsciiLetter c || isDigit c || c = '_' || c = '-' || c = '.' || c = ':'
 
+            printfn "Inside parse statement: %A, %A" input.Position input.State
+
             let parser =
                 identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
                                                 isAsciiIdContinue = isAsciiIdContinue))
                 .>> spaces
-                .>>. (     (skipChar ';' |>> (fun _ -> None, None))
-                       <|> (skipChar '{' >>. (manyTill parse_statement (skipChar '}'))
-                            |>> (fun body -> None, Some body))
-                       <|> (Strings.parse_string .>> spaces .>> skipChar ';'
-                            |>> (fun argument -> Some argument, None))
-                       <|> (Strings.parse_string .>> spaces .>> skipChar '{' .>>. (manyTill parse_statement (skipChar '}'))
-                            |>> (fun (argument, body) -> Some argument, Some body))
+                .>>. (     (end_of_statement
+                            |>> (fun _                  -> printfn "1"; None, None))
+                       <|> (read_keyword .>> end_of_statement
+                            |>> (fun argument           -> printfn "2: %A" argument; Some argument, None))
+                       <|> (begin_block >>. read_block
+                            |>> (fun body               -> printfn "3: %A" body; None, Some body))
+                       <|> (read_keyword .>> begin_block .>>. read_block
+                            |>> (fun (argument, body)   -> printfn "4"; Some argument, Some body))
                      )
-                |>> ( fun (keyword, (argument, body)) ->
+                |>> ( fun (keyword, (argument, body))   ->
                     {
                         Keyword     = keyword
                         Argument    = argument
@@ -120,3 +129,6 @@ module Generic =
 
         parse_statement_ref := parse_statement_implementation
         parse_statement
+
+    let parse_many_statements<'a> : Parser<Statement list, 'a> =
+        many (spaces >>. statement_parser .>> spaces)
