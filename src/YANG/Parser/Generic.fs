@@ -88,11 +88,19 @@ module Generic =
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
 
+        // Some helper methods; it is convenient to consume whitespace here
         let end_of_statement = skipChar ';' >>. spaces
         let read_keyword = Strings.parse_string .>> spaces
         let begin_block = skipChar '{' .>> spaces
         let end_block = spaces .>> skipChar '}' .>> spaces
         let read_block = manyTill parse_statement end_block
+
+        // The following combines the case of either reaching the end of the
+        // statement with a semicolon, or we found a nested block.
+        let end_of_statement_or_block : Parser<Statement list option, 'a> =
+            (end_of_statement |>> (fun _ -> None))
+            <|>
+            (begin_block >>. read_block |>> (fun statements -> Some statements))
 
         let inline parse_statement_implementation (input : CharStream<'a>) : Reply<Statement> =
             // Below are the conditions for parsing the keyword which is either
@@ -102,20 +110,16 @@ module Generic =
             let isAsciiIdContinue c =
                 isAsciiLetter c || isDigit c || c = '_' || c = '-' || c = '.' || c = ':'
 
-            printfn "Inside parse statement: %A, %A" input.Position input.State
-
             let parser =
                 identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
                                                 isAsciiIdContinue = isAsciiIdContinue))
                 .>> spaces
                 .>>. (     (end_of_statement
-                            |>> (fun _                  -> printfn "1"; None, None))
-                       <|> (read_keyword .>> end_of_statement
-                            |>> (fun argument           -> printfn "2: %A" argument; Some argument, None))
+                            |>> (fun _                  -> None, None))
+                       <|> (read_keyword .>>. end_of_statement_or_block
+                            |>> (fun (argument, body)   -> Some argument, body))
                        <|> (begin_block >>. read_block
-                            |>> (fun body               -> printfn "3: %A" body; None, Some body))
-                       <|> (read_keyword .>> begin_block .>>. read_block
-                            |>> (fun (argument, body)   -> printfn "4"; Some argument, Some body))
+                            |>> (fun body               -> None, Some body))
                      )
                 |>> ( fun (keyword, (argument, body))   ->
                     {

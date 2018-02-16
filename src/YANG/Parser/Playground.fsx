@@ -104,6 +104,11 @@ keyword argument {
 
 run parse_many_statements ``simple body with argument and nested statements``
 
+
+run parse_many_statements model
+
+
+
 run Strings.parse_string "test"
 run Strings.parse_string "'test 123 !£$%'"
 run Strings.parse_string "\"string with space\""
