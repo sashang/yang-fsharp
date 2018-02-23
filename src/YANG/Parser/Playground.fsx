@@ -10,6 +10,7 @@
 #load "Strings.fs"
 #load "Generic.fs"
 #load "Identifier.fs"
+#load "YangStatements.fs"
 #load "Module.fs"
 #load "Parser.fs"
 
@@ -32,75 +33,8 @@ let ReadAndClean (filename : string) =
 
 let model = ReadAndClean example
 
-let empty_module = """
-module empty {
-}
-"""
 
-run Module.module_parser empty_module
-
-open Yang.Parser.Generic
-
-let ``simple body with just keywords`` = """
-keyword1;
-keyword2;
-keyword3;
-"""
-
-run parse_many_statements ``simple body with just keywords``
-
-let ``simple body with simple statements`` = """
-    yang-version 1.1;
-    namespace "urn:example:system";
-    prefix "sys";
-
-    organization "Example Inc.";
-    contact "joe@example.com";
-    description
-        "The module for entities implementing the Example system.";
-"""
-
-run parse_many_statements ``simple body with simple statements``
-
-let ``simple body with one nested statement`` = """
-keyword {
-    yang-version 1.1;
-}
-"""
-
-run parse_many_statements ``simple body with one nested statement``
-
-let ``simple body with nested statements`` = """
-keyword {
-    yang-version 1.1;
-    namespace "urn:example:system";
-    prefix "sys";
-
-    organization "Example Inc.";
-    contact "joe@example.com";
-    description
-        "The module for entities implementing the Example system.";
-}
-"""
-
-run parse_many_statements ``simple body with nested statements``
-
-let ``simple body with argument and nested statements`` = """
-keyword argument {
-    yang-version 1.1;
-    namespace "urn:example:system";
-    prefix "sys";
-
-    organization "Example Inc.";
-    contact "joe@example.com";
-    description
-        "The module for entities implementing the Example system.";
-}
-"""
-
-run parse_many_statements ``simple body with argument and nested statements``
-
-run parse_many_statements model
+run Module.parse_module model
 
 #time
 let big_model =
@@ -112,41 +46,24 @@ let apply parser input =
     | Success (result, _, _)    -> result
     | Failure (message, _, _)   -> failwith "parsing failed"
 
-let juniper = apply parse_many_statements big_model |> List.head
+let juniper = apply Generic.parse_many_statements big_model |> List.head
 juniper.Keyword
 juniper.Argument
 juniper.Body
 #time
 
-run Strings.parse_string "test"
-run Strings.parse_string "'test 123 !£$%'"
-run Strings.parse_string "\"string with space\""
-run Strings.parse_string "\'string with space\'"
-run Strings.parse_string "\"Test \\\" string\""
-run Strings.parse_string "\"string A \" + \"and string B\""
-run Strings.parse_string "'string A ' + \"and string B\""
-run Strings.parse_string "'string A ' + 'and string B'"
+let simple_model = """
+module example-system {
+    yang-version 1.1;
+    namespace "urn:example:system";
+    prefix "sys";
 
-let multiline_string = """
-        "the message starts here and
-         continues to the next line"
+    organization "Example Inc.";
+    contact "joe@example.com";
+    description
+        "The module for entities implementing the Example system.";
+}
 """
 
-let multiline_string_2 = """
-        "the message starts here and " +
-        "continues to the next line" + " and a bit more"
-"""
-
-let multiline_string_concatenated = """
-        "the message starts here and
-         continues to the next line " +
-     "and continues here
-      and there"
-"""
-
-run (spaces >>. Strings.parse_double_quoted_string) multiline_string
-run (spaces >>. Strings.parse_string .>> spaces) multiline_string
-run (spaces >>. Strings.parse_string .>> spaces) multiline_string_2
-run (spaces >>. Strings.parse_string .>> spaces) multiline_string_concatenated
-
+let sm = run Module.parse_module simple_model
 

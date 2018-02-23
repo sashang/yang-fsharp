@@ -56,9 +56,6 @@ module Module =
     //
     // TODO: Parsing unknown-statement declarations, see Note-03.
 
-    type Statement =
-    | Unparsed of string
-
     type Module =
         {
             Name : Identifier.Identifier
@@ -66,16 +63,18 @@ module Module =
         }
 
     /// Parser for the module statement
-    let module_parser<'a> : Parser<Module, 'a> =
+    let parse_module<'a> : Parser<Module, 'a> =
         let parser =
             spaces >>. skipStringCI "module" >>. spaces >>.
-            Identifier.parse_identifier .>> spaces .>>.
-            Generic.unparsed_block_literal
+            Identifier.parse_identifier .>> spaces .>>
+            skipChar '{' .>> spaces .>>.
+            parse_many_statements .>>
+            spaces .>> skipChar '}' .>> spaces
         parser |>> (
-            fun (identifier, block) ->
+            fun (identifier, statements) ->
                 {
                     Name = identifier
-                    Statement = [ Unparsed (block.Trim()) ]
+                    Statement = statements
                 }
         )
 
