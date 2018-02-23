@@ -57,6 +57,7 @@
     <Compile Include="FParsecHelper.fs" />
     <Compile Include="CommentsTests.fs" />
     <Compile Include="StringsTests.fs" />
+    <Compile Include="GenericTests.fs" />
     <Compile Include="IdentifierTests.fs" />
     <Content Include="packages.config" />
   </ItemGroup>

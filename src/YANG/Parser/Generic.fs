@@ -77,14 +77,9 @@ module Generic =
         Body: (Statement list) option
     }
 
-    // TODO: Generalize type below
-    // The type system complaints when generalizing the input type below (from unit to 'a).
-    // In similar problems, a solution is to inline the definition.
-
-    type StatementParserGenerator =
-        static member inline Generate<'a>() = createParserForwardedToRef<Statement, 'a>()
-
+    /// Implements a parser for generic statements.
     let inline statement_parser<'a> =
+        /// Forward definitions for the parser.
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
 
@@ -133,5 +128,7 @@ module Generic =
         parse_statement_ref := parse_statement_implementation
         parse_statement
 
+    /// Parses the rest of statements without associating any semantics to them.
+    /// This also consumes whitespace before and after the statements.
     let parse_many_statements<'a> : Parser<Statement list, 'a> =
         many (spaces >>. statement_parser .>> spaces)

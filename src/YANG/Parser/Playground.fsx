@@ -33,7 +33,6 @@ let ReadAndClean (filename : string) =
 
 let model = ReadAndClean example
 
-
 run Module.parse_module model
 
 #time
@@ -66,4 +65,3 @@ module example-system {
 """
 
 let sm = run Module.parse_module simple_model
-
