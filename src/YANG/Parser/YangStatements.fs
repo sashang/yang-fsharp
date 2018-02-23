@@ -128,7 +128,7 @@ module YangStatements =
                  )
             |>> (fun (identifier, (argument, body)) -> Unparsed (identifier, argument, body))
 
-    let inline yang_keywowrd_string_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
+    let inline yang_keyword_string_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
         skipStringCI keyword >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parser
@@ -140,17 +140,17 @@ module YangStatements =
 
         let inline parse_statement_implementation (input : CharStream<'a>) : Reply<Statement> =
             let parser =
-                    yang_keywowrd_string_statement (
+                    yang_keyword_string_statement (
                         "yang-version",
                         (fun (version, options) ->
                             let version' = Version.Parse version
                             YangVersion (version', options)
                         )) parse_statement
-                <|> yang_keywowrd_string_statement ("contact", Contact) parse_statement
-                <|> yang_keywowrd_string_statement ("description", Description) parse_statement
-                <|> yang_keywowrd_string_statement ("namespace", Namespace) parse_statement
-                <|> yang_keywowrd_string_statement ("organization", Organization) parse_statement
-                <|> yang_keywowrd_string_statement ("prefix", Prefix) parse_statement
+                <|> yang_keyword_string_statement ("contact", Contact) parse_statement
+                <|> yang_keyword_string_statement ("description", Description) parse_statement
+                <|> yang_keyword_string_statement ("namespace", Namespace) parse_statement
+                <|> yang_keyword_string_statement ("organization", Organization) parse_statement
+                <|> yang_keyword_string_statement ("prefix", Prefix) parse_statement
                 <|> unknown_statement parse_statement
                 <|> unparsed_statement parse_statement
 
