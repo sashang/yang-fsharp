@@ -102,8 +102,11 @@ module Strings =
     | EscapeError
 
     /// Extracts the string inside the the double quotes, as it appears
-    let private parse_double_quoted_string_atom_pass1<'a> : Parser<string, 'a> =
+    let private parse_double_quoted_string_atom_pass1<'a> : Parser<string * bool, 'a> =
         let mutable state = NoEscape
+        // We need to keep track of whether this is a multiline string, since
+        // we should not remove leading whitespace for non-multiline strings
+        let mutable multiline = false
 
         /// Determine whether the current character is part of the string
         let advance c =
@@ -112,6 +115,8 @@ module Strings =
             | '\\', NoEscape    -> state <- Escape; true
             // End of string
             | '"',  NoEscape    -> false
+            // Keep track whether we found a string that spans multiple lines
+            | '\n', NoEscape    -> multiline <- true; true
             // Ordinary character in string
             | _,    NoEscape    -> true
             // Input is \\
@@ -131,6 +136,7 @@ module Strings =
 
         manySatisfy advance
         |> resultSatisfies (fun _ -> state <> EscapeError) "Detected invalid control character in string"
+        |>> (fun str -> (str, multiline))
 
     /// Parses a double quoted string
     let parse_double_quoted_string<'a> : Parser<string, 'a> =
@@ -145,7 +151,7 @@ module Strings =
             let reply =
                 (
                     parser
-                    |>> trim_whitespace (int position.Column)
+                    |>> fun (str, multiline) -> if multiline then trim_whitespace (int position.Column) str else str
                     |>> substitute_control_characters
                 ) stream
             if reply.Status = Ok then

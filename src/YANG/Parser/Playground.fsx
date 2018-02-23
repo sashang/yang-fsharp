@@ -118,35 +118,3 @@ juniper.Argument
 juniper.Body
 #time
 
-run Strings.parse_string "test"
-run Strings.parse_string "'test 123 !£$%'"
-run Strings.parse_string "\"string with space\""
-run Strings.parse_string "\'string with space\'"
-run Strings.parse_string "\"Test \\\" string\""
-run Strings.parse_string "\"string A \" + \"and string B\""
-run Strings.parse_string "'string A ' + \"and string B\""
-run Strings.parse_string "'string A ' + 'and string B'"
-
-let multiline_string = """
-        "the message starts here and
-         continues to the next line"
-"""
-
-let multiline_string_2 = """
-        "the message starts here and " +
-        "continues to the next line" + " and a bit more"
-"""
-
-let multiline_string_concatenated = """
-        "the message starts here and
-         continues to the next line " +
-     "and continues here
-      and there"
-"""
-
-run (spaces >>. Strings.parse_double_quoted_string) multiline_string
-run (spaces >>. Strings.parse_string .>> spaces) multiline_string
-run (spaces >>. Strings.parse_string .>> spaces) multiline_string_2
-run (spaces >>. Strings.parse_string .>> spaces) multiline_string_concatenated
-
-
