@@ -6,6 +6,19 @@ namespace Yang.Parser
 /// Parsers and types for YANG identifiers
 module Identifier =
     open FParsec
+    open NLog
+
+    /// Logger for this module
+    let private _logger = LogManager.GetCurrentClassLogger()
+
+#if INTERACTIVE
+    // The following are used only in interactive (fsi) to help with enabling disabling
+    // logging for particular modules.
+
+    type internal Marker = interface end
+    let _full_name = typeof<Marker>.DeclaringType.FullName
+    let _name = typeof<Marker>.DeclaringType.Name
+#endif
 
     // RFC 7950: Definition of identifier (page 208)
     // identifier          = (ALPHA / "_")
@@ -48,6 +61,7 @@ module Identifier =
         /// <param name="name">The input identifier</param>
         static member Make (name : string) =
             if (is_identifier_valid name) = false then
+                _logger.Error(sprintf "Invalid identifier: %s" name)
                 raise (new YangParserException(sprintf "Invalid identifier: %s" name))
             else
                 String name
@@ -94,8 +108,10 @@ module Identifier =
         /// <param name="name">The name of the identifier</param>
         static member Make (prefix, name) =
             if (is_identifier_valid prefix) = false then
+                _logger.Error(sprintf "Invalid prefix for identifier: %s" prefix)
                 raise (new YangParserException(sprintf "Invalid prefix for identifier: %s" prefix))
             if (is_identifier_valid name) = false then
+                _logger.Error(sprintf "Invalid name of (prefixed) identifier: %s" name)
                 raise (new YangParserException(sprintf "Invalid name of (prefixed) identifier : %s" name))
             { Prefix = prefix; Name = name }
 
