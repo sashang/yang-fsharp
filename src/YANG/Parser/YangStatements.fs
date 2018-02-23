@@ -57,7 +57,7 @@ module YangStatements =
             | Unparsed (id, _, _)   -> id.ToString()
 
         member this.PrettyPrint =
-            let escape = [| ' '; '\t'; '\r'; '\n'; ';'; '{'; '}'; '@' |]
+            let escape = [| ' '; '\t'; '\r'; '\n'; ';'; '{'; '}'; '@'; ':' |]
 
             /// Pretty print string
             let ps (input : string) =
