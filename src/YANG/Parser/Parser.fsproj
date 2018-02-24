@@ -55,10 +55,13 @@
     <Compile Include="Utilities.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Comments.fs" />
+    <Compile Include="Tokens.fs" />
     <Compile Include="Strings.fs" />
+    <Compile Include="Namespace.fs" />
     <Compile Include="Generic.fs" />
     <Compile Include="Identifier.fs" />
     <Compile Include="Statements.fs" />
+    <Compile Include="Revisions.fs" />
     <Compile Include="Module.fs" />
     <Compile Include="Parser.fs" />
     <None Include="Playground.fsx" />

@@ -7,6 +7,7 @@ module Statements =
     open System
     open FParsec
     open Identifier
+    open Identifier
 
     // [RFC 7950, p. 202-204]
     //
@@ -36,15 +37,35 @@ module Statements =
     /// Available Yang statement definitions
     [<StructuredFormatDisplay("{PrettyPrint}")>]
     type Statement =
-    | Contact of Contact:string * Options:(Statement list option)
-    | Description of Description:string * Options:(Statement list option)
-    | Namespace of Namespace:string * Options:(Statement list option)
-    | Organization of Organization:string * Options:(Statement list option)
-    | Prefix of Prefix:string * Options:(Statement list option)
-    | YangVersion of Version:Version * Options:(Statement list option)
-    | Unknown of Identifier:IdentifierWithPrefix * Argument:(string option) * Body:(Statement list option)
-    | Unparsed of Identifier:Identifier * Argument:(string option) * Body:(Statement list option)
+    // Observe that many rules can be followed by blocks of unknown statements.
+    // We store the statements in those blocks in a special field called Options.
+    // Typically this should be empty.
+
+    /// Contact statement
+    | Contact       of Contact:string * Options:ExtraStatements
+    | Description   of DescriptionStatement
+    | Namespace     of Namespace:string * Options:ExtraStatements
+    | Organization  of Organization:string * Options:ExtraStatements
+    | Prefix        of Prefix:string * Options:ExtraStatements
+    | Reference     of ReferenceStatement
+    | YangVersion   of Version:Version * Options:ExtraStatements
+    | Unknown       of UnknownStatement
+    | Unparsed      of Identifier:Identifier * Argument:(string option) * Body:(Statement list option)
     with
+        member this.Options =
+            match this with
+            | Contact       (_, options)
+            | Description   (_, options)
+            | Namespace     (_, options)
+            | Organization  (_, options)
+            | Prefix        (_, options)
+            | Reference     (_, options)
+            | YangVersion   (_, options)
+                -> options
+            | Unknown _
+            | Unparsed _
+                -> None
+
         member this.Identifier =
             match this with
             | Contact _         -> "contact"
@@ -52,6 +73,7 @@ module Statements =
             | Namespace _       -> "namespace"
             | Organization _    -> "organization"
             | Prefix _          -> "prefix"
+            | Reference _       -> "reference"
             | YangVersion _     -> "yang-version"
             | Unknown (id, _, _)    -> id.ToString()
             | Unparsed (id, _, _)   -> id.ToString()
@@ -86,11 +108,16 @@ module Statements =
             | Namespace (s, b)
             | Organization (s, b)
             | Prefix (s, b)
+            | Reference (s, b)
                 -> sprintf "%s %s %s" id (ps s) (pb b)
             | YangVersion (version, block)  -> sprintf "%s %s %s" id (version.ToString()) (pb block)
             | Unknown (id, arg, body)       -> sprintf "Unknown: %A %s %s"  id (pso arg) (pb body)
             | Unparsed (id, arg, body)      -> sprintf "Unparsed: %A %s %s" id (pso arg) (pb body)
-
+    /// Short name for the extra statements that may appear
+    and ExtraStatements         = Statement list option
+    and DescriptionStatement    = string * ExtraStatements
+    and ReferenceStatement      = string * ExtraStatements
+    and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
 
     // Helper definitions that consume trailing whitespace
     let inline read_keyword<'a> : Parser<string, 'a> = Strings.parse_string .>> spaces
@@ -101,7 +128,7 @@ module Statements =
     let inline block<'a> (parser : Parser<Statement, 'a>) : Parser<Statement list, 'a> =
         manyTill parser end_block
 
-    let inline end_of_statement_or_block<'a> (parser : Parser<Statement, 'a>) : Parser<Statement list option, 'a> =
+    let inline end_of_statement_or_block<'a> (parser : Parser<Statement, 'a>) : Parser<ExtraStatements, 'a> =
         (end_of_statement |>> (fun _ -> None))
         <|>
         (begin_block >>. (block parser) |>> (fun statements -> Some statements))
@@ -134,7 +161,14 @@ module Statements =
         end_of_statement_or_block parser
         |>> maker
 
+    /// Parses a yang-stmt [RFC 7950, p. 202].
+    /// It should be used for parsing rules with no constraints, e.g.
+    // inside unknown-statement rules.
     let inline parse_statement<'a> : Parser<Statement, 'a> =
+        // This parser accepts any type of statement. Typically, it should be used for statements
+        // in unknown statements that have no constaints. Because, of their generality they can
+        // be applied recursively.
+
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
 
@@ -146,11 +180,12 @@ module Statements =
                             let version' = Version.Parse version
                             YangVersion (version', options)
                         )) parse_statement
-                <|> yang_keyword_string_statement ("contact", Contact) parse_statement
-                <|> yang_keyword_string_statement ("description", Description) parse_statement
-                <|> yang_keyword_string_statement ("namespace", Namespace) parse_statement
-                <|> yang_keyword_string_statement ("organization", Organization) parse_statement
-                <|> yang_keyword_string_statement ("prefix", Prefix) parse_statement
+                <|> yang_keyword_string_statement ("contact", Contact)              parse_statement
+                <|> yang_keyword_string_statement ("description", Description)      parse_statement
+                <|> yang_keyword_string_statement ("namespace", Namespace)          parse_statement
+                <|> yang_keyword_string_statement ("organization", Organization)    parse_statement
+                <|> yang_keyword_string_statement ("prefix", Prefix)                parse_statement
+                <|> yang_keyword_string_statement ("reference", Reference)          parse_statement
                 <|> unknown_statement parse_statement
                 <|> unparsed_statement parse_statement
 
@@ -160,5 +195,35 @@ module Statements =
         parse_statement
 
     /// Parses the rest of statements.
+    /// It should be used inside blocks with no constraints, e.g. in unknown statement blocks.
     let parse_many_statements<'a> : Parser<Statement list, 'a> =
         many (spaces >>. parse_statement .>> spaces)
+
+    /// Parses a description statement
+    let parse_description_statement<'a> : Parser<DescriptionStatement, 'a> =
+        // [RFC 7950, p. 186]
+        // description-stmt    = description-keyword sep string stmtend
+        skipStringCI "description" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    /// Parses a reference statement
+    let parse_reference_statement<'a> : Parser<ReferenceStatement, 'a> =
+        // [RFC 7950, p. 186]
+        // reference-stmt      = reference-keyword sep string stmtend
+        skipStringCI "reference" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    /// Helper method to parse an unknown statement
+    let parse_unknown_statement<'a> : Parser<UnknownStatement, 'a> =
+        Identifier.parse_identifier_with_prefix
+        .>> spaces
+        .>>. ((end_of_statement_or_block parse_statement
+                |>> (fun body            -> None, body))
+                <|>
+                (read_keyword .>>. end_of_statement_or_block parse_statement
+                |>> (fun (argument, body)    -> Some argument, body))
+                )
+        |>> (fun (identifier, (argument, body)) -> identifier, argument, body)
+

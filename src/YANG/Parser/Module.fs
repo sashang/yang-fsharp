@@ -5,6 +5,7 @@ namespace Yang.Parser
 /// Parser for the module statement
 module Module =
     open FParsec
+    open System
 
     // The module statement is defined in RFC 7950, page 184:
     // module-stmt     = optsep module-keyword sep identifier-arg-str
@@ -56,11 +57,64 @@ module Module =
     //
     // TODO: Parsing unknown-statement declarations, see Note-03.
 
+    // TODO: define the type of imports
+    type Imports = string
+
+    // TODO: define the type of includes
+    type Includes = string
+
     type Module =
         {
+            // Module header statements
+
+            /// Name of module
             Name : Identifier.Identifier
+            /// Version of YANG used for the specification; should be 1.1
+            YangVersion : Version
+            /// Namespace of module
+            Namespace : Namespace
+            /// Prefix
+            Prefix : string
+
+            // Linkage statements
+            Imports : Imports option
+            Includes : Includes option
+
+            // Meta statements
+            Organization : string
+            Contact : string
+            Description : string
+            Reference : string option
+
+            // Revision statements
+            Revisions : Revision list
+
+            // Rest of body statements
             Statement : Statement list
         }
+    with
+        /// Creates an empty (invalid) module
+        static member Empty = {
+            Name = Identifier.Identifier.MakeUnchecked "<empty>"
+            YangVersion = Version(1, 1)
+            Namespace = "<empty>"
+            Prefix = "<empty>"
+
+            Imports = None
+            Includes = None
+
+            Organization = ""
+            Contact = ""
+            Description = ""
+            Reference = None
+
+            Revisions = []
+
+            Statement = []
+        }
+
+        /// Retrieve the most recent revision of the module
+        member this.CurrentRevision = this.Revisions |> List.maxBy (fun v -> v.Version)
 
     /// Parser for the module statement
     let parse_module<'a> : Parser<Module, 'a> =
@@ -72,7 +126,7 @@ module Module =
             spaces .>> skipChar '}' .>> spaces
         parser |>> (
             fun (identifier, statements) ->
-                {
+                { Module.Empty with
                     Name = identifier
                     Statement = statements
                 }

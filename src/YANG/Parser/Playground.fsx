@@ -7,10 +7,13 @@
 #load "Utilities.fs"
 #load "Errors.fs"
 #load "Comments.fs"
+#load "Tokens.fs"
 #load "Strings.fs"
+#load "Namespace.fs"
 #load "Generic.fs"
 #load "Identifier.fs"
-#load "YangStatements.fs"
+#load "Statements.fs"
+#load "Revisions.fs"
 #load "Module.fs"
 #load "Parser.fs"
 
@@ -65,3 +68,27 @@ module example-system {
 """
 
 let sm = run Module.parse_module simple_model
+
+let ``revision info with no description`` = """
+revision 2007-06-09;
+"""
+
+run (spaces >>. Revisions.parse_revision) ``revision info with no description``
+
+let ``simple revision info with description`` = """
+revision 2007-06-09 {
+        description "Initial revision.";
+    }
+"""
+
+run (spaces >>. Revisions.parse_revision) ``simple revision info with description``
+
+let ``revision info with description with options`` = """
+revision 2007-06-09 {
+    description "Initial revision." {
+        ex:documentation-flag 5;
+    }
+}
+"""
+
+run (spaces >>. Revisions.parse_revision) ``revision info with description with options``
