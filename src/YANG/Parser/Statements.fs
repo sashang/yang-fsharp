@@ -3,7 +3,7 @@ namespace Yang.Parser
 
 /// Parsers for common statements, that appear in the yang-stmt rule
 [<AutoOpen>]
-module YangStatements =
+module Statements =
     open System
     open FParsec
     open Identifier
