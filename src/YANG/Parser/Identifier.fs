@@ -36,6 +36,10 @@ module Identifier =
     let private isAsciiIdStart c = isAsciiLetter c || c = '_'
     let private isAsciiIdContinue c =
         isAsciiLetter c || isDigit c || c = '_' || c = '-' || c = '.'
+    let private options = IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
+                                            isAsciiIdContinue = isAsciiIdContinue)
+    /// parser for YANG identifier tokens
+    let private yang_identifier_element<'a> : Parser<string, 'a> = identifier options
 
     /// Checks whether a string is a valid identifier name
     let is_identifier_valid (input : string) =
@@ -82,9 +86,7 @@ module Identifier =
     /// Parses the following token as an identifier
     /// </summary>
     let parse_identifier<'a> : Parser<Identifier, 'a> =
-        identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
-                                       isAsciiIdContinue = isAsciiIdContinue))
-        |>> Identifier.MakeUnchecked
+        yang_identifier_element |>> Identifier.MakeUnchecked
 
     /// YANG Identifier with prefix
     [<StructuredFormatDisplay("{Value}")>]
@@ -129,9 +131,34 @@ module Identifier =
 
     /// Parses the following token as an identifier with prefix (e.g. 'ns:identifier')
     let parse_identifier_with_prefix<'a> : Parser<IdentifierWithPrefix, 'a> =
-        identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
-                                       isAsciiIdContinue = isAsciiIdContinue)) .>>
+        yang_identifier_element .>>
         skipChar ':' .>>.
-        identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
-                                       isAsciiIdContinue = isAsciiIdContinue))
-        |>> IdentifierWithPrefix.MakeUnchecked
+        yang_identifier_element |>> IdentifierWithPrefix.MakeUnchecked
+
+    /// Captures either a simple or custom identifier
+    [<StructuredFormatDisplay("{Value}")>]
+    type IdentifierReference =
+    | Simple of Identifier
+    | Custom of IdentifierWithPrefix
+    with
+        member this.Value =
+            match this with
+            | Simple identifier -> identifier.Value
+            | Custom identifier -> identifier.Value
+
+        override this.ToString() = this.Value
+
+        member this.IsValid =
+            match this with
+            | Simple identifier -> identifier.IsValid
+            | Custom identifier -> identifier.IsValid
+
+    /// Parses a reference to an identifier. The identifier can be either a
+    /// common one
+    let parse_identifier_reference<'a> : Parser<IdentifierReference, 'a> =
+        yang_identifier_element .>>. (opt (skipChar ':' >>. yang_identifier_element))
+        |>> (fun (name1, name2) ->
+            match name2 with
+            | None -> Simple (Identifier.MakeUnchecked name1)
+            | Some name -> Custom (IdentifierWithPrefix.MakeUnchecked (name1, name))
+        )

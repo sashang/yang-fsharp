@@ -75,3 +75,16 @@ module IdentifierTests =
         Assert.ThrowsAny<Exception>(
             fun _ -> FParsecHelper.apply Identifier.parse_identifier_with_prefix identifier |> ignore
         )
+
+    [<Theory>]
+    [<InlineData("id1")>]
+    let ``parse simple identifier references`` (identifier : string) =
+        let id = FParsecHelper.apply Identifier.parse_identifier_reference identifier
+        Assert.Equal(Identifier.Simple (Identifier.Make identifier), id)
+
+    [<Theory>]
+    [<InlineData("ns", "id")>]
+    let ``parse custom identifier references`` (prefix : string, identifier : string) =
+        let str = sprintf "%s:%s" prefix identifier
+        let id = FParsecHelper.apply Identifier.parse_identifier_reference str
+        Assert.Equal(Identifier.Custom (IdentifierWithPrefix.Make (prefix, identifier)), id)
