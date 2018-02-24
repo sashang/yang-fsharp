@@ -58,7 +58,7 @@
     <Compile Include="Strings.fs" />
     <Compile Include="Generic.fs" />
     <Compile Include="Identifier.fs" />
-    <Compile Include="YangStatements.fs" />
+    <Compile Include="Statements.fs" />
     <Compile Include="Module.fs" />
     <Compile Include="Parser.fs" />
     <None Include="Playground.fsx" />

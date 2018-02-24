@@ -1,4 +1,4 @@
-﻿// YangStatements.fs
+﻿// Statements.fs
 namespace Yang.Parser
 
 /// Parsers for common statements, that appear in the yang-stmt rule
