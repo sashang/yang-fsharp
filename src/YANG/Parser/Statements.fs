@@ -42,10 +42,10 @@ module Statements =
     // Typically this should be empty.
 
     /// Contact statement
-    | Contact       of Contact:string * Options:ExtraStatements
+    | Contact       of ContactStatement
     | Description   of DescriptionStatement
     | Namespace     of NamespaceStatement
-    | Organization  of Organization:string * Options:ExtraStatements
+    | Organization  of OrganizationStatement
     | Prefix        of PrefixStatement
     | Reference     of ReferenceStatement
     | YangVersion   of YangVersionStatement
@@ -117,10 +117,12 @@ module Statements =
             | Unparsed (id, arg, body)      -> sprintf "Unparsed: %A %s %s" id (pso arg) (pb body)
     /// Short name for the extra statements that may appear
     and ExtraStatements         = Statement list option
-    and DescriptionStatement    = string * ExtraStatements
-    and NamespaceStatement      = Uri * ExtraStatements
-    and PrefixStatement         = string * ExtraStatements
-    and ReferenceStatement      = string * ExtraStatements
+    and ContactStatement        = string  * ExtraStatements
+    and DescriptionStatement    = string  * ExtraStatements
+    and NamespaceStatement      = Uri     * ExtraStatements
+    and OrganizationStatement   = string  * ExtraStatements
+    and PrefixStatement         = string  * ExtraStatements
+    and ReferenceStatement      = string  * ExtraStatements
     and YangVersionStatement    = Version * ExtraStatements
     and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
 
@@ -210,6 +212,14 @@ module Statements =
     let parse_many_statements<'a> : Parser<Statement list, 'a> =
         many (spaces >>. parse_statement .>> spaces)
 
+    /// Parses a contact statement
+    let parse_contact_statement<'a> : Parser<ContactStatement, 'a> =
+        // [RFC 7950, p. 186]
+        // contact-stmt        = contact-keyword sep string stmtend
+        skipStringCI "contact" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
     /// Parses a description statement
     let parse_description_statement<'a> : Parser<DescriptionStatement, 'a> =
         // [RFC 7950, p. 186]
@@ -226,6 +236,14 @@ module Statements =
         //                      < URI in RFC 3986 >
         skipStringCI "namespace" >>. spaces >>.
         (Strings.parse_string |>> Uri) .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    /// Parses an organization statement
+    let parse_organization_statement<'a> : Parser<OrganizationStatement, 'a> =
+        // [RFC 7950, p. 186]
+        // organization-stmt   = organization-keyword sep string stmtend
+        skipStringCI "organization" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
     /// Parses a prefix statement

@@ -15,4 +15,31 @@ it easier to translate from EBNF (the notation used in the YANG description in
 [RFC 7950](https://tools.ietf.org/html/rfc7950#section-14)). However, the `FParsec-Pipes`
 project is still in pre-release mode.
 
-// TODO: More details.
+## Parsing of the module statement
+
+The structure of the module is roughly as follows:
+
+- Module header statements (`module-header-stmts`)
+
+- Linkage statements (`linkage-stmts`)
+
+- Meta statements (`meta-stmts`)
+
+- Revision statements (`revision-stmts`)
+
+- Body (`body-stmts`)
+
+The Module, Meta, and Revision statements carry basic information about the module.
+The order of statements in each of those sections is not important. Hence, the parse
+accumulates them in records (in files `Header.fs`, `Meta.fs`, and `Revisions.fs`).
+
+We also keep the unknown statements in each of these modules. We keep them in order.
+However, we do not keep information about their order in relation with the expected
+statements.
+
+TODO: Comments on linkage section.
+
+The assignment of unknown statements to sections is a bit tricky. When parsing a section
+(e.g. header, linkage, meta, and revision), we associate all unknown statements with
+the section being parsed. Hence, unknown statements that appear in the beginning of a section
+will be associated with the preceding section.

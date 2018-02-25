@@ -78,13 +78,10 @@ module Module =
             Includes : Includes option
 
             // Meta statements
-            Organization : string
-            Contact : string
-            Description : string
-            Reference : string option
+            Meta : Meta option
 
             // Revision statements
-            Revisions : Revision list
+            Revisions : Revision list option
 
             // Rest of body statements
             Statement : Statement list
@@ -98,32 +95,33 @@ module Module =
             Imports = None
             Includes = None
 
-            Organization = ""
-            Contact = ""
-            Description = ""
-            Reference = None
-
-            Revisions = []
+            Meta = None
+            Revisions = None
 
             Statement = []
         }
 
         /// Retrieve the most recent revision of the module
-        member this.CurrentRevision = this.Revisions |> List.maxBy (fun v -> v.Version)
+        member this.CurrentRevision =
+            match this.Revisions with
+            | Some revisions -> Some (revisions |> List.maxBy (fun v -> v.Version))
+            | None           -> None
 
     /// Parser for the module statement
     let parse_module<'a> : Parser<Module, 'a> =
         let parser =
-            spaces >>. skipStringCI "module" >>. spaces >>.
+            spaces .>> skipStringCI "module" .>> spaces >>.
             Identifier.parse_identifier .>> spaces .>>
             skipChar '{' .>> spaces .>>.
-            parse_many_statements .>>
+            tuple3 parse_header (opt parse_meta) (opt parse_revision_list) .>>
             spaces .>> skipChar '}' .>> spaces
         parser |>> (
-            fun (identifier, statements) ->
+            fun (identifier, (header, meta, revision)) ->
                 { Module.Empty with
-                    Name = identifier
-                    Statement = statements
+                    Name        = identifier
+                    Header      = header
+                    Meta        = meta
+                    Revisions   = revision
                 }
         )
 

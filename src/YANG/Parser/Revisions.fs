@@ -73,7 +73,7 @@ module Revisions =
             | Unknown       e   -> { Revision.Empty with Options       = Some [ Statements.Unknown e ] }
 
         /// Update state from element
-        let foldState state element =
+        let foldState (state : Revision) element =
             match element with
             | Description   e   -> { state with Description   = Some e }
             | Reference     e   -> { state with Reference     = Some e }
@@ -110,3 +110,7 @@ module Revisions =
         |>> (fun (revision, body) ->
             { body with Version = revision }
         )
+
+    /// Parses all revision statements
+    let parse_revision_list<'a> : Parser<Revision list, 'a> =
+        many (parse_revision .>> spaces)

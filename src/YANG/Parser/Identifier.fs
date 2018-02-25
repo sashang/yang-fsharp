@@ -162,3 +162,27 @@ module Identifier =
             | None -> Simple (Identifier.MakeUnchecked name1)
             | Some name -> Custom (IdentifierWithPrefix.MakeUnchecked (name1, name))
         )
+
+    /// Helper methods for using regular expressions with identifiers
+    module RegularExpressions =
+        /// Regular expression for normal identifier
+        let identifier = "[A-Za-z_][A-Za-z_\-\.0-9]*"
+
+        /// Regular expression for identifier with prefix
+        let prefix_identifer_re = sprintf "%s:%s" identifier identifier
+
+        /// Construct a regular expression that matches any of a set of keywords,
+        /// or an identifier with prefix
+        let keyword_or_prefix_identifier (keywords : string list) =
+            let kwds = String.concat "|" keywords
+            sprintf "(%s|%s)($|\s)" kwds prefix_identifer_re
+
+        /// Parser that captures the next keyword (from the set of input keywords),
+        /// or an identifier with prefix
+        let parse_next_keyword_or_prefix_identifier (keywords : string list) =
+            let re = keyword_or_prefix_identifier keywords
+            regex re
+
+        let notFollowedBy_keyword_or_prefix_identifier (keywords : string list) =
+            notFollowedBy (parse_next_keyword_or_prefix_identifier keywords)
+

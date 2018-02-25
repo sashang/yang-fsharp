@@ -61,6 +61,7 @@
     <Compile Include="Identifier.fs" />
     <Compile Include="Statements.fs" />
     <Compile Include="Header.fs" />
+    <Compile Include="Meta.fs" />
     <Compile Include="Revisions.fs" />
     <Compile Include="Module.fs" />
     <Compile Include="Parser.fs" />

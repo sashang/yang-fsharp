@@ -50,6 +50,11 @@ module Header =
         <|> (parse_prefix_statement         |>> Prefix)
         <|> (parse_unknown_statement        |>> Unknown)
 
+    /// Parser for end of header section
+    let private end_of_header_parser<'a> : Parser<unit, 'a> =
+        // Not currently used, but keeping around just in case.
+        Identifier.RegularExpressions.notFollowedBy_keyword_or_prefix_identifier [ "yang-version"; "namespace"; "prefix" ]
+
     /// Parses all header statements
     let parse_header<'a> : Parser<Header, 'a> =
         // TODO: check that there is exactly one definition of each header statement.
@@ -78,7 +83,7 @@ module Header =
                 | None          -> { state with Options = Some [ Statements.Unknown e ] }
                 | Some op       -> { state with Options = Some ( op @ [Statements.Unknown e] ) }
 
-        Inline.Many(
+        ParserHelper.ConsumeMany(
             elementParser           = elementParser,
             stateFromFirstElement   = stateFromFirstElement,
             foldState               = foldState,

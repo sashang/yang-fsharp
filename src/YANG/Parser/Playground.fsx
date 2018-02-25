@@ -13,6 +13,7 @@
 #load "Identifier.fs"
 #load "Statements.fs"
 #load "Header.fs"
+#load "Meta.fs"
 #load "Revisions.fs"
 #load "Module.fs"
 #load "Parser.fs"
@@ -54,6 +55,22 @@ juniper.Argument
 juniper.Body
 #time
 
+let simple_body = """yang-version 1.1;
+namespace "urn:example:system";
+prefix "sys";
+
+organization "Example Inc.";
+contact "joe@example.com";
+description
+    "The module for entities implementing the Example system.";
+
+revision 2007-06-09 {
+    description "Initial revision.";
+}
+"""
+
+run (Header.parse_header .>>. Meta.parse_meta .>>. Revisions.parse_revision_list) simple_body
+
 let simple_model = """
 module example-system {
     yang-version 1.1;
@@ -64,6 +81,10 @@ module example-system {
     contact "joe@example.com";
     description
         "The module for entities implementing the Example system.";
+
+    revision 2007-06-09 {
+        description "Initial revision.";
+    }
 }
 """
 
@@ -75,3 +96,15 @@ let header = """yang-version 1.1;
 """
 
 run (spaces >>. Header.parse_header) header
+
+
+let empty_meta = ""
+run (spaces >>. Meta.parse_meta) empty_meta
+
+let meta = """organization "Example Inc.";
+    contact "joe@example.com";
+    description
+        "The module for entities implementing the Example system.";
+"""
+
+run (spaces >>. Meta.parse_meta) meta
