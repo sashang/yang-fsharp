@@ -44,11 +44,11 @@ module Statements =
     /// Contact statement
     | Contact       of Contact:string * Options:ExtraStatements
     | Description   of DescriptionStatement
-    | Namespace     of Namespace:string * Options:ExtraStatements
+    | Namespace     of NamespaceStatement
     | Organization  of Organization:string * Options:ExtraStatements
-    | Prefix        of Prefix:string * Options:ExtraStatements
+    | Prefix        of PrefixStatement
     | Reference     of ReferenceStatement
-    | YangVersion   of Version:Version * Options:ExtraStatements
+    | YangVersion   of YangVersionStatement
     | Unknown       of UnknownStatement
     | Unparsed      of Identifier:Identifier * Argument:(string option) * Body:(Statement list option)
     with
@@ -105,25 +105,30 @@ module Statements =
             match this with
             | Contact (s, b)
             | Description (s, b)
-            | Namespace (s, b)
             | Organization (s, b)
             | Prefix (s, b)
             | Reference (s, b)
                 -> sprintf "%s %s %s" id (ps s) (pb b)
+
+            | Namespace (uri, block)        -> sprintf "%s %s %s" id (uri.ToString()) (pb block)
             | YangVersion (version, block)  -> sprintf "%s %s %s" id (version.ToString()) (pb block)
+
             | Unknown (id, arg, body)       -> sprintf "Unknown: %A %s %s"  id (pso arg) (pb body)
             | Unparsed (id, arg, body)      -> sprintf "Unparsed: %A %s %s" id (pso arg) (pb body)
     /// Short name for the extra statements that may appear
     and ExtraStatements         = Statement list option
     and DescriptionStatement    = string * ExtraStatements
+    and NamespaceStatement      = Uri * ExtraStatements
+    and PrefixStatement         = string * ExtraStatements
     and ReferenceStatement      = string * ExtraStatements
+    and YangVersionStatement    = Version * ExtraStatements
     and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
 
     // Helper definitions that consume trailing whitespace
-    let inline read_keyword<'a> : Parser<string, 'a> = Strings.parse_string .>> spaces
-    let inline end_of_statement<'a> : Parser<unit, 'a> = skipChar ';' >>. spaces
-    let inline begin_block<'a> : Parser<unit, 'a> = skipChar '{' .>> spaces
-    let inline end_block<'a> : Parser<unit, 'a> = spaces .>> skipChar '}' .>> spaces
+    let inline private read_keyword<'a> : Parser<string, 'a> = Strings.parse_string .>> spaces
+    let inline private end_of_statement<'a> : Parser<unit, 'a> = skipChar ';' >>. spaces
+    let inline private begin_block<'a> : Parser<unit, 'a> = skipChar '{' .>> spaces
+    let inline private end_block<'a> : Parser<unit, 'a> = spaces .>> skipChar '}' .>> spaces
 
     let inline block<'a> (parser : Parser<Statement, 'a>) : Parser<Statement list, 'a> =
         manyTill parser end_block
@@ -133,7 +138,7 @@ module Statements =
         <|>
         (begin_block >>. (block parser) |>> (fun statements -> Some statements))
 
-    let inline unknown_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
+    let inline private unknown_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
             Identifier.parse_identifier_with_prefix
             .>> spaces
             .>>. ((end_of_statement_or_block parser
@@ -144,7 +149,7 @@ module Statements =
                  )
             |>> (fun (identifier, (argument, body)) -> Unknown (identifier, argument, body))
 
-    let inline unparsed_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
+    let inline private unparsed_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
             Identifier.parse_identifier
             .>> spaces
             .>>. ((end_of_statement_or_block parser
@@ -155,9 +160,15 @@ module Statements =
                  )
             |>> (fun (identifier, (argument, body)) -> Unparsed (identifier, argument, body))
 
-    let inline yang_keyword_string_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
+    let inline private yang_keyword_string_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
         skipStringCI keyword >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parser
+        |>> maker
+
+    let inline private yang_keyword_uri_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
+        skipStringCI keyword >>. spaces >>.
+        (Strings.parse_string |>> Uri) .>> spaces .>>.
         end_of_statement_or_block parser
         |>> maker
 
@@ -182,7 +193,7 @@ module Statements =
                         )) parse_statement
                 <|> yang_keyword_string_statement ("contact", Contact)              parse_statement
                 <|> yang_keyword_string_statement ("description", Description)      parse_statement
-                <|> yang_keyword_string_statement ("namespace", Namespace)          parse_statement
+                <|> yang_keyword_uri_statement    ("namespace", Namespace)          parse_statement
                 <|> yang_keyword_string_statement ("organization", Organization)    parse_statement
                 <|> yang_keyword_string_statement ("prefix", Prefix)                parse_statement
                 <|> yang_keyword_string_statement ("reference", Reference)          parse_statement
@@ -208,11 +219,45 @@ module Statements =
         end_of_statement_or_block parse_statement .>> spaces
 
     /// Parses a reference statement
+    let parse_namespace_statement<'a> : Parser<NamespaceStatement, 'a> =
+        // [RFC 7950, p. 186]
+        //namespace-stmt      = namespace-keyword sep uri-str stmtend
+        //uri-str             = < a string that matches the rule >
+        //                      < URI in RFC 3986 >
+        skipStringCI "namespace" >>. spaces >>.
+        (Strings.parse_string |>> Uri) .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    /// Parses a prefix statement
+    let parse_prefix_statement<'a> : Parser<PrefixStatement, 'a> =
+        // [RFC 7950, p. 208]
+        //prefix-stmt         = prefix-keyword sep prefix-arg-str stmtend
+        //prefix-arg-str      = < a string that matches the rule >
+        //                      < prefix-arg >
+        //prefix-arg          = prefix
+        //prefix              = identifier
+        skipStringCI "prefix" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    /// Parses a reference statement
     let parse_reference_statement<'a> : Parser<ReferenceStatement, 'a> =
         // [RFC 7950, p. 186]
         // reference-stmt      = reference-keyword sep string stmtend
         skipStringCI "reference" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    /// Parses a YANG version information
+    let parse_yang_version_statement<'a> : Parser<YangVersionStatement, 'a> =
+        // [RFC 7950, p. 185]
+        //yang-version-stmt   = yang-version-keyword sep yang-version-arg-str
+        //                      stmtend
+        //yang-version-arg-str = < a string that matches the rule >
+        //                          < yang-version-arg >
+        //yang-version-arg    = "1.1"        skipStringCI "reference" >>. spaces >>.
+        skipStringCI "yang-version" >>. spaces >>.
+        (Strings.parse_string |>> Version.Parse) .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
     /// Helper method to parse an unknown statement

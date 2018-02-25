@@ -69,12 +69,9 @@ module Module =
 
             /// Name of module
             Name : Identifier.Identifier
-            /// Version of YANG used for the specification; should be 1.1
-            YangVersion : Version
-            /// Namespace of module
-            Namespace : Namespace
-            /// Prefix
-            Prefix : string
+
+            // Header information
+            Header : Header
 
             // Linkage statements
             Imports : Imports option
@@ -96,9 +93,7 @@ module Module =
         /// Creates an empty (invalid) module
         static member Empty = {
             Name = Identifier.Identifier.MakeUnchecked "<empty>"
-            YangVersion = Version(1, 1)
-            Namespace = "<empty>"
-            Prefix = "<empty>"
+            Header = Header.Empty
 
             Imports = None
             Includes = None
