@@ -57,10 +57,10 @@
     <Compile Include="AssemblyReaderReflection.fs">
       <Paket>True</Paket>
     </Compile>
-    <Compile Include="ProvidedTypes.fs">
+    <Compile Include="ProvidedTypes.fsi">
       <Paket>True</Paket>
     </Compile>
-    <Compile Include="ProvidedTypes.fsi">
+    <Compile Include="ProvidedTypes.fs">
       <Paket>True</Paket>
     </Compile>
     <Compile Include="ProvidedTypesContext.fs">
@@ -70,7 +70,8 @@
       <Paket>True</Paket>
     </Compile>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Generator.fs" />
+    <Compile Include="Yang.Types.fs" />
+    <Compile Include="YangProvider.fs" />
     <None Include="Playground.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>
