@@ -34,8 +34,10 @@ module Types =
     type Type =
     | TString
 
-    let parse_type<'a> : Parser<Type, 'a> =
+    type TypeStatement = Type * ExtraStatements
+
+    let parse_type<'a> : Parser<TypeStatement, 'a> =
         skipString "type" >>. spaces >>.
         skipString "string" >>. spaces >>.
         skipChar ';' >>. spaces
-        |>> (fun _ -> TString)
+        |>> (fun _ -> TString, None)

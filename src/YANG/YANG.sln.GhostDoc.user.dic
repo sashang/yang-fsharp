@@ -2,6 +2,7 @@ elif
 endif
 failwith
 forall
+Hostname
 optsep
 pchar
 printfn

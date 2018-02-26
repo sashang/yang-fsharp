@@ -194,7 +194,7 @@ module Statements =
     // inside unknown-statement rules.
     let inline parse_statement<'a> : Parser<Statement, 'a> =
         // This parser accepts any type of statement. Typically, it should be used for statements
-        // in unknown statements that have no constaints. Because, of their generality they can
+        // in unknown statements that have no constraints. Because, of their generality they can
         // be applied recursively.
 
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =

@@ -25,24 +25,32 @@ module Leaf =
     //                            [reference-stmt]
     //                        "}" stmtsep
 
+    type LeafStatement =
+    | Type          of TypeStatement
+    | Description   of DescriptionStatement
+    | Unknown       of UnknownStatement
+
+    let private IsTypeStatement = function
+    | Type _ -> true
+    | _      -> false
+
+    let private IsDescriptionStatement = function
+    | Description _ -> true
+    | _             -> false
+
     type Leaf = {
         Identifier  : Identifier.Identifier
-        Type        : Types.Type
-        Description : DescriptionStatement option
+        Statements  : LeafStatement list
     }
+        with
+            member this.Type        = List.find IsTypeStatement this.Statements
+            member this.Description = List.tryFind IsDescriptionStatement this.Statements
 
-    type private LeafBody = {
-        Type        : Types.Type option
-        Description : DescriptionStatement option
-    }
-    with
-        static member Empty = {
-            Type        = None
-            Description = None
-        }
-
-    let private parse_leaf_body<'a> : Parser<LeafBody, 'a> =
-        failwith "Not implemented exception"
+    let private parse_leaf_body<'a> : Parser<LeafStatement list, 'a> =
+        many (
+                (Types.parse_type |>> Type)
+            <|> (parse_description_statement |>> Description)
+        )
 
     let parse_leaf<'a> : Parser<Leaf, 'a> =
         skipString "leaf" >>. spaces >>.
@@ -54,8 +62,7 @@ module Leaf =
             fun (name, body) ->
                 {
                     Identifier  = name
-                    Type        = body.Type.Value
-                    Description = body.Description
+                    Statements  = body
                 }
         )
 

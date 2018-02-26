@@ -62,6 +62,7 @@
     <Compile Include="HeaderTests.fs" />
     <Compile Include="MetaTests.fs" />
     <Compile Include="RevisionsTests.fs" />
+    <Compile Include="LeafTests.fs" />
     <Compile Include="ModuleBodyTests.fs" />
     <Compile Include="ModuleTests.fs" />
     <Content Include="packages.config" />
