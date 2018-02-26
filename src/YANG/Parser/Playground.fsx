@@ -25,18 +25,13 @@ open System.Text
 open FParsec
 open Yang.Parser
 
-let apply parser input =
-    match (run parser input) with
-    | Success (result, _, _)    -> result
-    | Failure (message, _, _)   -> failwith "parsing failed"
-
 let definition_body = """leaf host-name {
     type string;
     description
         "Hostname for this system.";
 }"""
 
-let definition = apply Leaf.parse_leaf definition_body 
+let definition = apply_parser Leaf.parse_leaf definition_body 
 definition.Identifier
 definition.Type
 definition.Description
@@ -70,7 +65,7 @@ let big_model =
 
 
 
-let juniper = apply Generic.parse_many_statements big_model |> List.head
+let juniper = apply_parser Generic.parse_many_statements big_model |> List.head
 juniper.Keyword
 juniper.Argument
 juniper.Body

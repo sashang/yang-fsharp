@@ -14,5 +14,5 @@ module LeafTests =
 
         let definition = FParsecHelper.apply Leaf.parse_leaf body
         Assert.Equal("host-name", definition.Identifier.Value)
-        Assert.Equal(Leaf.Type (Types.TString, None), definition.Type)
+        Assert.Equal((Types.TString, None), definition.Type)
         Assert.Equal(Some (Leaf.Description ("Hostname for this system.", None)), definition.Description)

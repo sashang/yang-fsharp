@@ -43,7 +43,11 @@ module Leaf =
         Statements  : LeafStatement list
     }
         with
-            member this.Type        = List.find IsTypeStatement this.Statements
+            member this.Type        =
+                match List.find IsTypeStatement this.Statements with
+                | Type statement -> statement
+                | _              -> raise (YangParserException (sprintf "Cannot find type for %s" this.Identifier.Value))
+
             member this.Description = List.tryFind IsDescriptionStatement this.Statements
 
     let private parse_leaf_body<'a> : Parser<LeafStatement list, 'a> =
