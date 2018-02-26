@@ -37,6 +37,7 @@ let ReadAndClean (filename : string) =
 
 let model = ReadAndClean example
 
+run Module.parse_module ""
 run Module.parse_module model
 
 #time
@@ -55,58 +56,3 @@ juniper.Argument
 juniper.Body
 #time
 
-let simple_body = """yang-version 1.1;
-namespace "urn:example:system";
-prefix "sys";
-
-organization "Example Inc.";
-contact "joe@example.com";
-description
-    "The module for entities implementing the Example system.";
-
-revision 2007-06-09 {
-    description "Initial revision.";
-}
-"""
-
-run (tuple3 Header.parse_header Meta.parse_meta Revisions.parse_revision_list) simple_body
-
-run (tuple3 Header.parse_header Meta.parse_meta Revisions.parse_revision_list) ""
-
-let simple_model = """
-module example-system {
-    yang-version 1.1;
-    namespace "urn:example:system";
-    prefix "sys";
-
-    organization "Example Inc.";
-    contact "joe@example.com";
-    description
-        "The module for entities implementing the Example system.";
-
-    revision 2007-06-09 {
-        description "Initial revision.";
-    }
-}
-"""
-
-let sm = run Module.parse_module simple_model
-
-let header = """yang-version 1.1;
-    namespace "urn:example:system";
-    prefix "sys";
-"""
-
-run (spaces >>. Header.parse_header) header
-
-
-let empty_meta = ""
-run (spaces >>. Meta.parse_meta) empty_meta
-
-let meta = """organization "Example Inc.";
-    contact "joe@example.com";
-    description
-        "The module for entities implementing the Example system.";
-"""
-
-run (spaces >>. Meta.parse_meta) meta

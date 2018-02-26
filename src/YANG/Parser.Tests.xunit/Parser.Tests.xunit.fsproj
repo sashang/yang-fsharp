@@ -59,7 +59,11 @@
     <Compile Include="StringsTests.fs" />
     <Compile Include="GenericTests.fs" />
     <Compile Include="IdentifierTests.fs" />
+    <Compile Include="HeaderTests.fs" />
+    <Compile Include="MetaTests.fs" />
     <Compile Include="RevisionsTests.fs" />
+    <Compile Include="ModuleBodyTests.fs" />
+    <Compile Include="ModuleTests.fs" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
