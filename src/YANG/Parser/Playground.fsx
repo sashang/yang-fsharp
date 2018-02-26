@@ -85,9 +85,6 @@ let ReadAndClean (filename : string) =
 
 let model = ReadAndClean example
 
-run Module.parse_module ""
-run Module.parse_module model
-
 #time
 let big_model =
     Path.Combine(__SOURCE_DIRECTORY__, @"../../../", @"Models-External\Juniper\16.1\configuration.yang")

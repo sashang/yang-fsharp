@@ -117,11 +117,25 @@ module Module =
             spaces .>> skipChar '}' .>> spaces
         parser |>> (
             fun (identifier, (header, meta, revision, body)) ->
+                // We need the two adjustments below, because the parsers
+                // are guaranteed to return a value, even if the values are empty.
+
+                let meta' =
+                    match meta with
+                    | None      -> None
+                    | Some v    -> if Object.ReferenceEquals(null, v) then None else meta
+
+                let revision' =
+                    match revision with
+                    | None
+                    | Some []   -> None
+                    | _         -> revision
+
                 { Module.Empty with
                     Name        = identifier
                     Header      = header
-                    Meta        = meta
-                    Revisions   = revision
+                    Meta        = meta'
+                    Revisions   = revision'
                     Statements  = body
                 }
         )

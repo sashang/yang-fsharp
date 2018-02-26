@@ -41,13 +41,8 @@ module Leaf =
     | Description   of DescriptionStatement
     | Unknown       of UnknownStatement
 
-    let private IsTypeStatement = function
-    | Type _ -> true
-    | _      -> false
-
-    let private IsDescriptionStatement = function
-    | Description _ -> true
-    | _             -> false
+    let IsTypeStatement         = function | Type _ -> true         | _ -> false
+    let IsDescriptionStatement  = function | Description _ -> true  | _ -> false
 
     type Leaf = {
         Identifier  : Identifier.Identifier
@@ -110,13 +105,8 @@ module LeafList =
     | Description   of DescriptionStatement
     | Unknown       of UnknownStatement
 
-    let private IsTypeStatement = function
-    | Type _ -> true
-    | _      -> false
-
-    let private IsDescriptionStatement = function
-    | Description _ -> true
-    | _             -> false
+    let IsTypeStatement         = function | Type _ -> true         | _ -> false
+    let IsDescriptionStatement  = function | Description _ -> true  | _ -> false
 
     type LeafList = {
         Identifier  : Identifier.Identifier

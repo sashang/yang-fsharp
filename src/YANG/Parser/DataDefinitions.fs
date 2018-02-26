@@ -76,6 +76,11 @@ module DataDefinitions =
     | ListKey           of string
     and YListStatement = Identifier.Identifier * (YListStatementBody list)
 
+    let IsContainer = function | Container _ -> true    | _ -> false
+    let IsLeaf      = function | Leaf _ -> true         | _ -> false
+    let IsLeafList  = function | LeafList _ -> true     | _ -> false
+    let IsYList     = function | YList _ -> true        | _ -> false
+
     let parse_data_definition<'a> : Parser<DataDefinitionStatement, 'a> =
         let (parse_data_definition : Parser<DataDefinitionStatement, 'a>),
             (parse_data_definition_ref : Parser<DataDefinitionStatement, 'a> ref) =
