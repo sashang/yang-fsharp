@@ -69,7 +69,9 @@ revision 2007-06-09 {
 }
 """
 
-run (Header.parse_header .>>. Meta.parse_meta .>>. Revisions.parse_revision_list) simple_body
+run (tuple3 Header.parse_header Meta.parse_meta Revisions.parse_revision_list) simple_body
+
+run (tuple3 Header.parse_header Meta.parse_meta Revisions.parse_revision_list) ""
 
 let simple_model = """
 module example-system {

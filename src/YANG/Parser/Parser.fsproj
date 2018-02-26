@@ -63,6 +63,8 @@
     <Compile Include="Header.fs" />
     <Compile Include="Meta.fs" />
     <Compile Include="Revisions.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Leaf.fs" />
     <Compile Include="Module.fs" />
     <Compile Include="Parser.fs" />
     <None Include="Playground.fsx" />

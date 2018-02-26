@@ -43,3 +43,21 @@ The assignment of unknown statements to sections is a bit tricky. When parsing a
 (e.g. header, linkage, meta, and revision), we associate all unknown statements with
 the section being parsed. Hence, unknown statements that appear in the beginning of a section
 will be associated with the preceding section.
+
+## Parsing of `body-stmts`
+
+Most of the interesting definitions are under the `body-stmts` statement.
+The `body-stmts` are used by `submodule-stmt` and `submodule-stmt`.
+
+For data definitions, the statements appear under `data-def-stmt`.
+These are used by `body-stmts`, `grouping-stmt`, `container-stmt`,
+`list-stmt`, `cast-stmt`, `uses-augment-stmt`, `augment-stmt`,
+`input-stmt`, `output-stmt`, and `notification-stmt`.
+The `data-def-stmt` itself uses `container-stmt`, `list-stmt`, and others.
+There are circular dependencies, and hence all of the above
+(and others) will have to be defined together.
+
+## Parsing of `leaf-stmt`
+
+At the very least, we will need to parse `type-stmt` and `description-stmt` (easy).
+The `type-stmt` seems to be self-contained.

@@ -44,9 +44,12 @@ module Statements =
     /// Contact statement
     | Contact       of ContactStatement
     | Description   of DescriptionStatement
+    | ErrorAppTag   of ErrorAppTagStatement
+    | ErrorMessage  of ErrorMessageStatement
     | Namespace     of NamespaceStatement
     | Organization  of OrganizationStatement
     | Prefix        of PrefixStatement
+    | Presence      of PresenceStatement
     | Reference     of ReferenceStatement
     | YangVersion   of YangVersionStatement
     | Unknown       of UnknownStatement
@@ -56,9 +59,12 @@ module Statements =
             match this with
             | Contact       (_, options)
             | Description   (_, options)
+            | ErrorAppTag   (_, options)
+            | ErrorMessage  (_, options)
             | Namespace     (_, options)
             | Organization  (_, options)
             | Prefix        (_, options)
+            | Presence      (_, options)
             | Reference     (_, options)
             | YangVersion   (_, options)
                 -> options
@@ -70,9 +76,12 @@ module Statements =
             match this with
             | Contact _         -> "contact"
             | Description _     -> "description"
+            | ErrorAppTag _     -> "error-app-tag"
+            | ErrorMessage _    -> "error-message"
             | Namespace _       -> "namespace"
             | Organization _    -> "organization"
             | Prefix _          -> "prefix"
+            | Presence _        -> "presence"
             | Reference _       -> "reference"
             | YangVersion _     -> "yang-version"
             | Unknown (id, _, _)    -> id.ToString()
@@ -105,8 +114,11 @@ module Statements =
             match this with
             | Contact (s, b)
             | Description (s, b)
+            | ErrorAppTag (s, b)
+            | ErrorMessage (s, b)
             | Organization (s, b)
             | Prefix (s, b)
+            | Presence (s, b)
             | Reference (s, b)
                 -> sprintf "%s %s %s" id (ps s) (pb b)
 
@@ -119,9 +131,12 @@ module Statements =
     and ExtraStatements         = Statement list option
     and ContactStatement        = string  * ExtraStatements
     and DescriptionStatement    = string  * ExtraStatements
+    and ErrorAppTagStatement    = string  * ExtraStatements
+    and ErrorMessageStatement   = string  * ExtraStatements
     and NamespaceStatement      = Uri     * ExtraStatements
     and OrganizationStatement   = string  * ExtraStatements
     and PrefixStatement         = string  * ExtraStatements
+    and PresenceStatement       = string  * ExtraStatements
     and ReferenceStatement      = string  * ExtraStatements
     and YangVersionStatement    = Version * ExtraStatements
     and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
@@ -195,9 +210,12 @@ module Statements =
                         )) parse_statement
                 <|> yang_keyword_string_statement ("contact", Contact)              parse_statement
                 <|> yang_keyword_string_statement ("description", Description)      parse_statement
+                <|> yang_keyword_string_statement ("error-app-tag", ErrorMessage)   parse_statement
+                <|> yang_keyword_string_statement ("error-message", ErrorMessage)   parse_statement
                 <|> yang_keyword_uri_statement    ("namespace", Namespace)          parse_statement
                 <|> yang_keyword_string_statement ("organization", Organization)    parse_statement
                 <|> yang_keyword_string_statement ("prefix", Prefix)                parse_statement
+                <|> yang_keyword_string_statement ("presence", Presence)            parse_statement
                 <|> yang_keyword_string_statement ("reference", Reference)          parse_statement
                 <|> unknown_statement parse_statement
                 <|> unparsed_statement parse_statement
@@ -228,6 +246,22 @@ module Statements =
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
+    /// Parses an error message statement
+    let parse_error_app_tag_statement<'a> : Parser<ErrorAppTagStatement, 'a> =
+        // [RFC 7950, p. 192]
+        // error-app-tag-stmt  = error-app-tag-keyword sep string stmtend
+        skipStringCI "error-app-tag" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    /// Parses an error message statement
+    let parse_error_message_statement<'a> : Parser<ErrorMessageStatement, 'a> =
+        // [RFC 7950, p. 192]
+        // error-message-stmt  = error-message-keyword sep string stmtend
+        skipStringCI "error-message" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
     /// Parses a reference statement
     let parse_namespace_statement<'a> : Parser<NamespaceStatement, 'a> =
         // [RFC 7950, p. 186]
@@ -255,6 +289,14 @@ module Statements =
         //prefix-arg          = prefix
         //prefix              = identifier
         skipStringCI "prefix" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    /// Parses an organization statement
+    let parse_presence_statement<'a> : Parser<PresenceStatement, 'a> =
+        // [RFC 7950, p. 192]
+        // presence-stmt       = presence-keyword sep string stmtend
+        skipStringCI "presence" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
