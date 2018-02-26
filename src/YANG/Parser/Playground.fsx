@@ -18,6 +18,7 @@
 #load "Types.fs"
 #load "Leaf.fs"
 #load "DataDefinitions.fs"
+#load "Body.fs"
 #load "Module.fs"
 #load "Parser.fs"
 

@@ -84,7 +84,7 @@ module Module =
             Revisions : Revision list option
 
             // Rest of body statements
-            Statement : Statement list
+            Statements : Body
         }
     with
         /// Creates an empty (invalid) module
@@ -98,7 +98,7 @@ module Module =
             Meta = None
             Revisions = None
 
-            Statement = []
+            Statements = []
         }
 
         /// Retrieve the most recent revision of the module
@@ -113,15 +113,16 @@ module Module =
             spaces .>> skipStringCI "module" .>> spaces >>.
             Identifier.parse_identifier .>> spaces .>>
             skipChar '{' .>> spaces .>>.
-            tuple3 parse_header (opt parse_meta) (opt parse_revision_list) .>>
+            tuple4 parse_header (opt parse_meta) (opt parse_revision_list) parse_body .>>
             spaces .>> skipChar '}' .>> spaces
         parser |>> (
-            fun (identifier, (header, meta, revision)) ->
+            fun (identifier, (header, meta, revision, body)) ->
                 { Module.Empty with
                     Name        = identifier
                     Header      = header
                     Meta        = meta
                     Revisions   = revision
+                    Statements  = body
                 }
         )
 
