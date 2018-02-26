@@ -59,3 +59,62 @@ leaf-list domain-search {
                 Assert.True(LeafList.IsDescriptionStatement ds)
             | _ -> failwith "Internal error: unit test should not have reached this point"
         | _ -> failwith "Internal error: unit test should not have reached this point"
+
+    [<Fact>]
+    let ``parse container with embedded container`` () =
+        let body ="""
+container system {
+    leaf host-name {
+        type string;
+        description
+            "Hostname for this system.";
+    }
+
+    leaf-list domain-search {
+        type string;
+        description
+            "List of domain names to search.";
+    }
+
+    container login {
+        leaf message {
+            type string;
+            description
+            "Message given at start of login session.";
+        }
+
+        list user {
+            key "name";
+            leaf name {
+                type string;
+            }
+            leaf full-name {
+                type string;
+            }
+            leaf class {
+                type string;
+            }
+        }
+    }
+}
+"""
+        let t = FParsecHelper.apply (spaces >>. DataDefinitions.parse_data_definition) body
+        Assert.True(IsContainer t)
+
+        match t with
+        | Container (id, body) ->
+            Assert.Equal("system", id.Value)
+            Assert.True(body.IsSome)
+
+            let b = body.Value
+            Assert.NotEmpty(b)
+            Assert.Equal(3, b.Length)
+
+            match b with
+            | (ContainerStatementBody.DataDefinition l1) :: (ContainerStatementBody.DataDefinition l2) :: (ContainerStatementBody.DataDefinition c2) :: [] ->
+                Assert.True(IsLeaf l1)
+                Assert.True(IsLeafList l2)
+                Assert.True(IsContainer c2)
+            // Force fail, if list is not of expected type
+            | _ -> Assert.True(false, "Unexpected list of elements in list")
+        | _ -> failwith "Internal error: unit test should not have reached this point"
