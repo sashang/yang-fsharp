@@ -47,5 +47,8 @@ let juniper = apply_parser Generic.parse_many_statements big_model |> List.head
 juniper.Keyword
 juniper.Argument
 juniper.Body
+
+// This is what we want to parse eventually
+let juniper' = apply_parser Module.parse_module big_model
 #time
 
