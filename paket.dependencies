@@ -3,6 +3,8 @@ source https://nuget.org/api/v2
 nuget FAKE
 nuget FParsec-Big-Data-Edition
 nuget NLog
+nuget OpenCover
+nuget ReportGenerator
 nuget System.Collections.Immutable
 nuget FSharp.TypeProviders.StarterPack
 nuget FSharp.Data

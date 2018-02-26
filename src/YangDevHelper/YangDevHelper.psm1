@@ -1,71 +1,33 @@
-function Get-WorkItems {
-    [CmdletBinding()]
-    param(
-        [ValidateNotNullOrEmpty()]
-        [ValidateScript({ Test-Path -Path $_ -PathType Container })]
-        [string]$RootDir = (Join-Path -Path $PSScriptRoot -ChildPath ".."),
+$rootDir = Join-Path -Path $PSScriptRoot -ChildPath .. | Join-Path -Child ..
+$outputDir = Join-Path -Path $rootDir -ChildPath "build"
+$packageDir = Join-Path -Path $rootDir -ChildPath packages
 
-        [switch]$IncludeLowPriority,
-        [switch]$DoNotFormat
-    )
+$xUnitTool = Join-Path -Path $packageDir -ChildPath "xunit.runner.console" |
+             Join-Path -ChildPath "tools" |
+             Join-Path -ChildPath "net452" |
+             Join-Path -ChildPath "xunit.console.exe"
 
-    $root = Get-Item -Path $RootDir
-    if ([String]::IsNullOrWhiteSpace($root.FullName)) {
-        Write-Error -Message "Cannot get the full name of root: $root"
-    }
+$codeCoverTool = Join-Path -Path $packageDir -ChildPath "OpenCover" |
+                 Join-Path -ChildPath "tools" |
+                 Join-Path -ChildPath "OpenCover.Console.exe"
 
-    $identifiers = @(
-        "TODO"
-        "HACK"
-    )
+$reportTool = Join-Path -Path $packageDir -ChildPath "ReportGenerator" |
+              Join-Path -ChildPath "tools" |
+              Join-Path -ChildPath "ReportGenerator.exe"
 
-    if ($IncludeLowPriority) {
-        $identifiers += @(
-            "DIVERGENCE"
-        )
-    }
+$reportDirectory = Join-Path -Path $rootDir -ChildPath "Reports"
+$codeCoverReportDirectory = Join-Path -Path $reportDirectory -ChildPath "CodeCoverage"
 
-    $labels = $identifiers | ForEach-Object -Process {
-        "// {0}:" -f $_
-    }
-
-    Write-Debug -Message "Searching in $RootDir"
-    [System.IO.FileInfo[]]$source = Get-ChildItem -Path $RootDir -Include *.fs -Recurse
-    if (($source -eq $null) -or ($source.Length -eq 0)) {
-        Write-Warning -Message "Did not find any input files"
-        return
-    }
-
-    $work = $source | ForEach-Object -Process {
-        $filename = $_.Name
-        Write-Progress -Activity "Parsing" -Status "$filename"
-
-        if ([String]::IsNullOrWhiteSpace($_.DirectoryName)) {
-            Write-Warning -Message "Cannot get the directory name for $_"
-            $location = ""
-        } else {
-            $location = $_.DirectoryName.Substring($root.FullName.Length).Trim('\', 1)
-        }
-
-        $_ | Select-String -Pattern $labels -AllMatches
-    }
-
-    if ($DoNotFormat) {
-        $work
-    } else {
-        $work | ForEach-Object -Process {
-            $message = $_.Line.Trim()
-
-            $work = [regex]::Match($message, "// (?<label>[A-z]+): (?<comment>.*)")
-            Write-Verbose $work
-
-            [PSCustomObject]@{
-                Filename = $_.Filename
-                Line     = $_.LineNumber
-                Label    = $work.Groups["label"].Value
-                Message  = $work.Groups["comment"].Value
-            }
-        }
-    }
+if (-not (Test-Path $xUnitTool -PathType Leaf)) {
+    Write-Warning -Message "Cannot find xUnit tool: $xUnitTool"
 }
 
+if (-not (Test-Path $codeCoverTool -PathType Leaf)) {
+    Write-Warning -Message "Cannot find code coverage tool: $codeCoverTool"
+}
+if (-not (Test-Path $reportTool -PathType Leaf)) {
+    Write-Warning -Message "Cannot find report tool: $reportTool"
+}
+
+. $PSScriptRoot/Work.ps1
+. $PSScriptRoot/Quality.ps1
