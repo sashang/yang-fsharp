@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2027
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Parser", "Parser\Parser.fsproj", "{E273DB40-799E-44A9-8D73-602698E15E7C}"
 EndProject
@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RFC7950", "RFC7950", "{593B
 		Examples\RFC7950\example-4.2.2.3.yang-partial = Examples\RFC7950\example-4.2.2.3.yang-partial
 		Examples\RFC7950\example-system.yang = Examples\RFC7950\example-system.yang
 	EndProjectSection
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator", "Generator\Generator.fsproj", "{7C27E787-3EE2-450B-BFE9-06999E5131C2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,6 +38,10 @@ Global
 		{95D1E6BD-D5D1-4653-9E2B-00B544084A21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{95D1E6BD-D5D1-4653-9E2B-00B544084A21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{95D1E6BD-D5D1-4653-9E2B-00B544084A21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C27E787-3EE2-450B-BFE9-06999E5131C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C27E787-3EE2-450B-BFE9-06999E5131C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C27E787-3EE2-450B-BFE9-06999E5131C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C27E787-3EE2-450B-BFE9-06999E5131C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
