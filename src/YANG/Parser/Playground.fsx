@@ -17,6 +17,7 @@
 #load "Revisions.fs"
 #load "Types.fs"
 #load "Leaf.fs"
+#load "DataDefinitions.fs"
 #load "Module.fs"
 #load "Parser.fs"
 
@@ -25,16 +26,44 @@ open System.Text
 open FParsec
 open Yang.Parser
 
-let definition_body = """leaf host-name {
-    type string;
-    description
-        "Hostname for this system.";
-}"""
+let body = """
+container system {
+    leaf host-name {
+        type string;
+        description
+            "Hostname for this system.";
+    }
 
-let definition = apply_parser Leaf.parse_leaf definition_body 
-definition.Identifier
-definition.Type
-definition.Description
+    leaf-list domain-search {
+        type string;
+        description
+            "List of domain names to search.";
+    }
+
+    container login {
+        leaf message {
+            type string;
+            description
+            "Message given at start of login session.";
+        }
+
+        list user {
+            key "name";
+            leaf name {
+                type string;
+            }
+            leaf full-name {
+                type string;
+            }
+            leaf class {
+                type string;
+            }
+        }
+    }
+}
+"""
+
+let m = apply_parser (spaces >>. DataDefinitions.parse_data_definition) body
 
 
 //

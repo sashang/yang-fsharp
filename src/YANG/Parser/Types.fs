@@ -3,6 +3,10 @@
 
 namespace Yang.Parser
 
+// TODO: Make the Type parser part of yang-stmt definition
+//       We will need a way to make the statements and parsers below known
+//       in the definition of parse_statement.
+
 /// Type definitions and parsers for types used in YANG
 module Types =
     open FParsec

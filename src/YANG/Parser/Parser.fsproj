@@ -65,6 +65,7 @@
     <Compile Include="Revisions.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Leaf.fs" />
+    <Compile Include="DataDefinitions.fs" />
     <Compile Include="Module.fs" />
     <Compile Include="Parser.fs" />
     <None Include="Playground.fsx" />
