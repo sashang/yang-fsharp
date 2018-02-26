@@ -51,6 +51,24 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
+    <Compile Include="AssemblyReader.fs">
+      <Paket>True</Paket>
+    </Compile>
+    <Compile Include="AssemblyReaderReflection.fs">
+      <Paket>True</Paket>
+    </Compile>
+    <Compile Include="ProvidedTypes.fs">
+      <Paket>True</Paket>
+    </Compile>
+    <Compile Include="ProvidedTypes.fsi">
+      <Paket>True</Paket>
+    </Compile>
+    <Compile Include="ProvidedTypesContext.fs">
+      <Paket>True</Paket>
+    </Compile>
+    <Compile Include="ProvidedTypesTesting.fs">
+      <Paket>True</Paket>
+    </Compile>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Generator.fs" />
     <None Include="Playground.fsx" />
