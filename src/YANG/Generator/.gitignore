@@ -1,6 +1,0 @@
-AssemblyReader.fs
-AssemblyReaderReflection.fs
-ProvidedTypes.fs
-ProvidedTypes.fsi
-ProvidedTypesContext.fs
-ProvidedTypesTesting.fs
