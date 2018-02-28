@@ -22,10 +22,18 @@ module Types =
             | Some logger -> logger message
 
     /// This is the namespace for the type provider
-    let ns = "Yang.Generator"
+    let ns = "Yang.YangProvider"
 
     let internal makeType asm typeName =
         ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, IsErased = false)
+
+    let internal makeTypeInAssembly asm typeName =
+        let ty = ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, IsErased = false)
+        ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
+        ty
+
+    let internal makeIncludedType typename =
+        ProvidedTypeDefinition(typename, Some typeof<obj>, IsErased=false)
 
     let internal addIncludedType (provAsm : ProvidedAssembly) (ty:ProvidedTypeDefinition) =
         provAsm.AddTypes([ ty ])
