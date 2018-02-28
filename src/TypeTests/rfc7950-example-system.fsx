@@ -1,5 +1,9 @@
 #r @"..\..\build\Yang.Generator.dll"
 
+open Samples
+
+Samples.
+type HW = Samples.HelloWorld
 open Yang.YangProvider
 
 // Stop provider with: pskill fsautocomplete

@@ -5,7 +5,7 @@ module Types =
     open System
     open System.Reflection
     open ProviderImplementation.ProvidedTypes
-    open Yang.Parser
+    //open Yang.Parser
 
     (*
      * Boiler plate code for creating types
@@ -55,28 +55,28 @@ module Types =
      * end of boilerplate code
      *)
 
-    let internal createTypes (_module : Module.Module) =
-        SetLogger (Some (fun str -> printfn "%s" str))
+    //let internal createTypes (_module : Module.Module) =
+    //    SetLogger (Some (fun str -> printfn "%s" str))
 
-        let (version, _) = _module.Header.YangVersion
-        let (ns, _) = _module.Header.Namespace
-        let (prefix, _) = _module.Header.Prefix
+    //    let (version, _) = _module.Header.YangVersion
+    //    let (ns, _) = _module.Header.Namespace
+    //    let (prefix, _) = _module.Header.Prefix
 
-        let header = [
-            ProvidedLiteralField ("YangVersion", typeof<Version>, version);
-            ProvidedLiteralField ("Namespace", typeof<Uri>, ns);
-            ProvidedLiteralField ("Prefix", typeof<string>, prefix)
-        ]
+    //    let header = [
+    //        ProvidedLiteralField ("YangVersion", typeof<Version>, version);
+    //        ProvidedLiteralField ("Namespace", typeof<Uri>, ns);
+    //        ProvidedLiteralField ("Prefix", typeof<string>, prefix)
+    //    ]
 
-        let meta =
-            match _module.Meta with
-            | None -> []
-            | Some meta ->
-                [
-                    meta.Contact        |> Option.map (fun (c, _) -> ProvidedLiteralField ("Contact", typeof<string>, c))
-                    meta.Description    |> Option.map (fun (d, _) -> ProvidedLiteralField ("Description", typeof<string>, d))
-                    meta.Organization   |> Option.map (fun (o, _) -> ProvidedLiteralField ("Organization", typeof<string>, o))
-                    meta.Reference      |> Option.map (fun (r, _) -> ProvidedLiteralField ("Reference", typeof<string>, r))
-                ] |> List.choose id
+    //    let meta =
+    //        match _module.Meta with
+    //        | None -> []
+    //        | Some meta ->
+    //            [
+    //                meta.Contact        |> Option.map (fun (c, _) -> ProvidedLiteralField ("Contact", typeof<string>, c))
+    //                meta.Description    |> Option.map (fun (d, _) -> ProvidedLiteralField ("Description", typeof<string>, d))
+    //                meta.Organization   |> Option.map (fun (o, _) -> ProvidedLiteralField ("Organization", typeof<string>, o))
+    //                meta.Reference      |> Option.map (fun (r, _) -> ProvidedLiteralField ("Reference", typeof<string>, r))
+    //            ] |> List.choose id
 
-        (header @ meta)
+    //    (header @ meta)
