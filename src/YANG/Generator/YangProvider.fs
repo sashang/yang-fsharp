@@ -112,58 +112,20 @@ type GenericYangProviderError (message:string, ?innerException:exn) =
 //    do schema.DefineStaticParameters( parameters=staticParameters, instantiationFunction=schemaCreation )
 
 [<TypeProvider>]
-type SampleTypeProvider(config: TypeProviderConfig) as this = 
+type BasicProvider (config : TypeProviderConfig) as this =
+    inherit TypeProviderForNamespaces (config)
 
-  // Inheriting from this type provides implementations of ITypeProvider 
-  // in terms of the provided types below.
-  inherit TypeProviderForNamespaces()
+    let ns = "StaticProperty.Provided"
+    let asm = Assembly.GetExecutingAssembly()
 
-  let namespaceName = "Samples.HelloWorldTypeProvider"
-  let thisAssembly = Assembly.GetExecutingAssembly()
+    let createTypes () =
+        let myType = ProvidedTypeDefinition(asm, ns, "MyType", Some typeof<obj>)
+        let myProp = ProvidedProperty("MyProperty", typeof<string>, isStatic = true, getterCode = (fun args -> <@@ "Hello world" @@>))
+        myType.AddMember(myProp)
+        [myType]
 
-  // Make one provided type, called TypeN.
-  let makeOneProvidedType (n:int) =
-    let t = ProvidedTypeDefinition(thisAssembly,namespaceName, "Type" + string n, baseType = Some typeof<obj>)
-    t.AddXmlDocDelayed (fun () -> sprintf "This provided type %s" ("Type" + string n))
-
-    let staticProp = ProvidedProperty(propertyName = "StaticProperty",
-                                      propertyType = typeof<string>, 
-                                      IsStatic=true,
-                                      GetterCode= (fun args -> <@@ "Hello!" @@>))
-    staticProp.AddXmlDocDelayed(fun () -> "This is a static property")
-    t.AddMember staticProp
-
-    let ctor = ProvidedConstructor(parameters = [ ], InvokeCode= (fun args -> <@@ "The object data" :> obj @@>))
-    ctor.AddXmlDocDelayed(fun () -> "This is a constructor")
-    t.AddMember ctor
-
-    let ctor2 = ProvidedConstructor(parameters = [ ProvidedParameter("data",typeof<string>) ],
-                                    InvokeCode= (fun args -> <@@ (%%(args.[0]) : string) :> obj @@>))
-    t.AddMember ctor2
-
-    let instanceProp =
-        ProvidedProperty(propertyName = "InstanceProperty", 
-                         propertyType = typeof<int>, 
-                         GetterCode= (fun args -> 
-                            <@@ ((%%(args.[0]) : obj) :?> string).Length @@>))
-    instanceProp.AddXmlDocDelayed(fun () -> "This is an instance property")
-    t.AddMember instanceProp
-
-    let instanceMeth = 
-        ProvidedMethod(methodName = "InstanceMethod", 
-                       parameters = [ProvidedParameter("x",typeof<int>)], 
-                       returnType = typeof<char>, 
-                       InvokeCode = (fun args -> 
-                       <@@ ((%%(args.[0]) : obj) :?> string).Chars(%%(args.[1]) : int) @@>))
-
-    instanceMeth.AddXmlDocDelayed(fun () -> "This is an instance method")
-    // Add the instance method to the type.
-    t.AddMember instanceMeth
-    t
-
-  let types = [ for i in 1 .. 100 -> makeOneProvidedType i ]
-  do this.AddNamespace(namespaceName, types)
-
+    do
+        this.AddNamespace(ns, createTypes())
 
 [<TypeProviderAssembly>]
 do ()

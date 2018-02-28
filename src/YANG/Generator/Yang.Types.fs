@@ -24,32 +24,32 @@ module Types =
     /// This is the namespace for the type provider
     let ns = "Yang.YangProvider"
 
-    let internal makeType asm typeName =
-        ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, IsErased = false)
+    //let internal makeType asm typeName =
+    //    ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, IsErased = false)
 
-    let internal makeIncludedType typeName =
-        ProvidedTypeDefinition(typeName, Some typeof<obj>, IsErased=false)
+    //let internal makeIncludedType typeName =
+    //    ProvidedTypeDefinition(typeName, Some typeof<obj>, IsErased=false)
 
-    let internal makeTypeInAssembly asm typeName =
-        let ty = ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, IsErased = false)
-        ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
-        ty
+    //let internal makeTypeInAssembly asm typeName =
+    //    let ty = ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, IsErased = false)
+    //    ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
+    //    ty
 
-    let internal addIncludedType (provAsm : ProvidedAssembly) (ty:ProvidedTypeDefinition) =
-        provAsm.AddTypes([ ty ])
-        ty
+    //let internal addIncludedType (provAsm : ProvidedAssembly) (ty:ProvidedTypeDefinition) =
+    //    provAsm.AddTypes([ ty ])
+    //    ty
 
-    let internal addMembers (mi:#MemberInfo list) (ty:ProvidedTypeDefinition) =
-        ty.AddMembersDelayed (
-            fun() ->
-                // printfn "Delayed expansion for %s" ty.Name
-                mi
-        )
-        ty
+    //let internal addMembers (mi:#MemberInfo list) (ty:ProvidedTypeDefinition) =
+    //    ty.AddMembersDelayed (
+    //        fun() ->
+    //            // printfn "Delayed expansion for %s" ty.Name
+    //            mi
+    //    )
+    //    ty
 
-    let internal addMember (mi:#MemberInfo) (ty:ProvidedTypeDefinition) =
-        ty.AddMember mi
-        ty
+    //let internal addMember (mi:#MemberInfo) (ty:ProvidedTypeDefinition) =
+    //    ty.AddMember mi
+    //    ty
 
     (*
      * end of boilerplate code

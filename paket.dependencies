@@ -6,7 +6,6 @@ nuget NLog
 nuget OpenCover
 nuget ReportGenerator
 nuget System.Collections.Immutable
-nuget FSharp.TypeProviders.StarterPack
 nuget FSharp.Data
 nuget FSharp.Data.TypeProviders
 nuget xunit

@@ -1,10 +1,12 @@
 #r @"..\..\build\Yang.Generator.dll"
 
-open Samples
+open StaticProperty.Provided
+printfn "%s" MyType.MyProperty
 
-Samples.
-type HW = Samples.HelloWorld
-open Yang.YangProvider
+// open Samples
+
+// type HW = Samples.HelloWorld
+// open Yang.YangProvider
 
 // Stop provider with: pskill fsautocomplete
 
@@ -62,5 +64,5 @@ module example-system {
 }
 """
 
-type ExampleSystem = YangFromString<model>
-ExampleSystem
+// type ExampleSystem = YangFromString<model>
+// ExampleSystem
