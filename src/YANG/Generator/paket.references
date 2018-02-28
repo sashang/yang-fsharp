@@ -1,3 +1,4 @@
 FSharp.Core
+FSharp.Data
+FSharp.Data.TypeProviders
 FSharp.TypeProviders.StarterPack
-FParsec-Big-Data-Edition

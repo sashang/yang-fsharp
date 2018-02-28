@@ -3,14 +3,17 @@
 // Some pointers to creating TypeProviders:
 // - <https://docs.microsoft.com/en-us/dotnet/fsharp/tutorials/type-providers/creating-a-type-provider>
 
+open System
 open System.IO
 open System.Reflection
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
-open FParsec
 open Yang.Parser
 
-exception GenericYangProviderError of string
+type GenericYangProviderError (message:string, ?innerException:exn) =
+    inherit ApplicationException(
+        message,
+        match innerException with | Some ex -> ex | _ -> null)
 
 //[<TypeProvider>]
 //type public YangProvider (config: TypeProviderConfig) as this =
@@ -66,14 +69,14 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
     inherit TypeProviderForNamespaces()
 
     /// Static parameters for type provider.
-    let staticParams =
+    let staticParameters =
         [
             // This parameter is used to specify the model from which to generate types.
             ProvidedStaticParameter("model", typeof<string>)
         ]
 
     let asm = Assembly.LoadFrom(config.RuntimeAssembly)
-    let schema = makeTypeInAssembly asm "YangFromStringProvider"
+    let schema = makeType asm "YangFromStringProvider"
 
     /// Each provider needs a unique temporary file
     let provAsm = ProvidedAssembly(Path.ChangeExtension(Path.GetTempFileName(), ".dll"))
@@ -86,23 +89,25 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
         fun (typeName:string) (parameterValues: obj[]) ->
             match parameterValues with
             | [| :? string as model |] ->
-                let model' = Comments.Remove model
-                if System.String.IsNullOrWhiteSpace(model') then
-                    raise (GenericYangProviderError "Input model cannot be empty")
-
-                match (run  Module.parse_module model') with
-                | Success (result, _, _)    ->
+                try
+                    let model' = MakeFromString model
                     typeName
-                    |> makeTypeInAssembly asm
-                    |> addMember (makeIncludedType "ModuleInformation" |> addMembers (createTypes result))
+                    |> makeType asm
+                    |> addMember (ProvidedLiteralField(
+                                    "Test",
+                                    typeof<string>,
+                                    "Example"
+                                 ))
+                    // |> addMember (makeIncludedType "ModuleInformation" |> addMembers (createTypes result))
                     |> addIncludedType provAsm
-
-                | Failure (message, _, _)   -> raise (GenericYangProviderError (sprintf "Failed to parse model, error: %s" message))
+                with
+                | :? YangParserException as  ex ->
+                    raise (GenericYangProviderError ("Error in parsing model", ex))
 
             | _ -> raise (GenericYangProviderError "Unexpected parameter values when using Yang provider")
 
     do this.AddNamespace(ns, [ addIncludedType provAsm schema ])
-    do schema.DefineStaticParameters( parameters=staticParams, instantiationFunction=schemaCreation )
+    do schema.DefineStaticParameters( parameters=staticParameters, instantiationFunction=schemaCreation )
 
 [<TypeProviderAssembly>]
 do ()

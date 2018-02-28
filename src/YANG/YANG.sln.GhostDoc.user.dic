@@ -4,6 +4,7 @@ endif
 failwith
 forall
 Hostname
+Namespaces
 optsep
 pchar
 printfn
