@@ -30,7 +30,9 @@ module Types =
         ty
 
     let internal makeIncludedType typeName =
-        ProvidedTypeDefinition(typeName, Some typeof<obj>, isErased=false)
+        let ty = ProvidedTypeDefinition(typeName, Some typeof<obj>, isErased=false)
+        ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
+        ty
 
     let internal makeTypeInAssembly asm typeName =
         let ty = ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, isErased = false)
@@ -68,12 +70,12 @@ module Types =
      * end of boilerplate code
      *)
 
-    let internal appendModuleInformation (_module : Module.Module) =
+    let internal appendModuleInformation (``module`` : Module.Module) =
         SetLogger (Some (fun str -> printfn "%s" str))
 
-        let (version, _) = _module.Header.YangVersion
-        let (ns, _) = _module.Header.Namespace
-        let (prefix, _) = _module.Header.Prefix
+        let (version, _) = ``module``.Header.YangVersion
+        let (ns, _) = ``module``.Header.Namespace
+        let (prefix, _) = ``module``.Header.Prefix
 
         let header = [
             ProvidedField.Literal ("YangVersion", typeof<Version>, version);
@@ -82,7 +84,7 @@ module Types =
         ]
 
         let meta =
-            match _module.Meta with
+            match ``module``.Meta with
             | None -> []
             | Some meta ->
                 [
@@ -93,3 +95,9 @@ module Types =
                 ] |> List.choose id
 
         (header @ meta)
+
+    let internal createModule (``module`` : Module.Module) =
+        let statics = appendModuleInformation ``module``  |> List.map (fun v -> v :> MemberInfo)
+        let fields  = [ ProvidedField("Test", typeof<string>) ] |> List.map (fun v -> v :> MemberInfo)
+        // let constructors = [ createDefaultConstructor() ] |> List.map (fun v -> v :> MemberInfo)
+        statics @ fields // @ constructors

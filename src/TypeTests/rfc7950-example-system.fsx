@@ -84,29 +84,27 @@ module Model =
 
     type T = YangFromStringProvider<model>
     // type X =
-    //     class
-    //         inherit T
-
-    //         new () = { inherit T() }
-    //     end
+    //     inherit T.Information
+    //     new () = { inherit T.Information() }
 
 module Tests =
     open Xunit
+    open Model
 
     [<Fact>]
-    let ``prefix should match`` () = Assert.Equal("sys", Model.T.Prefix)
+    let ``prefix should match`` () = Assert.Equal("sys", T.Information.Prefix)
     [<Fact>]
-    let ``organization should match`` () = Assert.Equal("Example Inc.", Model.T.Organization)
+    let ``organization should match`` () = Assert.Equal("Example Inc.", T.Information.Organization)
     [<Fact>]
-    let ``contact should match`` () = Assert.Equal("joe@example.com", Model.T.Contact)
+    let ``contact should match`` () = Assert.Equal("joe@example.com", T.Information.Contact)
     [<Fact>]
-    let ``description should match`` () = Assert.Equal("The module for entities implementing the Example system.", Model.T.Description)
+    let ``description should match`` () = Assert.Equal("The module for entities implementing the Example system.", T.Information.Description)
 
 // printfn "Version        : %A" T.YangVersion
 // printfn "Namespace      : %A" T.Namespace
 #if CONSOLE
-printfn "Prefix         : %s" Model.T.Prefix
-printfn "Organization   : %s" Model.T.Organization
-printfn "Contact        : %s" Model.T.Contact
-printfn "Description    : %s" Model.T.Description
+printfn "Prefix         : %s" Model.T.Information.Prefix
+printfn "Organization   : %s" Model.T.Information.Organization
+printfn "Contact        : %s" Model.T.Information.Contact
+printfn "Description    : %s" Model.T.Information.Description
 #endif

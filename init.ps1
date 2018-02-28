@@ -73,42 +73,6 @@ if ($generate_scripts) {
 }
 
 #
-# Check for updated TypeProvider helper files
-#
-$tpHelpFiles = Get-ChildItem $PSScriptRoot\packages\FSharp.TypeProviders.StarterPack\content\ -Filter *.fs? | `
-               ForEach-Object -Process {
-                   @{
-                       Name=$_.Name
-                       File=$_
-                       Hash=(Get-FileHash $_.FullName)
-                    }
-                }
-
-Get-ChildItem $PSScriptRoot -Filter paket.references -Recurse | `
-Where-Object -FilterScript {
-    (Get-Content -Path $_.FullName) -contains "FSharp.TypeProviders.StarterPack"
-} | `
-Select-Object -ExpandProperty Directory | `
-ForEach-Object -Process {
-    $tpDir = $_
-    Write-Verbose -Message "Examining update TypeProvider files in directory: $tpDir"
-
-    $tpHelpFiles | ForEach-Object -Process {
-        Write-Debug -Message "Examining: $($_.Name)"
-        $t = Join-Path -Path $tpDir -ChildPath $_.Name
-        if (-not (Test-Path -Path $t)) {
-            Write-Warning -Message "File $t does not seem to exist; maybe run 'paket install'"
-        } else {
-            $h = Get-FileHash $t
-            if ($h.Hash -ne $_.Hash.Hash) {
-                Write-Warning -Message "Files '$t' and '$($_.File.FullName)' differ; maybe run paket install"
-            }
-        }
-    }
-}
-
-
-#
 # Helper cmdlets
 #
 function global:Build {

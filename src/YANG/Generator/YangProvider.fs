@@ -1,7 +1,9 @@
 ﻿namespace Yang.Generator
 
 // Some pointers to creating TypeProviders:
+// - <https://github.com/fsprojects/FSharp.TypeProviders.SDK>
 // - <https://docs.microsoft.com/en-us/dotnet/fsharp/tutorials/type-providers/creating-a-type-provider>
+//   This seems to be a bit outdated.
 
 open System
 open System.IO
@@ -77,7 +79,7 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
             ProvidedStaticParameter("model", typeof<string>)
         ]
 
-    let asm = Assembly.LoadFrom(config.RuntimeAssembly)
+    let asm = ProvidedAssembly()
     let schema = makeType asm "YangFromStringProvider"
 
     /// Each provider needs a unique temporary file
@@ -96,8 +98,7 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
 
                     typeName
                     |> makeType asm
-                    |> addMembers (appendModuleInformation model')
-                    |> addMember (createDefaultConstructor ())
+                    |> addMember (makeIncludedType "Information" |> addMembers (createModule model'))
                     |> addIncludedType provAsm
                 with
                 | :? YangParserException as  ex ->
@@ -105,8 +106,9 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
 
             | _ -> raise (GenericYangProviderError "Unexpected parameter values when using Yang provider")
 
-    do this.AddNamespace(ns, [ addIncludedType provAsm schema ])
-    do schema.DefineStaticParameters( parameters=staticParameters, instantiationFunction=schemaCreation )
+    do
+        schema.DefineStaticParameters( parameters=staticParameters, instantiationFunction=schemaCreation )
+        this.AddNamespace(ns, [ addIncludedType provAsm schema ])
 
 [<TypeProviderAssembly>]
 do ()
