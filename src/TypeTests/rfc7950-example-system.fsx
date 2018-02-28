@@ -1,6 +1,6 @@
 #r @"..\..\build\Yang.Generator.dll"
 
-open Yang.Generator
+open Yang.YangProvider
 
 // Stop provider with: pskill fsautocomplete
 
@@ -59,4 +59,4 @@ module example-system {
 """
 
 type ExampleSystem = YangFromString<model>
-ExampleSystem.YangVersion
+ExampleSystem
