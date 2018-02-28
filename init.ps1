@@ -81,4 +81,10 @@ function global:Build {
     Pop-Location
 }
 
+function global:qb {
+    Push-Location -Path $PSScriptRoot
+    .\packages\FAKE\tools\Fake.exe build.fsx QuickBuild
+    Pop-Location
+}
+
 Import-Module $PSScriptRoot\src\YangDevHelper

@@ -24,6 +24,12 @@ Target "Build" (fun _ ->
       |> Log "AppBuild-Output:"
 )
 
+Target "QuickBuild" (fun _ ->
+    !! "src/YANG/YANG.sln"
+      |> MSBuildRelease buildDir "Build"
+      |> Log "AppBuild-Output:"
+)
+
 Target "BuildTest" (fun _ ->
     !! "src/**/*.Tests.*.fsproj"
       |> MSBuildDebug testDir "Build"
@@ -53,5 +59,8 @@ Target "Default" (fun _ ->
   ==> "BuildTest"
   ==> "Test"
   ==> "Default"
+
+"Build"
+  ==> "QuickBuild"
 
 RunTargetOrDefault "Default"
