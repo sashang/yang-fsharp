@@ -529,3 +529,8 @@ NUGET
       xunit.extensibility.core (2.3.1) - restriction: >= netstandard1.1
     xunit.runner.console (2.3.1)
     Zlib.Portable (1.11) - restriction: || (&& (< net40) (>= portable-net45+win8)) (&& (< net40) (< portable-net45+win8) (>= portable-net45+win8+wp8+wpa81))
+GITHUB
+  remote: fsprojects/FSharp.TypeProviders.StarterPack
+    src/ProvidedTypes.fs (76afcf2c5f3223578371f1578a23ce0db645d05e)
+    src/ProvidedTypes.fsi (76afcf2c5f3223578371f1578a23ce0db645d05e)
+    src/ProvidedTypesTesting.fs (76afcf2c5f3223578371f1578a23ce0db645d05e)

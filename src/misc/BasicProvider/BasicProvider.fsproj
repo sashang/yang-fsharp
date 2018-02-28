@@ -12,7 +12,7 @@
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <UseStandardResourceNames>true</UseStandardResourceNames>
-    <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <Name>BasicProvider</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -55,23 +55,17 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
-    <Compile Include="AssemblyReader.fs">
+    <Compile Include="..\..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fsi">
       <Paket>True</Paket>
+      <Link>ProvidedTypes.fsi</Link>
     </Compile>
-    <Compile Include="AssemblyReaderReflection.fs">
+    <Compile Include="..\..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fs">
       <Paket>True</Paket>
+      <Link>ProvidedTypes.fs</Link>
     </Compile>
-    <Compile Include="ProvidedTypes.fsi">
+    <Compile Include="..\..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypesTesting.fs">
       <Paket>True</Paket>
-    </Compile>
-    <Compile Include="ProvidedTypes.fs">
-      <Paket>True</Paket>
-    </Compile>
-    <Compile Include="ProvidedTypesContext.fs">
-      <Paket>True</Paket>
-    </Compile>
-    <Compile Include="ProvidedTypesTesting.fs">
-      <Paket>True</Paket>
+      <Link>ProvidedTypesTesting.fs</Link>
     </Compile>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="BasicProvider.fs" />

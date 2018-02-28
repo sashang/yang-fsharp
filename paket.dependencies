@@ -11,3 +11,7 @@ nuget FSharp.Data
 nuget FSharp.Data.TypeProviders
 nuget xunit
 nuget xunit.runner.console
+
+github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi
+github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
+github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypesTesting.fs
