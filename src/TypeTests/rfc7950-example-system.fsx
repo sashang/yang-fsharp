@@ -26,7 +26,7 @@ namespace Yang.Examples.RFC7950.SimpleModel
 #r @"..\..\build\Yang.Generator.dll"
 
 module Model =
-    open Yang.YangProvider
+    open Yang.Provider
 
     let [<Literal>] model = """
     // This is the example from Sec. 4.2.2.5 of RFC 7950 (p.22-23)

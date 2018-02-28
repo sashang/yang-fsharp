@@ -21,6 +21,7 @@ module Types =
             | None -> ()
             | Some logger -> logger message
 
+
     let internal makeType ns asm typeName =
         let ty = ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, isErased = false)
         ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
@@ -36,10 +37,10 @@ module Types =
         ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
         ty
 
-    let internal addIncludedType (provAsm : ProvidedAssembly) (ty:ProvidedTypeDefinition) =
-        provAsm.AddTypes([ ty ])
-        ty
 
+    let internal addIncludedType (provAsm : ProvidedAssembly) (ty:ProvidedTypeDefinition) = provAsm.AddTypes([ ty ]) ; ty
+    let internal addMembers (mi:#MemberInfo list) (ty:ProvidedTypeDefinition)   = ty.AddMembers mi  ; ty
+    let internal addMember (mi:#MemberInfo) (ty:ProvidedTypeDefinition)         = ty.AddMember mi   ; ty
 
     let internal createDefaultConstructor () =
         let constructor = ProvidedConstructor(
@@ -50,18 +51,6 @@ module Types =
                     )
         constructor.AddXmlDoc(sprintf "Default constructor")
         constructor
-
-    let internal addMembers (mi:#MemberInfo list) (ty:ProvidedTypeDefinition) =
-        ty.AddMembersDelayed (
-            fun() ->
-                // printfn "Delayed expansion for %s" ty.Name
-                mi
-        )
-        ty
-
-    let internal addMember (mi:#MemberInfo) (ty:ProvidedTypeDefinition) =
-        ty.AddMember mi
-        ty
 
     (*
      * end of boilerplate code

@@ -83,7 +83,7 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
     let asm = ProvidedAssembly()
 
     /// This is the namespace for the type provider
-    let ns = "Yang.YangProvider"
+    let ns = "Yang.Provider"
     let schema = makeType ns asm "YangFromStringProvider"
 
     // Set the logger; observe that the logger will just write to console
