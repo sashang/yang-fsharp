@@ -79,14 +79,12 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
             ProvidedStaticParameter("model", typeof<string>)
         ]
 
+    /// Each provider needs a unique temporary file
     let asm = ProvidedAssembly()
 
     /// This is the namespace for the type provider
     let ns = "Yang.YangProvider"
     let schema = makeType ns asm "YangFromStringProvider"
-
-    /// Each provider needs a unique temporary file
-    let provAsm = ProvidedAssembly()
 
     // Set the logger; observe that the logger will just write to console
     do SetLogger !ProvidedTypeDefinition.Logger
@@ -102,7 +100,7 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
                     typeName
                     |> makeType ns asm
                     |> addMember (makeIncludedType "Information" |> addMembers (createModule model'))
-                    |> addIncludedType provAsm
+                    |> addIncludedType asm
                 with
                 | :? YangParserException as  ex ->
                     raise (GenericYangProviderError ("Error in parsing model", ex))
@@ -111,7 +109,7 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
 
     do
         schema.DefineStaticParameters( parameters=staticParameters, instantiationFunction=schemaCreation )
-        this.AddNamespace(ns, [ addIncludedType provAsm schema ])
+        this.AddNamespace(ns, [ addIncludedType asm schema ])
 
 [<TypeProviderAssembly>]
 do ()
