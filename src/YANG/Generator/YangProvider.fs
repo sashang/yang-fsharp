@@ -93,9 +93,11 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
             | [| :? string as model |] ->
                 try
                     let model' = MakeFromString model
+
                     typeName
                     |> makeType asm
-                    |> addMember (makeIncludedType "ModuleInformation" |> addMembers (createTypes model'))
+                    |> addMembers (appendModuleInformation model')
+                    |> addMember (createDefaultConstructor ())
                     |> addIncludedType provAsm
                 with
                 | :? YangParserException as  ex ->

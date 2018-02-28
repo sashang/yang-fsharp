@@ -25,7 +25,9 @@ module Types =
     let ns = "Yang.YangProvider"
 
     let internal makeType asm typeName =
-        ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, isErased = false)
+        let ty = ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, isErased = false)
+        ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
+        ty
 
     let internal makeIncludedType typeName =
         ProvidedTypeDefinition(typeName, Some typeof<obj>, isErased=false)
@@ -38,6 +40,17 @@ module Types =
     let internal addIncludedType (provAsm : ProvidedAssembly) (ty:ProvidedTypeDefinition) =
         provAsm.AddTypes([ ty ])
         ty
+
+
+    let internal createDefaultConstructor () =
+        let constructor = ProvidedConstructor(
+                            [],
+                            invokeCode = fun args ->
+                                // All fields will get the default values
+                                <@@ () @@>
+                    )
+        constructor.AddXmlDoc(sprintf "Default constructor")
+        constructor
 
     let internal addMembers (mi:#MemberInfo list) (ty:ProvidedTypeDefinition) =
         ty.AddMembersDelayed (
@@ -55,7 +68,7 @@ module Types =
      * end of boilerplate code
      *)
 
-    let internal createTypes (_module : Module.Module) =
+    let internal appendModuleInformation (_module : Module.Module) =
         SetLogger (Some (fun str -> printfn "%s" str))
 
         let (version, _) = _module.Header.YangVersion
