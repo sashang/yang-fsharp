@@ -3,5 +3,4 @@
 #r @"bin/Debug/BasicProvider.dll"
 open StaticProperty.Provided
 
-type T = StaticProperty.Provided.MyType
-printfn "%s" T.MyProperty
+printfn "%s" MyType.MyProperty
