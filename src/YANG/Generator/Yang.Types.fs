@@ -21,6 +21,7 @@ module Types =
             | None -> ()
             | Some logger -> logger message
 
+    /// This is the namespace where the type provider should appear
     let ns = "Yang.Generator"
 
     let internal makeType asm typeName =
