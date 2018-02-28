@@ -8,7 +8,7 @@ open System.IO
 open System.Reflection
 open Microsoft.FSharp.Core.CompilerServices
 open ProviderImplementation.ProvidedTypes
-//open Yang.Parser
+open Yang.Parser
 
 open Microsoft.FSharp.Quotations
 
@@ -66,66 +66,45 @@ type GenericYangProviderError (message:string, ?innerException:exn) =
 
 /// This provider creates the type from a string;
 /// it is useful for testing, otherwise, it is very similar to the functionality above.
-//[<TypeProvider>]
-//type public YangFromStringProvider (config: TypeProviderConfig) as this =
-//    inherit TypeProviderForNamespaces()
-
-//    /// Static parameters for type provider.
-//    let staticParameters =
-//        [
-//            // This parameter is used to specify the model from which to generate types.
-//            ProvidedStaticParameter("model", typeof<string>)
-//        ]
-
-//    let asm = Assembly.LoadFrom(config.RuntimeAssembly)
-//    let schema = makeType asm "YangFromStringProvider"
-
-//    /// Each provider needs a unique temporary file
-//    let provAsm = ProvidedAssembly(Path.ChangeExtension(Path.GetTempFileName(), ".dll"))
-
-//    // Set the logger; observe that the logger will just write to console
-//    do SetLogger !ProvidedTypeDefinition.Logger
-
-//    /// Method for starting the type generation process
-//    let schemaCreation =
-//        fun (typeName:string) (parameterValues: obj[]) ->
-//            match parameterValues with
-//            | [| :? string as model |] ->
-//                try
-//                    let model' = MakeFromString model
-//                    typeName
-//                    |> makeType asm
-//                    |> addMember (ProvidedLiteralField(
-//                                    "Test",
-//                                    typeof<string>,
-//                                    "Example"
-//                                 ))
-//                    // |> addMember (makeIncludedType "ModuleInformation" |> addMembers (createTypes result))
-//                    |> addIncludedType provAsm
-//                with
-//                | :? YangParserException as  ex ->
-//                    raise (GenericYangProviderError ("Error in parsing model", ex))
-
-//            | _ -> raise (GenericYangProviderError "Unexpected parameter values when using Yang provider")
-
-//    do this.AddNamespace(ns, [ addIncludedType provAsm schema ])
-//    do schema.DefineStaticParameters( parameters=staticParameters, instantiationFunction=schemaCreation )
-
 [<TypeProvider>]
-type BasicProvider (config : TypeProviderConfig) as this =
-    inherit TypeProviderForNamespaces (config)
+type public YangFromStringProvider (config: TypeProviderConfig) as this =
+    inherit TypeProviderForNamespaces(config)
 
-    let ns = "StaticProperty.Provided"
-    let asm = Assembly.GetExecutingAssembly()
+    /// Static parameters for type provider.
+    let staticParameters =
+        [
+            // This parameter is used to specify the model from which to generate types.
+            ProvidedStaticParameter("model", typeof<string>)
+        ]
 
-    let createTypes () =
-        let myType = ProvidedTypeDefinition(asm, ns, "MyType", Some typeof<obj>)
-        let myProp = ProvidedProperty("MyProperty", typeof<string>, isStatic = true, getterCode = (fun args -> <@@ "Hello world" @@>))
-        myType.AddMember(myProp)
-        [myType]
+    let asm = Assembly.LoadFrom(config.RuntimeAssembly)
+    let schema = makeType asm "YangFromStringProvider"
 
-    do
-        this.AddNamespace(ns, createTypes())
+    /// Each provider needs a unique temporary file
+    let provAsm = ProvidedAssembly()
+
+    // Set the logger; observe that the logger will just write to console
+    do SetLogger !ProvidedTypeDefinition.Logger
+
+    /// Method for starting the type generation process
+    let schemaCreation =
+        fun (typeName:string) (parameterValues: obj[]) ->
+            match parameterValues with
+            | [| :? string as model |] ->
+                try
+                    let model' = MakeFromString model
+                    typeName
+                    |> makeType asm
+                    |> addMember (makeIncludedType "ModuleInformation" |> addMembers (createTypes model'))
+                    |> addIncludedType provAsm
+                with
+                | :? YangParserException as  ex ->
+                    raise (GenericYangProviderError ("Error in parsing model", ex))
+
+            | _ -> raise (GenericYangProviderError "Unexpected parameter values when using Yang provider")
+
+    do this.AddNamespace(ns, [ addIncludedType provAsm schema ])
+    do schema.DefineStaticParameters( parameters=staticParameters, instantiationFunction=schemaCreation )
 
 [<TypeProviderAssembly>]
 do ()

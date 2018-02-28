@@ -1,14 +1,9 @@
 #r @"..\..\build\Yang.Generator.dll"
 
-open StaticProperty.Provided
-printfn "%s" MyType.MyProperty
-
-// open Samples
-
-// type HW = Samples.HelloWorld
-// open Yang.YangProvider
-
+// Compile with: fsc rfc7950-example-system.fsx
 // Stop provider with: pskill fsautocomplete
+
+open Yang.YangProvider
 
 let [<Literal>] model = """
 // This is the example from Sec. 4.2.2.5 of RFC 7950 (p.22-23)
@@ -63,6 +58,15 @@ module example-system {
     }
 }
 """
+
+type T = YangFromStringProvider<model>
+
+// printfn "Version        : %A" T.ModuleInformation.YangVersion
+// printfn "Namespace      : %A" T.ModuleInformation.Namespace
+printfn "Prefix         : %s" T.ModuleInformation.Prefix
+printfn "Organization   : %s" T.ModuleInformation.Organization
+printfn "Contact        : %s" T.ModuleInformation.Contact
+printfn "Description    : %s" T.ModuleInformation.Description
 
 // type ExampleSystem = YangFromString<model>
 // ExampleSystem
