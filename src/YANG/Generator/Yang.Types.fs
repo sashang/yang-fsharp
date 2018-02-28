@@ -21,10 +21,7 @@ module Types =
             | None -> ()
             | Some logger -> logger message
 
-    /// This is the namespace for the type provider
-    let ns = "Yang.YangProvider"
-
-    let internal makeType asm typeName =
+    let internal makeType ns asm typeName =
         let ty = ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, isErased = false)
         ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
         ty
@@ -34,7 +31,7 @@ module Types =
         ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
         ty
 
-    let internal makeTypeInAssembly asm typeName =
+    let internal makeTypeInAssembly ns asm typeName =
         let ty = ProvidedTypeDefinition( asm, ns, typeName, Some typeof<obj>, isErased = false)
         ty.SetAttributes (TypeAttributes.Class ||| TypeAttributes.Public)
         ty

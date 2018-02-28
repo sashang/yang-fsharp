@@ -80,7 +80,10 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
         ]
 
     let asm = ProvidedAssembly()
-    let schema = makeType asm "YangFromStringProvider"
+
+    /// This is the namespace for the type provider
+    let ns = "Yang.YangProvider"
+    let schema = makeType ns asm "YangFromStringProvider"
 
     /// Each provider needs a unique temporary file
     let provAsm = ProvidedAssembly()
@@ -97,7 +100,7 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
                     let model' = MakeFromString model
 
                     typeName
-                    |> makeType asm
+                    |> makeType ns asm
                     |> addMember (makeIncludedType "Information" |> addMembers (createModule model'))
                     |> addIncludedType provAsm
                 with
