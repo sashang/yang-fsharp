@@ -5,12 +5,22 @@ Parser and .NET type generator for YANG model.
 ## Build instructions
 
 First, run `.\init.ps1` from PowerShell. This will download `paket` and setup a few other
-things. It is advised (although not required) to run this script for every shell.
+things. It will also load the `YangDevHelper` PowerShell module that provides some commands
+that are useful during development. It is advised (although not required) to initialize
+your working (Power)shell with this script.
 
-Running the `.\build.bat` should do the job. The output will be placed in the `.\build` directory.
+Running the `.\build.bat` should compile the main project and run the unit tests.
+The output is placed in the `.\build` directory.
 This uses the `FAKE` build system (which is based on F\#).
+Alternatively, (if you initialize with the `init.ps1` script) you can also use
+the commands `build` and `qb` for the full build, or a quick build (only the main project)
+respectively.
 
 To run the unit tests, use `.\build.bat Test`.
+To get some statistics on the code coverage of the unit tests use the `Show-YangCodeCoverage`
+command (this is part of `YangDevHelper`). To see a list of the active to-do items
+use the command `Get-YangWorkItems`.
+
 
 You can also open the Visual Studio solution file in `.\src\YANG\Yang.sln`. However, before doing
 so do restore the dependencies if necessary. We use the `paket` system for package management.
