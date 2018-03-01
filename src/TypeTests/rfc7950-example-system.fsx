@@ -88,9 +88,6 @@ module Model =
     """
 
     type T = YangFromStringProvider<model>
-    // type X =
-    //     inherit T.Information
-    //     new () = { inherit T.Information() }
 
 /// Unit tests
 module Tests =

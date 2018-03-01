@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace RFC7950ConsoleTests
+namespace RFC7950DesktopTests
 {
     class Program
     {
