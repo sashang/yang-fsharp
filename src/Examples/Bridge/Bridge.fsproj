@@ -59,9 +59,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
-    <Reference Include="rfc7950-example-system">
-      <HintPath>..\..\TypeTests\rfc7950-example-system.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
