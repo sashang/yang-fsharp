@@ -5,6 +5,10 @@
 namespace Yang.Examples.RFC7950.SimpleModel
 #endif
 
+// The following are important, otherwise the generated type is not right.
+#load @"..\..\.paket\load\net471\FSharp.Data.TypeProviders.fsx"
+#load @"..\..\.paket\load\net471\FSharp.QueryProvider.fsx"
+
 // Compile with:
 // fsc --target:library rfc7950-example-system.fsx
 //
@@ -25,6 +29,7 @@ namespace Yang.Examples.RFC7950.SimpleModel
 
 #r @"..\..\build\Yang.Generator.dll"
 
+/// Definition of model
 module Model =
     open Yang.Provider
 
@@ -87,6 +92,7 @@ module Model =
     //     inherit T.Information
     //     new () = { inherit T.Information() }
 
+/// Unit tests
 module Tests =
     open Xunit
     open Model
