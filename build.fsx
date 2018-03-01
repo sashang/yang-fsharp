@@ -1,7 +1,12 @@
 #r "packages/FAKE/tools/FakeLib.dll"
+open System.Diagnostics
 open Fake
 open Fake.Testing.XUnit2
 open System.IO
+
+// TODO: Strategy for compiling and testing
+// The following is a bit messy. We compile both debug and release versions.
+// We do unit testing of the debug versions. QuickBuild builds release.
 
 //
 // Properties
@@ -9,6 +14,10 @@ open System.IO
 let buildDir = Path.Combine(__SOURCE_DIRECTORY__, "build")
 let testDir = Path.Combine(__SOURCE_DIRECTORY__, "test")
 let testDirResults = Path.Combine(__SOURCE_DIRECTORY__, "test")
+
+let packagesDir = Path.Combine(__SOURCE_DIRECTORY__, "packages")
+
+let exampleTypesDirectory = Path.Combine(__SOURCE_DIRECTORY__, "src", "TypeTests")
 
 //
 // Targets
@@ -34,6 +43,38 @@ Target "BuildTest" (fun _ ->
     !! "src/**/*.Tests.*.fsproj"
       |> MSBuildDebug testDir "Build"
       |> Log "TestBuild-Output:"
+)
+
+Target "GenerateTypes" (fun _ ->
+  let dependencies =
+    [
+      @"System.Reflection.Metadata\lib\portable-net45+win8\System.Reflection.Metadata.dll"
+    ]
+    |> List.map(fun lib ->
+      Path.Combine(packagesDir, lib)
+    )
+
+  Directory.GetFiles(exampleTypesDirectory, "*.fsx")
+  |> List.ofArray
+  |> List.map (fun filename ->
+    let outputFile = Path.ChangeExtension(Path.Combine(testDir, filename), ".dll")
+    TraceHelper.logVerbosefn "Compiling example type in %s" filename
+    let result =
+      FscHelper.compile [
+        FscHelper.Out         outputFile
+        FscHelper.Target      FscHelper.TargetType.Library
+        FscHelper.Platform    FscHelper.PlatformType.AnyCpu
+        // FscHelper.References  dependencies
+        FscHelper.Debug       true
+      ] [ filename ]
+
+    if result = 0 then
+      filename
+    else
+      traceError (sprintf "Error compiling example type in file: %s" filename)
+      raise <| BuildException(sprintf "Fsc: compile failed for %s with exit code" filename, [ string result ])
+  )
+  |> ignore
 )
 
 Target "Test" (fun _ ->

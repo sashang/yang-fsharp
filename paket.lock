@@ -531,6 +531,6 @@ NUGET
     Zlib.Portable (1.11) - restriction: || (&& (< net40) (>= portable-net45+win8)) (&& (< net40) (< portable-net45+win8) (>= portable-net45+win8+wp8+wpa81))
 GITHUB
   remote: fsprojects/FSharp.TypeProviders.StarterPack
-    src/ProvidedTypes.fs (6de9626e9bc2d8e90a9f53a48e3f823ee752c8af)
-    src/ProvidedTypes.fsi (6de9626e9bc2d8e90a9f53a48e3f823ee752c8af)
-    src/ProvidedTypesTesting.fs (6de9626e9bc2d8e90a9f53a48e3f823ee752c8af)
+    src/ProvidedTypes.fs (f0c4a6300db313eb2616c4f792cd6ae68c255e56)
+    src/ProvidedTypes.fsi (f0c4a6300db313eb2616c4f792cd6ae68c255e56)
+    src/ProvidedTypesTesting.fs (f0c4a6300db313eb2616c4f792cd6ae68c255e56)
