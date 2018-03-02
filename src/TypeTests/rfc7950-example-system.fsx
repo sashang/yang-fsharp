@@ -27,7 +27,11 @@ namespace Yang.Examples.RFC7950.SimpleModel
 #r @"xunit.extensibility.core\lib\netstandard1.1\xunit.core.dll"
 #r @"xunit.core\build\xunit.execution.desktop.dll"
 
+#if DEBUG
+#r @"..\..\test\Yang.Generator.dll"
+#else
 #r @"..\..\build\Yang.Generator.dll"
+#endif
 
 /// Definition of model
 module Model =
