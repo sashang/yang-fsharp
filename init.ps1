@@ -77,7 +77,7 @@ if ($generate_scripts) {
 #
 function global:Build {
     Push-Location -Path $PSScriptRoot
-    .\build.bat
+    .\build.bat $args
     Pop-Location
 }
 

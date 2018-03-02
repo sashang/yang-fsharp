@@ -1,8 +1,10 @@
 #r "packages/FAKE/tools/FakeLib.dll"
+open Fake.MSTest
 open System.Diagnostics
 open Fake
 open Fake.Testing.XUnit2
 open System.IO
+open System.Text
 
 // TODO: Strategy for compiling and testing
 // The following is a bit messy. We compile both debug and release versions.
@@ -15,18 +17,66 @@ open System.IO
 //
 let buildDir = Path.Combine(__SOURCE_DIRECTORY__, "build")
 let testDir = Path.Combine(__SOURCE_DIRECTORY__, "test")
-let testDirResults = Path.Combine(__SOURCE_DIRECTORY__, "test")
+let testDirResults = Path.Combine(__SOURCE_DIRECTORY__, "Reports")
 
 let packagesDir = Path.Combine(__SOURCE_DIRECTORY__, "packages")
 
 let exampleTypesDirectory = Path.Combine(__SOURCE_DIRECTORY__, "src", "TypeTests")
 
 //
+// Helper scripts
+//
+
+/// The following compiles a script (typically using the type provider) and writes to output directory
+let CompileFsx (filename : string, debug : bool) =
+  // TODO: Compile with the Fake FscHelper target.
+  // let outputFile = Path.ChangeExtension(Path.Combine(testDir, filename), ".dll")
+  // TraceHelper.logVerbosefn "Compiling example type in %s" filename
+  // let result =
+  //   FscHelper.compile [
+  //     FscHelper.Out         outputFile
+  //     FscHelper.Target      FscHelper.TargetType.Library
+  //     FscHelper.Platform    FscHelper.PlatformType.AnyCpu
+  //     // FscHelper.References  dependencies
+  //     FscHelper.Debug       true
+  //   ] [ filename ]
+
+  let outputFile = Path.ChangeExtension(filename, "dll")
+
+  // TODO: Do not compile fsx if output already exists and is recent
+
+  let args = StringBuilder(@"--target:library")
+
+  if debug then
+    args.Append(" -d:DEBUG") |> ignore
+
+  let result = ExecProcess (fun info ->
+    info.FileName <- "fsc"
+    info.WorkingDirectory <- exampleTypesDirectory
+    info.Arguments <- sprintf @"%s %s" (args.ToString()) filename) (System.TimeSpan.FromMinutes 5.0)
+
+  if result <> 0 then
+    traceError (sprintf "Error compiling example type in file: %s" filename)
+    raise <| BuildException(sprintf "Fsc: compile failed for %s with exit code" filename, [ string result ])
+
+  if debug then
+    Fake.FileHelper.CopyFile testDir outputFile
+  else
+    Fake.FileHelper.CopyFile buildDir outputFile
+
+  filename
+
+//
 // Targets
 //
 Target "Clean" (fun _ ->
+    // Clean release and test directories
     CleanDir buildDir
     CleanDir testDir
+    CleanDir testDirResults
+
+    // Delete generated types
+    Directory.GetFiles(exampleTypesDirectory, "*.dll") |> DeleteFiles
 )
 
 Target "Build" (fun _ ->
@@ -41,53 +91,11 @@ Target "QuickBuild" (fun _ ->
       |> Log "AppBuild-Output:"
 )
 
+// We want to build all unit tests, and the type generator.
 Target "BuildTest" (fun _ ->
     !! "src/**/*.Tests.*.fsproj"
       |> MSBuildDebug testDir "Build"
       |> Log "TestBuild-Output:"
-)
-
-Target "GenerateTypes" (fun _ ->
-  let dependencies =
-    [
-      @"System.Reflection.Metadata\lib\portable-net45+win8\System.Reflection.Metadata.dll"
-    ]
-    |> List.map(fun lib ->
-      Path.Combine(packagesDir, lib)
-    )
-
-  Directory.GetFiles(exampleTypesDirectory, "*.fsx")
-  |> List.ofArray
-  |> List.map (fun filename ->
-    // TODO: Compile with the Fake FscHelper target.
-
-    let outputFile = Path.ChangeExtension(Path.Combine(testDir, filename), ".dll")
-    // let outputFile = Path.ChangeExtension(Path.Combine(testDir, filename), ".dll")
-    // TraceHelper.logVerbosefn "Compiling example type in %s" filename
-    // let result =
-    //   FscHelper.compile [
-    //     FscHelper.Out         outputFile
-    //     FscHelper.Target      FscHelper.TargetType.Library
-    //     FscHelper.Platform    FscHelper.PlatformType.AnyCpu
-    //     // FscHelper.References  dependencies
-    //     FscHelper.Debug       true
-    //   ] [ filename ]
-    let result = ExecProcess (fun info ->
-      info.FileName <- "fsc"
-      info.WorkingDirectory <- exampleTypesDirectory
-      info.Arguments <- sprintf @"--target:library -r:..\..\build\Yang.Generator.dll %s" filename) (System.TimeSpan.FromMinutes 5.0)
-
-    if result <> 0 then
-      traceError (sprintf "Error compiling example type in file: %s" filename)
-      raise <| BuildException(sprintf "Fsc: compile failed for %s with exit code" filename, [ string result ])
-
-    // TODO: Produce a proper build for the debug version and copy to test
-    Fake.FileHelper.CopyFile buildDir outputFile
-    Fake.FileHelper.CopyFile testDir outputFile
-
-    filename
-  )
-  |> ignore
 )
 
 Target "Test" (fun _ ->
@@ -101,6 +109,52 @@ Target "Test" (fun _ ->
       )
 )
 
+Target "BuildDebugTypeGenerator" ( fun _ ->
+    !! "src/YANG/Generator/Generator.fsproj"
+      |> MSBuildDebug testDir "Build"
+      |> Log "TestBuild-Type Generator Output:"
+)
+
+Target "GenerateTypesForTesting" (fun _ ->
+  Directory.GetFiles(exampleTypesDirectory, "*.fsx")
+  |> List.ofArray
+  |> List.iter (fun filename ->
+    [ CompileFsx (filename, false) ] |> Log (sprintf "Compiling (debug)   : %s" filename)
+    [ CompileFsx (filename, true)  ] |> Log (sprintf "Compiling (release) : %s" filename)
+  )
+)
+
+Target "BuildCSharpTests" (fun _ ->
+  !! "src/TypeTestsFromCSharp/TypeTestsFromCSharp.sln"
+  |> MSBuildDebug testDir "Build"
+  |> Log "TestBuild-Build C# unit tests"
+)
+
+Target "TestGeneratedTypes" (fun _ ->
+  let fsharpTests =
+    Directory.GetFiles(exampleTypesDirectory, "*.fsx")
+    |> Seq.map (fun filename ->
+      let fi = FileInfo(filename)
+      let basename = fi.Name
+      let outname = Path.Combine(testDir, basename)
+      Path.ChangeExtension(outname, "dll")
+    )
+
+  fsharpTests
+    |> xUnit2 (fun p ->
+      {
+          p with
+              HtmlOutputPath = Some (Path.Combine(testDirResults, "Generator.tests.result.html"))
+              XmlOutputPath = Some (Path.Combine(testDirResults, "Generator.tests.result.xml"))
+      }
+    )
+
+  let csharpReportDir = Path.Combine(testDirResults, "CSharpUnitTests")
+  FileUtils.mkdir csharpReportDir
+  !! Path.Combine(testDir, "TypeTestsFromCSharp.dll")
+    |> MSTest (fun p -> { p with ResultsDir = csharpReportDir})
+)
+
 Target "Default" (fun _ ->
     trace "Start building YANG parser and type generator"
 )
@@ -112,9 +166,12 @@ Target "Default" (fun _ ->
   ==> "Build"
   ==> "BuildTest"
   ==> "Test"
+  ==> "GenerateTypesForTesting"
+  ==> "BuildCSharpTests"
+  ==> "TestGeneratedTypes"
   ==> "Default"
 
-"Build"
-  ==> "QuickBuild"
+"BuildDebugTypeGenerator"
+  ==> "GenerateTypesForTesting"
 
 RunTargetOrDefault "Default"
