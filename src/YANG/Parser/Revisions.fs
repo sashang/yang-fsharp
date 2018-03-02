@@ -36,7 +36,7 @@ module Revisions =
             Options     = None
         }
 
-        /// Creates a revision enty from revision date
+        /// Creates a revision entry from revision date
         static member Make version = {
             Version     = version
             Description = None
