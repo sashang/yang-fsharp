@@ -27,7 +27,7 @@ function Show-CodeCoverage {
         $output = Join-Path -Path $Directory -ChildPath $OutputFile
     }
 
-    [string[]]$all_arguments = @(
+    [string[]]$xunit_arguments = @(
         "-target:$xUnitTool",
         "-targetdir:$BuildDirectory",
         '-register:"user"',
@@ -36,11 +36,79 @@ function Show-CodeCoverage {
         #"-filter:-[*.Tests]*"
     )
 
+    [string[]]$xunit_arguments_local = @(
+        "-target:$xUnitTool",
+        '-register:"user"',
+        "-mergeoutput",
+        "-output:$output"#,
+        #"-filter:-[*.Tests]*"
+    )
+
+    [string[]]$mstest_arguments = @(
+        "-target:mstest",
+        "-targetdir:$BuildDirectory",
+        '-register:"user"',
+        "-mergeoutput",
+        "-output:$output"#,
+        #"-filter:-[*.Tests]*"
+    )
+
+    [string[]]$fsharp_arguments = @(
+        "-target:fsc",
+        '-register:"user"',
+        "-mergeoutput",
+        "-output:$output"#,
+    )
+
     Get-ChildItem -Path $BuildDirectory -Filter *.xunit.dll | ForEach-Object -Process {
         $ut = $_.FullName
         Write-Verbose -Message "Processing tests from: $ut"
 
-        [string[]]$arguments = $all_arguments + @(
+        [string[]]$arguments = $xunit_arguments + @(
+            "-targetargs:$ut"
+        )
+
+        Write-Verbose -Message "Processing args: $arguments"
+
+        . "$codeCoverTool" @arguments
+    }
+
+    Get-ChildItem -Path $exampleTypesDir -Filter *.fsx | ForEach-Object -Process {
+        $ut = $_.FullName
+        Write-Verbose -Message "Compiling type from: $ut"
+
+        $args = "{0} -d:DEBUG --target:library" -f $ut
+        [string[]]$arguments = $fsharp_arguments + @(
+            "-targetdir:$exampleTypesDir",
+            "-targetargs:'$args'"
+        )
+
+        . "$codeCoverTool" @arguments
+    }
+
+    Get-ChildItem -Path $exampleTypesDir -Filter *.dll | ForEach-Object -Process {
+        $ut = [System.IO.Path]::Combine($BuildDirectory, $_.Name)
+        Write-Verbose -Message "Processing tests from: $ut"
+
+        [string[]]$arguments = $xunit_arguments_local + @(
+            "-targetdir:$exampleTypesDir",
+            "-targetargs:$ut"
+        )
+
+        Write-Verbose -Message "Processing args: $arguments"
+
+        . "$codeCoverTool" @arguments
+    }
+
+    [string[]]$extra_unit_tests = @(
+        "TypeTestsFromCSharp.dll"
+    )
+
+    $extra_unit_tests | ForEach-Object -Process {
+        $ut = [System.IO.Path]::Combine($BuildDirectory, $_.Name)
+        Write-Verbose -Message "Processing tests from: $ut"
+
+        [string[]]$arguments = $mstest_arguments + @(
             "-targetargs:$ut"
         )
 

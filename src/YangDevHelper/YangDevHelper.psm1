@@ -1,6 +1,7 @@
 $rootDir = Join-Path -Path $PSScriptRoot -ChildPath .. | Join-Path -Child ..
-$outputDir = Join-Path -Path $rootDir -ChildPath "build"
+$outputDir = Join-Path -Path $rootDir -ChildPath "test"
 $packageDir = Join-Path -Path $rootDir -ChildPath packages
+$exampleTypesDir = Join-Path -Path $rootDir -ChildPath "src" | Join-Path -Child TypeTests
 
 $xUnitTool = Join-Path -Path $packageDir -ChildPath "xunit.runner.console" |
              Join-Path -ChildPath "tools" |
