@@ -17,35 +17,36 @@ function Get-WorkItems {
     $identifiers = @(
         "TODO"
         "HACK"
+        "FIX"
+        "BUG"
     )
 
     if ($IncludeLowPriority) {
         $identifiers += @(
             "DIVERGENCE"
+            "REFACTOR"
         )
     }
 
     $labels = $identifiers | ForEach-Object -Process {
-        "// {0}:" -f $_
+        "(//|#) {0}:" -f $_
     }
 
     Write-Debug -Message "Searching in $RootDir"
-    [System.IO.FileInfo[]]$source = Get-ChildItem -Path $RootDir -Include *.fs -Recurse
+    [System.IO.FileInfo[]]$source = Get-ChildItem -Path $RootDir -Include *.fs,*.fsi,*.fsx,*.cs,*.ps1 -Recurse
     if (($source -eq $null) -or ($source.Length -eq 0)) {
         Write-Warning -Message "Did not find any input files"
         return
     }
+    $source += @(
+        Get-Item -Path ([System.IO.Path]::Combine($RootDir, '..', 'build.fsx'))
+        Get-Item -Path ([System.IO.Path]::Combine($RootDir, '..', 'init.ps1'))
+
+    )
 
     $work = $source | ForEach-Object -Process {
         $filename = $_.Name
         Write-Progress -Activity "Parsing" -Status "$filename"
-
-        if ([String]::IsNullOrWhiteSpace($_.DirectoryName)) {
-            Write-Warning -Message "Cannot get the directory name for $_"
-            $location = ""
-        } else {
-            $location = $_.DirectoryName.Substring($root.FullName.Length).Trim('\', 1)
-        }
 
         $_ | Select-String -Pattern $labels -AllMatches
     }
@@ -56,7 +57,7 @@ function Get-WorkItems {
         $work | ForEach-Object -Process {
             $message = $_.Line.Trim()
 
-            $work = [regex]::Match($message, "// (?<label>[A-z]+): (?<comment>.*)")
+            $work = [regex]::Match($message, "(//|#) (?<label>[A-z]+): (?<comment>.*)")
             Write-Verbose $work
 
             [PSCustomObject]@{

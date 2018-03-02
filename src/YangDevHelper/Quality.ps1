@@ -12,6 +12,9 @@ function Show-CodeCoverage {
         [string]$OutputFile = "results.xml"
     )
 
+    # REFACTOR: Refactor code below to separate functions, and document
+    # FIX: Code below does not cover code in the type creation scripts. Why not?
+
     Write-Verbose -Message "Report will be generated in: $Directory"
     if (Test-Path -Path $Directory -PathType Container) {
         Write-Verbose -Message "Emptying target directory: $Directory"
@@ -137,8 +140,4 @@ function Show-CodeCoverage {
     } else {
         . $index_page
     }
-
-    #  .\packages\OpenCover\tools\OpenCover.Console.exe  -targetargs:"
-        # $p\build\Yang.Parser.Tests.xunit.dll" -targetdir:"$p\build" -register:"user"
-    #  .\packages\ReportGenerator\tools\ReportGenerator.exe -reports:.\results.xml  -reporttypes:Html
 }
