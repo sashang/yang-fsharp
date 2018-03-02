@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RFC7950", "RFC7950", "{593B
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator", "Generator\Generator.fsproj", "{7C27E787-3EE2-450B-BFE9-06999E5131C2}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Model", "Model\Model.fsproj", "{7EF9ECD7-2DB7-482D-9CFE-CF705B6B31C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +44,10 @@ Global
 		{7C27E787-3EE2-450B-BFE9-06999E5131C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C27E787-3EE2-450B-BFE9-06999E5131C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C27E787-3EE2-450B-BFE9-06999E5131C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EF9ECD7-2DB7-482D-9CFE-CF705B6B31C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EF9ECD7-2DB7-482D-9CFE-CF705B6B31C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EF9ECD7-2DB7-482D-9CFE-CF705B6B31C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EF9ECD7-2DB7-482D-9CFE-CF705B6B31C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

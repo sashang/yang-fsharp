@@ -7,7 +7,6 @@ module Statements =
     open System
     open FParsec
     open Identifier
-    open Identifier
 
     // [RFC 7950, p. 202-204]
     //
