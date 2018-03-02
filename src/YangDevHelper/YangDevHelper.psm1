@@ -10,6 +10,8 @@ $xUnitTool = Join-Path -Path $packageDir -ChildPath "xunit.runner.console" |
 
 $msTestTool = [System.IO.Path]::Combine($packageDir, "TestRunner", "tools", "TestRunner.exe")
 
+$fsc = [System.IO.Path]::Combine($Env:FSHARPINSTALLDIR, "fsc.exe")
+
 $codeCoverTool = Join-Path -Path $packageDir -ChildPath "OpenCover" |
                  Join-Path -ChildPath "tools" |
                  Join-Path -ChildPath "OpenCover.Console.exe"

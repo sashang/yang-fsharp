@@ -32,16 +32,16 @@ function Show-CodeCoverage {
         "-targetdir:$BuildDirectory",
         '-register:"user"',
         "-mergeoutput",
-        "-output:$output"#,
-        #"-filter:-[*.Tests]*"
+        "-output:$output",
+        "-filter:`"+[Yang.*]* -[*.Tests.*]*`""
     )
 
     [string[]]$xunit_arguments_local = @(
         "-target:$xUnitTool",
         '-register:"user"',
         "-mergeoutput",
-        "-output:$output"#,
-        #"-filter:-[*.Tests]*"
+        "-output:$output",
+        "-filter:`"+[Yang.*]* -[*.Tests.*]*`""
     )
 
     [string[]]$mstest_arguments = @(
@@ -49,17 +49,19 @@ function Show-CodeCoverage {
         "-targetdir:$BuildDirectory",
         '-register:"user"',
         "-mergeoutput",
-        "-output:$output"#,
-        #"-filter:-[*.Tests]*"
+        "-output:$output",
+        "-filter:`"+[Yang.*]* -[*.Tests.*]*`""
     )
 
     [string[]]$fsharp_arguments = @(
-        "-target:fsc",
+        "-target:$fsc",
         '-register:"user"',
         "-mergeoutput",
-        "-output:$output"#,
+        "-output:$output",
+        "-filter:`"+[Yang.*]* -[Yang.*]ProviderImplementation.* -[*.Tests.*]*`""
     )
 
+    # Run normal unit tests
     Get-ChildItem -Path $BuildDirectory -Filter *.xunit.dll | ForEach-Object -Process {
         $ut = $_.FullName
         Write-Verbose -Message "Processing tests from: $ut"
@@ -73,20 +75,24 @@ function Show-CodeCoverage {
         . "$codeCoverTool" @arguments
     }
 
+    # Compile type provider examples
     Get-ChildItem -Path $exampleTypesDir -Filter *.fsx | ForEach-Object -Process {
         $ut = $_.FullName
         Write-Verbose -Message "Compiling type from: $ut"
 
-        $args = "{0} -d:DEBUG --target:library" -f $ut
+        $args = "{0} -d:DEBUG --target:library " -f $ut
         [string[]]$arguments = $fsharp_arguments + @(
             "-targetdir:$exampleTypesDir",
-            "-targetargs:'$args'"
+            "-targetargs:`"$args`""
         )
 
         . "$codeCoverTool" @arguments
     }
 
-    Get-ChildItem -Path $exampleTypesDir -Filter *.dll | ForEach-Object -Process {
+    # Run the tests in the type provider examples
+    Get-ChildItem -Path $exampleTypesDir -Filter *.dll |
+    Where-Object -Property Name -NotMatch "FSharp.*.dll" |
+    ForEach-Object -Process {
         $ut = [System.IO.Path]::Combine($BuildDirectory, $_.Name)
         Write-Verbose -Message "Processing tests from: $ut"
 
@@ -100,8 +106,9 @@ function Show-CodeCoverage {
         . "$codeCoverTool" @arguments
     }
 
+    # Run the integration with C# tests
     [string[]]$extra_unit_tests = @(
-        "TypeTestsFromCSharp.dll"
+        "Yang.Examples.CSharp.Tests.dll"
     )
 
     $extra_unit_tests | ForEach-Object -Process {

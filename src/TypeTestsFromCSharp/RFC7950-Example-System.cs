@@ -15,10 +15,10 @@
 // </summary>
 // ***********************************************************************
 
-namespace TypeTestsFromCSharp
+namespace Yang.Examples.CSharp.Tests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Yang.Examples.RFC7950.SimpleModel;
+    using RFC7950.SimpleModel;
 
     /// <summary>
     /// Class Rfc7950ExampleSystem.

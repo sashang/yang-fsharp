@@ -151,7 +151,7 @@ Target "TestGeneratedTypes" (fun _ ->
 
   let csharpReportDir = Path.Combine(testDirResults, "CSharpUnitTests")
   FileUtils.mkdir csharpReportDir
-  !! Path.Combine(testDir, "TypeTestsFromCSharp.dll")
+  !! Path.Combine(testDir, "Yang.Examples.CSharp.Tests.dll")
     |> MSTest (fun p -> { p with ResultsDir = csharpReportDir})
 )
 
@@ -173,5 +173,6 @@ Target "Default" (fun _ ->
 
 "BuildDebugTypeGenerator"
   ==> "GenerateTypesForTesting"
+  ==> "TestGeneratedTypes"
 
 RunTargetOrDefault "Default"
