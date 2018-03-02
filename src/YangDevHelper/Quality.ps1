@@ -45,7 +45,7 @@ function Show-CodeCoverage {
     )
 
     [string[]]$mstest_arguments = @(
-        "-target:mstest",
+        "-target:$msTestTool",
         "-targetdir:$BuildDirectory",
         '-register:"user"',
         "-mergeoutput",
@@ -105,7 +105,7 @@ function Show-CodeCoverage {
     )
 
     $extra_unit_tests | ForEach-Object -Process {
-        $ut = [System.IO.Path]::Combine($BuildDirectory, $_.Name)
+        $ut = [System.IO.Path]::Combine($BuildDirectory, $_)
         Write-Verbose -Message "Processing tests from: $ut"
 
         [string[]]$arguments = $mstest_arguments + @(

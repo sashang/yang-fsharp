@@ -8,6 +8,8 @@ $xUnitTool = Join-Path -Path $packageDir -ChildPath "xunit.runner.console" |
              Join-Path -ChildPath "net452" |
              Join-Path -ChildPath "xunit.console.exe"
 
+$msTestTool = [System.IO.Path]::Combine($packageDir, "TestRunner", "tools", "TestRunner.exe")
+
 $codeCoverTool = Join-Path -Path $packageDir -ChildPath "OpenCover" |
                  Join-Path -ChildPath "tools" |
                  Join-Path -ChildPath "OpenCover.Console.exe"
