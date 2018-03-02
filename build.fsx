@@ -8,6 +8,8 @@ open System.IO
 // The following is a bit messy. We compile both debug and release versions.
 // We do unit testing of the debug versions. QuickBuild builds release.
 
+// TODO: We should bring as a package a good F# compiler and set up build system to use that.
+
 //
 // Properties
 //
@@ -57,22 +59,33 @@ Target "GenerateTypes" (fun _ ->
   Directory.GetFiles(exampleTypesDirectory, "*.fsx")
   |> List.ofArray
   |> List.map (fun filename ->
-    let outputFile = Path.ChangeExtension(Path.Combine(testDir, filename), ".dll")
-    TraceHelper.logVerbosefn "Compiling example type in %s" filename
-    let result =
-      FscHelper.compile [
-        FscHelper.Out         outputFile
-        FscHelper.Target      FscHelper.TargetType.Library
-        FscHelper.Platform    FscHelper.PlatformType.AnyCpu
-        // FscHelper.References  dependencies
-        FscHelper.Debug       true
-      ] [ filename ]
+    // TODO: Compile with the Fake FscHelper target.
 
-    if result = 0 then
-      filename
-    else
+    let outputFile = Path.ChangeExtension(Path.Combine(testDir, filename), ".dll")
+    // let outputFile = Path.ChangeExtension(Path.Combine(testDir, filename), ".dll")
+    // TraceHelper.logVerbosefn "Compiling example type in %s" filename
+    // let result =
+    //   FscHelper.compile [
+    //     FscHelper.Out         outputFile
+    //     FscHelper.Target      FscHelper.TargetType.Library
+    //     FscHelper.Platform    FscHelper.PlatformType.AnyCpu
+    //     // FscHelper.References  dependencies
+    //     FscHelper.Debug       true
+    //   ] [ filename ]
+    let result = ExecProcess (fun info ->
+      info.FileName <- "fsc"
+      info.WorkingDirectory <- exampleTypesDirectory
+      info.Arguments <- sprintf @"--target:library -r:..\..\build\Yang.Generator.dll %s" filename) (System.TimeSpan.FromMinutes 5.0)
+
+    if result <> 0 then
       traceError (sprintf "Error compiling example type in file: %s" filename)
       raise <| BuildException(sprintf "Fsc: compile failed for %s with exit code" filename, [ string result ])
+
+    // TODO: Produce a proper build for the debug version and copy to test
+    Fake.FileHelper.CopyFile buildDir outputFile
+    Fake.FileHelper.CopyFile testDir outputFile
+
+    filename
   )
   |> ignore
 )
