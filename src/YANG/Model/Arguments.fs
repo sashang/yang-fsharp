@@ -1,9 +1,9 @@
-﻿// Tokens.fs
+﻿// Arguments.fs
 // Basic tokens of the YANG model
 
 namespace Yang.Model
 
-module Tokens =
+module Arguments =
     open System
 
     // Below we define a custom date field. We could have used the system DateTime,
@@ -67,3 +67,24 @@ module Tokens =
                 match other with
                 | :? Date as other' -> (this :> IComparable<Date>).CompareTo(other')
                 | _                 -> invalidArg "other" "cannot compare values of different types"
+
+    type Key = Identifier list
+
+    type MaxValue =
+    | Unbounded
+    // TODO: The MaxValue must be greater than zero (and never zero)
+    | Bounded   of uint64
+
+    type OrderedBy =
+    | User
+    | System
+
+    /// Definition of Range ([RFC 7950, p. 204])
+    // TODO: Expand definition of Range
+    type Range = NA
+
+    type Status =
+    | Current
+    | Obsolete
+    | Deprecated
+

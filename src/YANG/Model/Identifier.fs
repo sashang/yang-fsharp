@@ -3,6 +3,7 @@
 namespace Yang.Model
 
 /// Parsers and types for YANG identifiers
+[<AutoOpen>]
 module Identifier =
     open System
     open NLog
