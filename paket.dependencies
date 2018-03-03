@@ -3,6 +3,7 @@ source https://nuget.org/api/v2
 nuget FAKE
 nuget FParsec-Big-Data-Edition
 nuget FSharp.QueryProvider
+nuget MSTest.TestAdapter
 nuget MSTest.TestFramework
 nuget NLog
 nuget OpenCover

@@ -148,11 +148,18 @@ Target "TestGeneratedTypes" (fun _ ->
               XmlOutputPath = Some (Path.Combine(testDirResults, "Generator.tests.result.xml"))
       }
     )
+)
 
+Target "TestCSharpTypes" (fun _ ->
   let csharpReportDir = Path.Combine(testDirResults, "CSharpUnitTests")
   FileUtils.mkdir csharpReportDir
   !! Path.Combine(testDir, "Yang.Examples.CSharp.Tests.dll")
-    |> MSTest (fun p -> { p with ResultsDir = csharpReportDir})
+    |> MSTest (fun p ->
+      { p with
+          // TODO: Can we get the MSTest.exe from nuget.org?
+          ToolPath = Path.Combine(System.Environment.GetEnvironmentVariable("DevEnvDir"), "MSTest.exe")
+          ResultsDir = csharpReportDir
+      })
 )
 
 Target "Default" (fun _ ->
@@ -168,11 +175,12 @@ Target "Default" (fun _ ->
   ==> "Test"
   ==> "GenerateTypesForTesting"
   ==> "BuildCSharpTests"
-  ==> "TestGeneratedTypes"
+  ==> "TestCSharpTypes"
   ==> "Default"
 
 "BuildDebugTypeGenerator"
   ==> "GenerateTypesForTesting"
   ==> "TestGeneratedTypes"
+  ==> "TestCSharpTypes"
 
 RunTargetOrDefault "Default"
