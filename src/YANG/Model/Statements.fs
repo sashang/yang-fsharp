@@ -306,15 +306,15 @@ module Statements =
             let id = this.Identifier
 
             match this with
-            | Contact       (s, b)
-            | Description   (s, b)
-            | ErrorAppTag   (s, b)
-            | ErrorMessage  (s, b)
-            | Organization  (s, b)
-            | Prefix        (s, b)
-            | Presence      (s, b)
-            | Reference     (s, b)
-                -> sprintf "%s %s %s" id (ps s) (pb b)
+            | Contact       (s, block)
+            | Description   (s, block)
+            | ErrorAppTag   (s, block)
+            | ErrorMessage  (s, block)
+            | Organization  (s, block)
+            | Prefix        (s, block)
+            | Presence      (s, block)
+            | Reference     (s, block)
+                -> sprintf "%s %s %s" id (ps s) (pb block)
 
             | Namespace (uri, block)        -> sprintf "%s %s %s" id (uri.ToString()) (pb block)
             | YangVersion (version, block)  -> sprintf "%s %s %s" id (version.ToString()) (pb block)
@@ -875,10 +875,10 @@ module Statements =
     // end of body-stmts
      *)
 
-    /// This captures all user defined statements
+    /// This captures all user defined statements; [RFC 7950, p. 202]
     and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
 
-    // The following capture types to specify module and sub-module statements
+    // The following types are used in the definition of the module and sub-module statements
 
     and ModuleHeaderStatements      = YangVersionStatement * NamespaceStatement * PrefixStatement
     and SubmoduleHeaderStatements   = YangVersionStatement * BelongsToStatement
