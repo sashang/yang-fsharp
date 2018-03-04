@@ -14,3 +14,4 @@ open Yang.Model
 
 let xx = YangVersion (Version(1,1), None)
 
+Statement.ToString xx

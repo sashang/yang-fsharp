@@ -281,46 +281,7 @@ module Statements =
             | Unknown (id, _, _)    -> id.ToString()
             | Unparsed (id, _, _)   -> id.ToString()
 
-        member this.PrettyPrint =
-            let escape = [| ' '; '\t'; '\r'; '\n'; ';'; '{'; '}'; '@'; ':' |]
-
-            /// Pretty print string
-            let ps (input : string) =
-                if input.IndexOfAny(escape) > 0 then sprintf "\"%s\"" input
-                else input
-
-            /// Pretty print optional string
-            let pso (input : string option) =
-                match input with
-                | Some str ->
-                    if str.IndexOfAny(escape) > 0 then sprintf "\"%s\"" str
-                    else str
-                | None -> ""
-
-            /// Pretty print block
-            let pb (options : Statement list option) =
-                match options with
-                | None -> ""
-                | Some block -> sprintf "{ %A }" block
-
-            let id = this.Identifier
-
-            match this with
-            | Contact       (s, block)
-            | Description   (s, block)
-            | ErrorAppTag   (s, block)
-            | ErrorMessage  (s, block)
-            | Organization  (s, block)
-            | Prefix        (s, block)
-            | Presence      (s, block)
-            | Reference     (s, block)
-                -> sprintf "%s %s %s" id (ps s) (pb block)
-
-            | Namespace (uri, block)        -> sprintf "%s %s %s" id (uri.ToString()) (pb block)
-            | YangVersion (version, block)  -> sprintf "%s %s %s" id (version.ToString()) (pb block)
-
-            | Unknown (id, arg, body)       -> sprintf "Unknown: %A %s %s"  id (pso arg) (pb body)
-            | Unparsed (id, arg, body)      -> sprintf "Unparsed: %A %s %s" id (pso arg) (pb body)
+        member this.PrettyPrint = Printer.Print this
 
     /// Short name for the extra statements that may appear
     and ExtraStatements         = Statement list option
@@ -385,7 +346,7 @@ module Statements =
     | Action        of ActionStatement
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
-    /// Captures the 'anyxml-stmt' statement from [RFC 7950, p. 199]
+    /// Captures the 'augment-stmt' statement from [RFC 7950, p. 199]
     and AugmentStatement        = Augment               * (AugmentBodyStatement list)
     and BaseStatement           = IdentifierReference   * ExtraStatements
     and BelongsToBodyStatement  =
@@ -933,6 +894,15 @@ module Statements =
         Revision    : RevisionStatement list
         Body        : BodyStatement list
     }
+    and Printer ()                  =
+        class
+            static let mutable StatementPrinter : (Statement -> string) option = None
+            static member Set (printer : Statement -> string) = StatementPrinter <- Some printer
+            static member Print (st : Statement) =
+                match StatementPrinter with
+                | None          -> sprintf "%A" st
+                | Some printer  -> printer st
+        end
 
     // Helper types that are not exported as statements
 
@@ -946,3 +916,377 @@ module Statements =
     and NumericalRestrictions           = RangeStatement
     and StringRestrictions              = (LengthStatement option)  * (PatternStatement list)
     and UnionSpecification              = TypeStatement list
+
+    (*
+     * End of Statement and related definitions
+     *)
+
+    /// Helper methods for the ActionBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ActionBodyStatement =
+        let Translate = function
+        | ActionBodyStatement.IfFeature     st -> Statement.IfFeature   st
+        | ActionBodyStatement.Status        st -> Statement.Status      st
+        | ActionBodyStatement.Description   st -> Statement.Description st
+        | ActionBodyStatement.Reference     st -> Statement.Reference   st
+        | ActionBodyStatement.TypeDef       st -> Statement.TypeDef     st
+        | ActionBodyStatement.Grouping      st -> Statement.Grouping    st
+        | ActionBodyStatement.Input         st -> Statement.Input       st
+        | ActionBodyStatement.Output        st -> Statement.Output      st
+        | ActionBodyStatement.Unknown       st -> Statement.Unknown     st
+
+    /// Helper methods for the AnyDataBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module AnyDataBodyStatement =
+
+        let Translate = function
+        | AnyDataBodyStatement.When         st -> Statement.When        st
+        | AnyDataBodyStatement.IfFeature    st -> Statement.IfFeature   st
+        | AnyDataBodyStatement.Must         st -> Statement.Must        st
+        | AnyDataBodyStatement.Config       st -> Statement.Config      st
+        | AnyDataBodyStatement.Mandatory    st -> Statement.Mandatory   st
+        | AnyDataBodyStatement.Status       st -> Statement.Status      st
+        | AnyDataBodyStatement.Description  st -> Statement.Description st
+        | AnyDataBodyStatement.Reference    st -> Statement.Reference   st
+        | AnyDataBodyStatement.Unknown      st -> Statement.Unknown     st
+
+    /// Helper methods for the AnyXmlBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module AnyXmlBodyStatement =
+
+        let Translate = function
+        | AnyXmlBodyStatement.When          st -> Statement.When        st
+        | AnyXmlBodyStatement.IfFeature     st -> Statement.IfFeature   st
+        | AnyXmlBodyStatement.Must          st -> Statement.Must        st
+        | AnyXmlBodyStatement.Config        st -> Statement.Config      st
+        | AnyXmlBodyStatement.Mandatory     st -> Statement.Mandatory   st
+        | AnyXmlBodyStatement.Status        st -> Statement.Status      st
+        | AnyXmlBodyStatement.Description   st -> Statement.Description st
+        | AnyXmlBodyStatement.Reference     st -> Statement.Reference   st
+        | AnyXmlBodyStatement.Unknown       st -> Statement.Unknown     st
+
+    /// Helper methods for the ArgumentBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ArgumentBodyStatement =
+
+        let Translate = function
+        | ArgumentBodyStatement.YinElement  st -> Statement.YinElement  st
+        | ArgumentBodyStatement.Unknown     st -> Statement.Unknown     st
+
+    /// Helper methods for the AugmentBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module AugmentBodyStatement =
+
+        let Translate = function
+        | AugmentBodyStatement.When          st -> Statement.When           st
+        | AugmentBodyStatement.IfFeature     st -> Statement.IfFeature      st
+        | AugmentBodyStatement.Status        st -> Statement.Status         st
+        | AugmentBodyStatement.Description   st -> Statement.Description    st
+        | AugmentBodyStatement.Reference     st -> Statement.Reference      st
+        | AugmentBodyStatement.Container     st -> Statement.Container      st
+        | AugmentBodyStatement.Leaf          st -> Statement.Leaf           st
+        | AugmentBodyStatement.LeafList      st -> Statement.LeafList       st
+        | AugmentBodyStatement.List          st -> Statement.List           st
+        | AugmentBodyStatement.Choice        st -> Statement.Choice         st
+        | AugmentBodyStatement.AnyData       st -> Statement.AnyData        st
+        | AugmentBodyStatement.AnyXml        st -> Statement.AnyXml         st
+        | AugmentBodyStatement.Uses          st -> Statement.Uses           st
+        | AugmentBodyStatement.Case          st -> Statement.Case           st
+        | AugmentBodyStatement.Action        st -> Statement.Action         st
+        | AugmentBodyStatement.Notification  st -> Statement.Notification   st
+        | AugmentBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the BelongsToBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module BelongsToBodyStatement =
+
+        let Translate = function
+        | BelongsToBodyStatement.Prefix     st -> Statement.Prefix      st
+        | BelongsToBodyStatement.Unknown    st -> Statement.Unknown     st
+
+    /// Helper methods for the Statement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module Statement =
+        open System.Text
+
+        /// Retrieves the extra options that may appear at the end of the statement;
+        /// If the statement has a statement specific body, then this call will return None,
+        /// and the caller will need to apply per-statement processing to retrieve those statements.
+        let Options (this : Statement) =
+            match this with
+            | Statement.Base                (_, options)
+            | Statement.Config              (_, options)
+            | Statement.Contact             (_, options)
+            | Statement.Default             (_, options)
+            | Statement.Description         (_, options)
+            | Statement.DeviateNotSupported options
+            | Statement.ErrorAppTag         (_, options)
+            | Statement.ErrorMessage        (_, options)
+            | Statement.FractionDigits      (_, options)
+            | Statement.IfFeature           (_, options)
+            | Statement.Key                 (_, options)
+            | Statement.Mandatory           (_, options)
+            | Statement.MaxElements         (_, options)
+            | Statement.MinElements         (_, options)
+            | Statement.Modifier            (_, options)
+            | Statement.Namespace           (_, options)
+            | Statement.OrderedBy           (_, options)
+            | Statement.Organization        (_, options)
+            | Statement.Path                (_, options)
+            | Statement.Position            (_, options)
+            | Statement.Prefix              (_, options)
+            | Statement.Presence            (_, options)
+            | Statement.Reference           (_, options)
+            | Statement.RevisionDate        (_, options)
+            | Statement.RequireInstance     (_, options)
+            | Statement.Status              (_, options)
+            | Statement.Units               (_, options)
+            | Statement.Unique              (_, options)
+            | Statement.Value               (_, options)
+            | Statement.YangVersion         (_, options)
+            | Statement.YinElement          (_, options)
+                -> options
+
+            // The following have custom options; the caller need to treat them specially
+            | Statement.Action              (_, _)
+            | Statement.AnyData             (_, _)
+            | Statement.AnyXml              (_, _)
+            | Statement.Augment             (_, _)
+            | Statement.Argument            (_, _)
+            | Statement.BelongsTo           (_, _)
+            | Statement.Bit                 (_, _)
+            | Statement.Case                (_, _)
+            | Statement.Choice              (_, _)
+            | Statement.Container           (_, _)
+            | Statement.DeviateAdd          _
+            | Statement.DeviateDelete       _
+            | Statement.DeviateReplace      _
+            | Statement.Deviation           (_, _)
+            | Statement.Enum                (_, _)
+            | Statement.Extension           (_, _)
+            | Statement.Feature             (_, _)
+            | Statement.Grouping            (_, _)
+            | Statement.Identity            (_, _)
+            | Statement.Import              (_, _)
+            | Statement.Include             (_, _)
+            | Statement.Input               _
+            | Statement.Leaf                (_, _)
+            | Statement.LeafList            (_, _)
+            | Statement.Length              (_, _)
+            | Statement.List                (_, _)
+            | Statement.Module              _
+            | Statement.Must                (_, _)
+            | Statement.Notification        (_, _)
+            | Statement.Output              _
+            | Statement.Pattern             (_, _)
+            | Statement.Range               (_, _)
+            | Statement.Rpc                 (_, _)
+            | Statement.Refine              (_, _)
+            | Statement.Revision            (_, _)
+            | Statement.Submodule           _
+            | Statement.Type                (_, _, _)
+            | Statement.TypeDef             (_, _)
+            | Statement.Uses                (_, _)
+            | Statement.UsesAugment         (_, _)
+            | Statement.When                (_, _)
+                -> None
+
+            | Statement.Unknown _
+            | Statement.Unparsed _
+                -> None
+
+        let Keyword (this : Statement) =
+            match this with
+            | Statement.Action _                -> "action"
+            | Statement.AnyData _               -> "anydata"
+            | Statement.AnyXml _                -> "anyxml"
+            | Statement.Argument _              -> "argument"
+            | Statement.Augment _               -> "augment"
+            | Statement.Base _                  -> "base"
+            | Statement.BelongsTo _             -> "belongs-to"
+            | Statement.Bit _                   -> "bit"
+            | Statement.Case _                  -> "case"
+            | Statement.Choice _                -> "choice"
+            | Statement.Config _                -> "config"
+            | Statement.Contact _               -> "contact"
+            | Statement.Container _             -> "container"
+            | Statement.Default _               -> "default"
+            | Statement.Description _           -> "description"
+            | Statement.DeviateAdd _            -> "deviate add"
+            | Statement.DeviateDelete _         -> "deviate delete"
+            | Statement.DeviateNotSupported _   -> "deviate not-supported"
+            | Statement.DeviateReplace _        -> "deviate replace"
+            | Statement.Deviation _             -> "deviation"
+            | Statement.Enum _                  -> "enum"
+            | Statement.ErrorAppTag _           -> "error-app-tag"
+            | Statement.ErrorMessage _          -> "error-message"
+            | Statement.Extension _             -> "extension"
+            | Statement.Feature _               -> "feature"
+            | Statement.FractionDigits _        -> "fraction-digits"
+            | Statement.Grouping _              -> "grouping"
+            | Statement.Identity _              -> "identity"
+            | Statement.IfFeature _             -> "if-feature"
+            | Statement.Import _                -> "import"
+            | Statement.Include _               -> "include"
+            | Statement.Input _                 -> "input"
+            | Statement.Key _                   -> "key"
+            | Statement.Leaf _                  -> "leaf"
+            | Statement.LeafList _              -> "leaf-list"
+            | Statement.Length _                -> "length"
+            | Statement.List _                  -> "list"
+            | Statement.Mandatory _             -> "mandatory"
+            | Statement.MaxElements _           -> "max-elements"
+            | Statement.MinElements _           -> "min-elements"
+            | Statement.Modifier _              -> "modifier"
+            | Statement.Module _                -> "module"
+            | Statement.Must _                  -> "must"
+            | Statement.Namespace _             -> "namespace"
+            | Statement.Notification _          -> "notification"
+            | Statement.OrderedBy _             -> "ordered-by"
+            | Statement.Organization _          -> "organization"
+            | Statement.Output _                -> "output"
+            | Statement.Path _                  -> "path"
+            | Statement.Pattern _               -> "pattern"
+            | Statement.Position _              -> "position"
+            | Statement.Prefix _                -> "prefix"
+            | Statement.Presence _              -> "presence"
+            | Statement.Range _                 -> "range"
+            | Statement.Reference _             -> "reference"
+            | Statement.Refine _                -> "refine"
+            | Statement.RequireInstance _       -> "require-instance"
+            | Statement.Revision _              -> "revision"
+            | Statement.RevisionDate _          -> "revision-date"
+            | Statement.Rpc _                   -> "rpc"
+            | Statement.Status _                -> "status"
+            | Statement.Submodule _             -> "submodule"
+            | Statement.Type _                  -> "type"
+            | Statement.TypeDef _               -> "typedef"
+            | Statement.Unique _                -> "unique"
+            | Statement.Units _                 -> "units"
+            | Statement.Uses _                  -> "uses"
+            // The following uses the same keyword as Uses.
+            | Statement.UsesAugment _           -> "uses"
+            | Statement.Value _                 -> "value"
+            | Statement.When _                  -> "when"
+            | Statement.YangVersion _           -> "yang-version"
+            | Statement.YinElement _            -> "yin-element"
+            | Statement.Unknown (id, _, _)      -> id.ToString()
+            | Statement.Unparsed (id, _, _)     -> id.ToString()
+
+        let rec internal print (sb : StringBuilder, tabs : int) (this : Statement) =
+            let escape = [| ' '; '\t'; '\r'; '\n'; ';'; '{'; '}'; '@'; ':' |]
+
+            /// Print string
+            let ps (input : string) =
+                if input.IndexOfAny(escape) > 0 then Printf.bprintf sb "\"%s\"" input
+                else Printf.bprintf sb "%s" input
+
+            /// Print string and end line
+            let pse (input : string) = ps input; Printf.bprintf sb ";"
+
+            /// Print identifier
+            let psi (id : Identifier) = ps (id.ToString())
+
+            /// Print space
+            let sp () = ps " "
+
+            /// Print new line
+            let nl () = Printf.bprintf sb "\n%s" (String.replicate tabs "\t")
+
+            /// Print string in new line
+            let psnl (input : string) =
+                Printf.bprintf sb "\n"
+                Printf.bprintf sb "%s%s" (String.replicate tabs "\t") input
+
+            /// Print optional string
+            let pso (input : string option) =
+                match input with
+                | Some str  -> ps str
+                | None      -> ps ""
+
+            /// Print generic argument
+            let psa (argument : 'a) = Printf. bprintf sb "%A" argument
+
+            /// Print end of statement (';') or block
+            let pb (options : ExtraStatements) =
+                match options with
+                | None          -> pse ""
+                | Some block    ->
+                    ps " {"
+                    block |> List.iter (fun s -> print (sb, tabs+1) s; nl ())
+                    psnl "}\n"
+
+            /// Print optional block of statements
+            let pbo (translate : 'T -> Statement) (block : 'T list option) =
+                match block with
+                | None -> pse ""
+                | Some block ->
+                    if block.Length = 0 then pse " {}"
+                    else
+                        pse " {"
+                        block |> List.map translate |> List.iter (fun st -> print (sb, tabs + 1) st; nl ())
+                        pse "}"
+
+            /// Print generic block of statement
+            let pbt (translate : 'T -> Statement) (block : 'T list) =
+                pse " {"
+                block |> List.map translate |> List.iter (fun st -> print (sb, tabs + 1) st; nl ())
+                pse "}"
+
+            let keyword = Keyword this
+            ps keyword; sp ()
+
+            match this with
+            //| Statement.Config              (s, block)
+            | Statement.Contact             (s, block)
+            //| Statement.Default             (s, block)
+            | Statement.Description         (s, block)
+            | Statement.ErrorAppTag         (s, block)
+            | Statement.ErrorMessage        (s, block)
+            //| Statement.FractionDigits      (s, block)
+            //| Statement.IfFeature           (s, block)
+            //| Statement.Key                 (s, block)
+            //| Statement.Mandatory           (s, block)
+            //| Statement.MaxElements         (s, block)
+            //| Statement.MinElements         (s, block)
+            //| Statement.Modifier            (s, block)
+            //| Statement.OrderedBy           (s, block)
+            | Statement.Organization        (s, block)
+            //| Statement.Path                (s, block)
+            //| Statement.Position            (s, block)
+            | Statement.Prefix              (s, block)
+            //| Statement.Presence            (s, block)
+            | Statement.Reference           (s, block)
+            //| Statement.RevisionDate        (s, block)
+            //| Statement.RequireInstance     (s, block)
+            | Statement.Units               (s, block)
+            //| Statement.Unique              (s, block)
+            //| Statement.Value               (s, block)
+            //| Statement.YinElement          (s, block)
+                                                                        -> ps s; pb block
+
+            | Statement.Action                              (id, block) -> psi id; pbo ActionBodyStatement.Translate    block
+            | Statement.AnyData                             (id, block) -> psi id; pbo AnyDataBodyStatement.Translate   block
+            | Statement.AnyXml                              (id, block) -> psi id; pbo AnyXmlBodyStatement.Translate    block
+            | Statement.Argument                            (id, block) -> psi id; pbo ArgumentBodyStatement.Translate  block
+            | Statement.Augment                             (au, block) -> psa au; pbt AugmentBodyStatement.Translate block
+            | Statement.BelongsTo                           (bt, block) -> psa bt; pbt BelongsToBodyStatement.Translate block
+
+            | Statement.Status                          (status, block) -> psa status;  pb block
+            | Statement.Namespace                          (uri, block) -> psa uri;     pb block
+            | Statement.YangVersion                    (version, block) -> psa version; pb block
+
+            | Statement.Base                                (_, block)
+            | Statement.DeviateNotSupported                     block   -> pb block
+
+            | Statement.Unknown                         (_, arg, body)
+            | Statement.Unparsed                        (_, arg, body)  -> pso arg; pb body
+
+        /// <summary>
+        /// Get a string version of the statement (in YANG format)
+        /// </summary>
+        /// <param name="statement">The statement to print</param>
+        let ToString statement = let sb = StringBuilder () in print (sb, 0) statement ; sb.ToString()
+
+    do
+        Printer.Set Statement.ToString
