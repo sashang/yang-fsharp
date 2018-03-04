@@ -68,23 +68,45 @@ module Arguments =
                 | :? Date as other' -> (this :> IComparable<Date>).CompareTo(other')
                 | _                 -> invalidArg "other" "cannot compare values of different types"
 
+    // TODO: Fill details for deviation-arg
+    type Deviation = | NA
+
+    // TODO: Fill details for key-arg
     type Key = Identifier list
+
+    // TODO: Fill detail of length-arg
+    type Length = | NA
 
     type MaxValue =
     | Unbounded
     // TODO: The MaxValue must be greater than zero (and never zero)
     | Bounded   of uint64
 
+    // TODO: Fill details of modifier-arg
+    type Modifier =
+    | InvertMatch
+
+    // TODO: Fill help methods for OrderedBy
     type OrderedBy =
     | User
     | System
+
+    // TODO: Fill definition for Path
+    type Path = | NA
 
     /// Definition of Range ([RFC 7950, p. 204])
     // TODO: Expand definition of Range
     type Range = NA
 
+    /// Captures the 'refine-arg' definition ([RFC 7950, p. 198])
+    // TODO: Expand definition of Refine
+    type Refine = NA
+
+    // TODO: Fill helper methods for Status
     type Status =
     | Current
     | Obsolete
     | Deprecated
 
+    // TODO: Fill definition of unique-arg
+    type Unique = | NA
