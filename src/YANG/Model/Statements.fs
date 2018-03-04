@@ -6,6 +6,7 @@ namespace Yang.Model
 module Statements =
     open System
     open Arguments
+    open System.ComponentModel
 
     (* The following captures the main part of the YANG model.
      * It tries to be reasonable close to [RFC 7950, Section 14, pp.184-210].
@@ -30,19 +31,28 @@ module Statements =
      * It is not particularly convenient to define lists that have at least one item, and we instead use lists.
      * The caller/user needs to verify cardinality --- in other words, cardinality constraints are not enforced
      * below.
+     *
+     * In some cases, the YANG model specifies mutually exclusive alternatives. These are not captured in
+     * the model below, instead we allow both alternatives. The caller needs to apply extra check to guarantee
+     * that the YANG model requirements are met.
      *)
 
     /// Available Yang statement definitions
     [<StructuredFormatDisplay("{PrettyPrint}")>]
     type Statement =
+    | Action        of ActionStatement
     | AnyData       of AnyDataStatement
     | AnyXml        of AnyXmlStatement
     | Argument      of ArgumentStatement
+    | Augment       of AugmentStatement
     | Base          of BaseStatement
     | BelongsTo     of BelongsToStatement
     | Bit           of BitStatement
+    | Case          of CaseStatement
+    | Choice        of ChoiceStatement
     | Config        of ConfigStatement
     | Contact       of ContactStatement
+    | Container     of ContainerStatement
     | Default       of DefaultStatement
     | Description   of DescriptionStatement
     | DeviateAdd    of DeviateAddStatement
@@ -56,22 +66,27 @@ module Statements =
     | Extension     of ExtensionStatement
     | Feature       of FeatureStatement
     | FractionDigits of FractionDigitsStatement
+    | Grouping      of GroupingStatement
     | Identity      of IdentityStatement
     | IfFeature     of IfFeatureStatement
     | Import        of ImportStatement
     | Include       of IncludeStatement
+    | Input         of InputStatement
     | Key           of KeyStatement
     | Leaf          of LeafStatement
     | LeafList      of LeafListStatement
     | Length        of LengthStatement
+    | List          of ListStatement
     | Mandatory     of MandatoryStatement
     | MaxElements   of MaxElementsStatement
     | MinElements   of MinElementsStatement
     | Modifier      of ModifierStatement
     | Must          of MustStatement
     | Namespace     of NamespaceStatement
+    | Notification  of NotificationStatement
     | OrderedBy     of OrderedByStatement
     | Organization  of OrganizationStatement
+    | Output        of OutputStatement
     | Path          of PathStatement
     | Pattern       of PatternStatement
     | Position      of PositionStatement
@@ -82,18 +97,21 @@ module Statements =
     | Refine        of RefineStatement
     | Revision      of RevisionStatement
     | RevisionDate  of RevisionDateStatement
+    | Rpc           of RpcStatement
     | RequireInstance of RequireInstanceStatement
     | Status        of StatusStatement
     | Type          of TypeStatement
     | TypeDef       of TypeDefStatement
     | Unique        of UniqueStatement
     | Units         of UnitsStatement
+    | Uses          of UsesStatement
     | Value         of ValueStatement
     | When          of WhenStatement
     | YangVersion   of YangVersionStatement
     | YinElement    of YinElementStatement
     | Unknown       of UnknownStatement
     | Unparsed      of Identifier:Identifier * Argument:(string option) * Body:(Statement list option)
+    | UsesAugment   of UsesAugmentStatement
     with
         /// Retrieves the extra options that may appear at the end of the statement;
         /// If the statement has a statement specific body, then this call will return None,
@@ -134,11 +152,16 @@ module Statements =
                 -> options
 
             // The following have custom options; the caller need to treat them specially
+            | Action        (_, _)
             | AnyData       (_, _)
             | AnyXml        (_, _)
+            | Augment       (_, _)
             | Argument      (_, _)
             | BelongsTo     (_, _)
             | Bit           (_, _)
+            | Case          (_, _)
+            | Choice        (_, _)
+            | Container     (_, _)
             | DeviateAdd     _
             | DeviateDelete  _
             | DeviateReplace _
@@ -146,19 +169,27 @@ module Statements =
             | Enum          (_, _)
             | Extension     (_, _)
             | Feature       (_, _)
+            | Grouping      (_, _)
             | Identity      (_, _)
             | Import        (_, _)
             | Include       (_, _)
+            | Input         _
             | Leaf          (_, _)
             | LeafList      (_, _)
             | Length        (_, _)
+            | List          (_, _)
             | Must          (_, _)
+            | Notification  (_, _)
+            | Output        _
             | Pattern       (_, _)
             | Range         (_, _)
+            | Rpc           (_, _)
             | Refine        (_, _)
             | Revision      (_, _)
             | Type          (_, _, _)
             | TypeDef       (_, _)
+            | Uses          (_, _)
+            | UsesAugment   (_, _)
             | When          (_, _)
                 -> None
 
@@ -168,14 +199,19 @@ module Statements =
 
         member this.Identifier =
             match this with
+            | Action _          -> "action"
             | AnyData _         -> "anydata"
             | AnyXml _          -> "anyxml"
             | Argument _        -> "argument"
+            | Augment _         -> "augment"
             | Base _            -> "base"
             | BelongsTo _       -> "belongs-to"
             | Bit _             -> "bit"
+            | Case _            -> "case"
+            | Choice _          -> "choice"
             | Config _          -> "config"
             | Contact _         -> "contact"
+            | Container _       -> "container"
             | Default _         -> "default"
             | Description _     -> "description"
             | DeviateAdd _      -> "deviate add"
@@ -189,22 +225,27 @@ module Statements =
             | Extension _       -> "extension"
             | Feature _         -> "feature"
             | FractionDigits _  -> "fraction-digits"
+            | Grouping _        -> "grouping"
             | Identity _        -> "identity"
             | IfFeature _       -> "if-feature"
             | Import _          -> "import"
             | Include _         -> "include"
+            | Input _           -> "input"
             | Key _             -> "key"
             | Leaf _            -> "leaf"
             | LeafList _        -> "leaf-list"
             | Length _          -> "length"
+            | List _            -> "list"
             | Mandatory _       -> "mandatory"
             | MaxElements _     -> "max-elements"
             | MinElements _     -> "min-elements"
             | Modifier _        -> "modifier"
             | Must _            -> "must"
             | Namespace _       -> "namespace"
+            | Notification _    -> "notification"
             | OrderedBy _       -> "ordered-by"
             | Organization _    -> "organization"
+            | Output _          -> "output"
             | Path _            -> "path"
             | Pattern _         -> "pattern"
             | Position _        -> "position"
@@ -216,11 +257,15 @@ module Statements =
             | RequireInstance _ -> "require-instance"
             | Revision _        -> "revision"
             | RevisionDate _    -> "revision-date"
+            | Rpc _             -> "rpc"
             | Status _          -> "status"
             | Type _            -> "type"
             | TypeDef _         -> "typedef"
             | Unique _          -> "unique"
             | Units _           -> "units"
+            | Uses _            -> "uses"
+            // The following uses the same keyword as Uses.
+            | UsesAugment _     -> "uses"
             | Value _           -> "value"
             | When _            -> "when"
             | YangVersion _     -> "yang-version"
@@ -272,6 +317,18 @@ module Statements =
     /// Short name for the extra statements that may appear
     and ExtraStatements         = Statement list option
 
+    and ActionBodyStatement     =
+    | IfFeature     of IfFeatureStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    | TypeDef       of TypeDefStatement
+    | Grouping      of GroupingStatement
+    | Input         of InputStatement
+    | Output        of OutputStatement
+    | Unknown       of UnknownStatement
+    /// Captures the 'action-stmt' statement from [RFC 7950, p. 200]
+    and ActionStatement         = Identifier            * (ActionBodyStatement list option)
     and AnyDataBodyStatement    =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -300,6 +357,28 @@ module Statements =
     | YinElement    of YinElementStatement
     | Unknown       of UnknownStatement
     and ArgumentStatement       = Identifier            * (ArgumentBodyStatement list option)
+    and AugmentBodyStatement    =
+    | When          of WhenStatement
+    | IfFeature     of IfFeatureStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Case          of CaseStatement
+    | Action        of ActionStatement
+    | Notification  of NotificationStatement
+    | Unknown       of UnknownStatement
+    /// Captures the 'anyxml-stmt' statement from [RFC 7950, p. 199]
+    and AugmentStatement        = Augment               * (AugmentBodyStatement list)
     and BaseStatement           = IdentifierReference   * ExtraStatements
     and BelongsToBodyStatement  =
     | Prefix        of PrefixStatement
@@ -313,8 +392,75 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     and BitStatement            = Identifier    * (BitBodyStatement list option)
+    and CaseBodyStatement       =
+    | When          of WhenStatement
+    | IfFeature     of IfFeatureStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Unknown       of UnknownStatement
+    /// Captures the 'case-stmt' statement from [RFC 7950, p. 196].
+    and CaseStatement           = Identifier    * (CaseBodyStatement list option)
+    and ChoiceBodyStatement     =
+    | When          of WhenStatement
+    | IfFeature     of IfFeatureStatement
+    | Default       of DefaultStatement
+    | Config        of ConfigStatement
+    | Mandatory     of MandatoryStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    // short-case-stmt
+    | Choice        of ChoiceStatement
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    // end of short-case-stmt
+    | Case          of CaseStatement
+    | Unknown       of UnknownStatement
+    /// Captures the 'choice-stmt' statement from [RFC 7950, p. 196].
+    and ChoiceStatement         = Identifier    * (ChoiceBodyStatement list option)
     and ConfigStatement         = bool          * ExtraStatements
     and ContactStatement        = string        * ExtraStatements
+    and ContainerBodyStatement  =
+    | When          of WhenStatement
+    | IfFeature     of IfFeatureStatement
+    | Must          of MustStatement
+    | Presence      of PresenceStatement
+    | Config        of ConfigStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    | TypeDef       of TypeDefStatement
+    | Grouping      of GroupingStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Action        of ActionStatement
+    | Notification  of NotificationStatement
+    | Unknown       of UnknownStatement
+    /// Captures the 'container-stmt' statement from [RFC 7950, p. 193].
+    and ContainerStatement      = Identifier    * (ContainerBodyStatement list option)
     and DefaultStatement        = string        * ExtraStatements
     and DescriptionStatement    = string        * ExtraStatements
     and DeviateAddBodyStatement =
@@ -380,8 +526,30 @@ module Statements =
     | Status        of StatusStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
+    | Unknown       of UnknownStatement
     and FeatureStatement        = Identifier            * (FeatureBodyStatement list option)
     and FractionDigitsStatement = byte                  * ExtraStatements
+    and GroupingBodyStatement =
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    | TypeDef       of TypeDefStatement
+    | Grouping      of GroupingStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Action        of ActionStatement
+    | Notification  of NotificationStatement
+    | Unknown       of UnknownStatement
+    /// Captures the 'grouping-stmt' statement from [RFC 7950, p. 193]
+    and GroupingStatement       = Identifier            * (GroupingBodyStatement list option)
     and IdentityBodyStatement   =
     | IfFeature     of IfFeatureStatement
     | Base          of BaseStatement
@@ -404,6 +572,23 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     and IncludeStatement        = Identifier    * (IncludeBodyStatement list option)
+    and InputBodyStatement      =
+    | Must          of MustStatement
+    | TypeDef       of TypeDefStatement
+    | Grouping      of GroupingStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Unknown       of UnknownStatement
+    /// Captures the 'input-stmt' statement from [RFC 7950, p. 200]
+    and InputStatement          = InputBodyStatement list
     and KeyStatement            = Key           * ExtraStatements
     and LeafBodyStatement       =
     | When          of WhenStatement
@@ -442,6 +627,36 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     and LengthStatement         = Length        * (LengthBodyStatement list option)
+    and ListBodyStatement       =
+    | When          of WhenStatement
+    | IfFeature     of IfFeatureStatement
+    | Must          of MustStatement
+    | Key           of KeyStatement
+    | Unique        of UniqueStatement
+    | Config        of ConfigStatement
+    | MinElements   of MinElementsStatement
+    | MaxElements   of MaxElementsStatement
+    | OrderedBy     of OrderedByStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    | TypeDef       of TypeDefStatement
+    | Grouping      of GroupingStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Action        of ActionStatement
+    | Notification  of NotificationStatement
+    | Unknown       of UnknownStatement
+    /// Captures the 'list-stmt' statement from [RFC 7950, p. 195]
+    and ListStatement           = Identifier    * (ListBodyStatement list)
     and MandatoryStatement      = bool          * ExtraStatements
     and MaxElementsStatement    = MaxValue      * ExtraStatements
     and MinElementsStatement    = uint32        * ExtraStatements
@@ -454,8 +669,46 @@ module Statements =
     | Unknown       of UnknownStatement
     and MustStatement           = string        * (MustBodyStatement list option)
     and NamespaceStatement      = Uri           * ExtraStatements
+    and NotificationBodyStatement =
+    | IfFeature     of IfFeatureStatement
+    | Must          of MustStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    | TypeDef       of TypeDefStatement
+    | Grouping      of GroupingStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Unknown       of UnknownStatement
+    /// Captures the 'notification-stmt' statement from [RFC 7950, p. 200]
+    and NotificationStatement   = Identifier    * (NotificationBodyStatement list option)
     and OrderedByStatement      = OrderedBy     * ExtraStatements
     and OrganizationStatement   = string        * ExtraStatements
+    and OutputBodyStatement     =
+    | Must          of MustStatement
+    | TypeDef       of TypeDefStatement
+    | Grouping      of GroupingStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Unknown       of UnknownStatement
+    /// Captures the 'output-stmt' statement from [RFC 7950, p. 200]
+    and OutputStatement         = OutputBodyStatement list
     and PathStatement           = (Path list)   * ExtraStatements
     and PatternBodyStatement    =
     | Modifier      of ModifierStatement
@@ -498,6 +751,18 @@ module Statements =
     and RevisionStatement       = Arguments.Date    * (RevisionBodyStatement list option)
     and RevisionDateStatement   = Arguments.Date    * ExtraStatements
     and RequireInstanceStatement = bool             * ExtraStatements
+    and RpcBodyStatement        =
+    | IfFeature     of IfFeatureStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    | TypeDef       of TypeDefStatement
+    | Grouping      of GroupingStatement
+    | Input         of InputStatement
+    | Output        of OutputStatement
+    | Unknown       of UnknownStatement
+    /// Captures the 'rpc-stmt' statement from [RFC 7950, p. 199]
+    and RpcStatement            = Identifier        * (RpcBodyStatement list option)
     and StatusStatement         = Status            * ExtraStatements
     and TypeBodyStatement       =
     | NumericalRestrictions             of NumericalRestrictions
@@ -519,10 +784,43 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     and TypeDefStatement        = Identifier        * (TypeDefBodyStatement list option)
-    /// Captures a type-stmt [RFC 7950, p.188]. If there are unknown statements, then they precede the TypeBodyStatement
+    /// Captures the type-stmt [RFC 7950, p.188]. If there are unknown statements, then they precede the TypeBodyStatement
     and TypeStatement           = IdentifierReference   * (TypeBodyStatement option) * (UnknownStatement list option)
     and UniqueStatement         = Unique            * ExtraStatements
     and UnitsStatement          = string            * ExtraStatements
+    and UsesBodyStatement       =
+    | When          of WhenStatement
+    | IfFeature     of IfFeatureStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    | Refine        of RefineStatement
+    | UsesAugment   of UsesAugmentStatement
+    | Unknown       of UnknownStatement
+    /// Captures the uses-stmt [RFC 7950, p.197].
+    and UsesStatement           = IdentifierReference   * (UsesBodyStatement list option)
+    and UsesAugmentBodyStatement =
+    | When          of WhenStatement
+    | IfFeature     of IfFeatureStatement
+    | Status        of StatusStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Case          of CaseStatement
+    | Action        of ActionStatement
+    | Notification  of NotificationStatement
+    | Unknown       of UnknownStatement
+    /// Captures the uses-augment-stmt [RFC 7950, p.198].
+    and UsesAugmentStatement    = UsesAugment       * (UsesAugmentBodyStatement list)
     and ValueStatement          = int64             * ExtraStatements
     and WhenBodyStatement       =
     | Description   of DescriptionStatement
@@ -531,6 +829,65 @@ module Statements =
     and WhenStatement           = string            * (WhenBodyStatement list option)
     and YangVersionStatement    = Version           * ExtraStatements
     and YinElementStatement     = bool              * ExtraStatements
+
+    (* DataDef should be replaced by the following:
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    *)
+
+    (* Body should be replaced by the following:
+    // body-stmts
+    | Extension    of ExtensionStatement
+    | Feature      of FeatureStatement
+    | Identity     of IdentityStatement
+    | TypeDef      of TypeDefStatement
+    | Grouping     of GroupingStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Augment       of AugmentStatement
+    | Rpc           of RpcStatement
+    | Notification  of NotificationStatement
+    | Deviation     of DeviationStatement
+    // end of body-stmts
+     *)
+
+    (* Module header statements
+    // module-header-stmts
+    | YangVersion   of YangVersionStatement
+    | Namespace     of NamespaceStatement
+    | Prefix        of PrefixStatement
+    // end of module-header-stmts
+    *)
+
+    (* Sub-module header statements
+    // submodule-header-stmts
+    | YangVersion   of YangVersionStatement
+    | BelongsTo     of BelongsToStatement
+    // end of submodule-header-stmts
+    *)
+
+    (* Linkage header statements
+    // linkage-stmts
+    | Import        of ImportStatement
+    | Include       of IncludeStatement
+    // end of linkage-stmts
+     *)
 
     and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
 

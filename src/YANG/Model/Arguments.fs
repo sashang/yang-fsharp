@@ -6,6 +6,9 @@ namespace Yang.Model
 module Arguments =
     open System
 
+    // TODO: Fill in the details of augment-arg
+    type Augment = | NA
+
     // Below we define a custom date field. We could have used the system DateTime,
     // but that gives more information (time) that specified by the grammar.
 
@@ -107,6 +110,9 @@ module Arguments =
     | Current
     | Obsolete
     | Deprecated
+
+    // TODO: Fill definition of uses-augment-arg
+    type UsesAugment = | NA
 
     // TODO: Fill definition of unique-arg
     type Unique = | NA
