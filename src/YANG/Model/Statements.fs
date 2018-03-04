@@ -7,6 +7,8 @@ module Statements =
     open System
     open Arguments
     open System.ComponentModel
+    open System.Runtime.Remoting.Messaging
+    open System.Reflection
 
     (* The following captures the main part of the YANG model.
      * It tries to be reasonable close to [RFC 7950, Section 14, pp.184-210].
@@ -81,6 +83,7 @@ module Statements =
     | MaxElements   of MaxElementsStatement
     | MinElements   of MinElementsStatement
     | Modifier      of ModifierStatement
+    | Module        of ModuleStatement
     | Must          of MustStatement
     | Namespace     of NamespaceStatement
     | Notification  of NotificationStatement
@@ -100,6 +103,7 @@ module Statements =
     | Rpc           of RpcStatement
     | RequireInstance of RequireInstanceStatement
     | Status        of StatusStatement
+    | Submodule     of SubmoduleStatement
     | Type          of TypeStatement
     | TypeDef       of TypeDefStatement
     | Unique        of UniqueStatement
@@ -178,6 +182,7 @@ module Statements =
             | LeafList      (_, _)
             | Length        (_, _)
             | List          (_, _)
+            | Module        _
             | Must          (_, _)
             | Notification  (_, _)
             | Output        _
@@ -186,6 +191,7 @@ module Statements =
             | Rpc           (_, _)
             | Refine        (_, _)
             | Revision      (_, _)
+            | Submodule     _
             | Type          (_, _, _)
             | TypeDef       (_, _)
             | Uses          (_, _)
@@ -240,6 +246,7 @@ module Statements =
             | MaxElements _     -> "max-elements"
             | MinElements _     -> "min-elements"
             | Modifier _        -> "modifier"
+            | Module _          -> "module"
             | Must _            -> "must"
             | Namespace _       -> "namespace"
             | Notification _    -> "notification"
@@ -259,6 +266,7 @@ module Statements =
             | RevisionDate _    -> "revision-date"
             | Rpc _             -> "rpc"
             | Status _          -> "status"
+            | Submodule _       -> "submodule"
             | Type _            -> "type"
             | TypeDef _         -> "typedef"
             | Unique _          -> "unique"
@@ -867,29 +875,66 @@ module Statements =
     // end of body-stmts
      *)
 
-    (* Module header statements
-    // module-header-stmts
-    | YangVersion   of YangVersionStatement
-    | Namespace     of NamespaceStatement
-    | Prefix        of PrefixStatement
-    // end of module-header-stmts
-    *)
+    /// This captures all user defined statements
+    and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
 
-    (* Sub-module header statements
-    // submodule-header-stmts
-    | YangVersion   of YangVersionStatement
-    | BelongsTo     of BelongsToStatement
-    // end of submodule-header-stmts
-    *)
+    // The following capture types to specify module and sub-module statements
 
-    (* Linkage header statements
-    // linkage-stmts
+    and ModuleHeaderStatements      = YangVersionStatement * NamespaceStatement * PrefixStatement
+    and SubmoduleHeaderStatements   = YangVersionStatement * BelongsToStatement
+    and LinkageBodyStatement        =
     | Import        of ImportStatement
     | Include       of IncludeStatement
-    // end of linkage-stmts
-     *)
+    and LinkageStatements           = LinkageBodyStatement list
+    and MetaBodyStatement           =
+    | Organization  of OrganizationStatement
+    | Contact       of ContactStatement
+    | Description   of DescriptionStatement
+    | Reference     of ReferenceStatement
+    | Unknown       of UnknownStatement
+    and MetaStatements              = MetaBodyStatement list
+    and BodyStatement               =
+    // body-stmts
+    | Extension    of ExtensionStatement
+    | Feature      of FeatureStatement
+    | Identity     of IdentityStatement
+    | TypeDef      of TypeDefStatement
+    | Grouping     of GroupingStatement
+    // data-def-stmt
+    | Container     of ContainerStatement
+    | Leaf          of LeafStatement
+    | LeafList      of LeafListStatement
+    | List          of ListStatement
+    | Choice        of ChoiceStatement
+    | AnyData       of AnyDataStatement
+    | AnyXml        of AnyXmlStatement
+    | Uses          of UsesStatement
+    // End of data-def-stmt
+    | Augment       of AugmentStatement
+    | Rpc           of RpcStatement
+    | Notification  of NotificationStatement
+    | Deviation     of DeviationStatement
+    // end of body-stmts
+    | Unknown       of UnknownStatement
 
-    and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
+    and ModuleStatement             = {
+        Name        : Identifier
+        Header      : ModuleHeaderStatements
+        Linkage     : LinkageStatements
+        Meta        : MetaStatements
+        Revision    : RevisionStatement list
+        Body        : BodyStatement list
+    }
+    and SubmoduleStatement          = {
+        Name        : Identifier
+        Header      : SubmoduleHeaderStatements
+        Linkage     : LinkageStatements
+        Meta        : MetaStatements
+        Revision    : RevisionStatement list
+        Body        : BodyStatement list
+    }
+
+    // Helper types that are not exported as statements
 
     and BinarySpecification             = LengthStatement option
     and BitsSpecification               = BitStatement list
