@@ -56,7 +56,7 @@
     <Compile Include="Utilities.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Comments.fs" />
-    <Compile Include="Tokens.fs" />
+    <Compile Include="Arguments.fs" />
     <Compile Include="Strings.fs" />
     <Compile Include="Generic.fs" />
     <Compile Include="Identifier.fs" />
@@ -66,8 +66,7 @@
     <Compile Include="Revisions.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Leaf.fs" />
-    <Compile Include="DataDefinitions.fs" />
-    <Compile Include="Body.fs" />
+    <Compile Include="BodyStatements.fs" />
     <Compile Include="Module.fs" />
     <Compile Include="Parser.fs" />
     <None Include="Playground.fsx" />
@@ -82,6 +81,13 @@
       <HintPath>E:\CxCache\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Model\Model.fsproj">
+      <Name>Model</Name>
+      <Project>{7ef9ecd7-2db7-482d-9cfe-cf705b6b31c2}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

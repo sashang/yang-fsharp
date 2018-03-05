@@ -6,6 +6,8 @@ namespace Yang.Parser
 module Module =
     open FParsec
     open System
+    open Yang.Model
+    open BodyStatements
 
     // The module statement is defined in RFC 7950, page 184:
     // module-stmt     = optsep module-keyword sep identifier-arg-str
@@ -57,86 +59,32 @@ module Module =
     //
     // TODO: Parsing unknown-statement declarations, see Note-03.
 
-    // TODO: define the type of imports
-    type Imports = string
-
-    // TODO: define the type of includes
-    type Includes = string
-
-    type Module =
-        {
-            // Module header statements
-
-            /// Name of module
-            Name : Identifier.Identifier
-
-            // Header information
-            Header : Header
-
-            // Linkage statements
-            Imports : Imports option
-            Includes : Includes option
-
-            // Meta statements
-            Meta : Meta option
-
-            // Revision statements
-            Revisions : Revision list option
-
-            // Rest of body statements
-            Statements : Body
-        }
-    with
-        /// Creates an empty (invalid) module
-        static member Empty = {
-            Name = Identifier.Identifier.MakeUnchecked "<empty>"
-            Header = Header.Empty
-
-            Imports = None
-            Includes = None
-
-            Meta = None
-            Revisions = None
-
-            Statements = []
-        }
-
-        /// Retrieve the most recent revision of the module
-        member this.CurrentRevision =
-            match this.Revisions with
-            | Some revisions -> Some (revisions |> List.maxBy (fun v -> v.Version))
-            | None           -> None
-
     /// Parser for the module statement
-    let parse_module<'a> : Parser<Module, 'a> =
+    let parse_module<'a> : Parser<ModuleStatement, 'a> =
         let parser =
             spaces .>> skipStringCI "module" .>> spaces >>.
             Identifier.parse_identifier .>> spaces .>>
             skipChar '{' .>> spaces .>>.
-            tuple4 parse_header (opt parse_meta) (opt parse_revision_list) parse_body .>>
+            tuple4 parse_header (opt parse_meta) (opt parse_revision_list) parse_body_statements .>>
             spaces .>> skipChar '}' .>> spaces
         parser |>> (
             fun (identifier, (header, meta, revision, body)) ->
                 // We need the two adjustments below, because the parsers
                 // are guaranteed to return a value, even if the values are empty.
 
-                let meta' =
-                    match meta with
-                    | None      -> None
-                    | Some v    -> if Object.ReferenceEquals(null, v) then None else meta
+                let meta' = match meta with | None -> [] | Some m -> m
+                let revision' = match revision with | None -> [] | Some r -> r
 
-                let revision' =
-                    match revision with
-                    | None
-                    | Some []   -> None
-                    | _         -> revision
-
-                { Module.Empty with
+                {
                     Name        = identifier
                     Header      = header
+                    Linkage     = []
                     Meta        = meta'
-                    Revisions   = revision'
-                    Statements  = body
+                    Revision    = revision'
+                    Body        = body
                 }
         )
+
+    let parse_module_as_statement<'a> : Parser<Statement, 'a> =
+        parse_module |>> Statement.Module
 

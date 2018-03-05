@@ -7,6 +7,7 @@ module Statements =
     open System
     open FParsec
     open Identifier
+    open Yang.Model
 
     // [RFC 7950, p. 202-204]
     //
@@ -33,113 +34,6 @@ module Statements =
 
     // TODO: Namespaces are hierarchical with colon as separator, e.g. urn:example:system
 
-    /// Available Yang statement definitions
-    [<StructuredFormatDisplay("{PrettyPrint}")>]
-    type Statement =
-    // Observe that many rules can be followed by blocks of unknown statements.
-    // We store the statements in those blocks in a special field called Options.
-    // Typically this should be empty.
-
-    /// Contact statement
-    | Contact       of ContactStatement
-    | Description   of DescriptionStatement
-    | ErrorAppTag   of ErrorAppTagStatement
-    | ErrorMessage  of ErrorMessageStatement
-    | Namespace     of NamespaceStatement
-    | Organization  of OrganizationStatement
-    | Prefix        of PrefixStatement
-    | Presence      of PresenceStatement
-    | Reference     of ReferenceStatement
-    | YangVersion   of YangVersionStatement
-    | Unknown       of UnknownStatement
-    | Unparsed      of Identifier:Identifier * Argument:(string option) * Body:(Statement list option)
-    with
-        member this.Options =
-            match this with
-            | Contact       (_, options)
-            | Description   (_, options)
-            | ErrorAppTag   (_, options)
-            | ErrorMessage  (_, options)
-            | Namespace     (_, options)
-            | Organization  (_, options)
-            | Prefix        (_, options)
-            | Presence      (_, options)
-            | Reference     (_, options)
-            | YangVersion   (_, options)
-                -> options
-            | Unknown _
-            | Unparsed _
-                -> None
-
-        member this.Identifier =
-            match this with
-            | Contact _         -> "contact"
-            | Description _     -> "description"
-            | ErrorAppTag _     -> "error-app-tag"
-            | ErrorMessage _    -> "error-message"
-            | Namespace _       -> "namespace"
-            | Organization _    -> "organization"
-            | Prefix _          -> "prefix"
-            | Presence _        -> "presence"
-            | Reference _       -> "reference"
-            | YangVersion _     -> "yang-version"
-            | Unknown (id, _, _)    -> id.ToString()
-            | Unparsed (id, _, _)   -> id.ToString()
-
-        member this.PrettyPrint =
-            let escape = [| ' '; '\t'; '\r'; '\n'; ';'; '{'; '}'; '@'; ':' |]
-
-            /// Pretty print string
-            let ps (input : string) =
-                if input.IndexOfAny(escape) > 0 then sprintf "\"%s\"" input
-                else input
-
-            /// Pretty print optional string
-            let pso (input : string option) =
-                match input with
-                | Some str ->
-                    if str.IndexOfAny(escape) > 0 then sprintf "\"%s\"" str
-                    else str
-                | None -> ""
-
-            /// Pretty print block
-            let pb (options : Statement list option) =
-                match options with
-                | None -> ""
-                | Some block -> sprintf "{ %A }" block
-
-            let id = this.Identifier
-
-            match this with
-            | Contact (s, b)
-            | Description (s, b)
-            | ErrorAppTag (s, b)
-            | ErrorMessage (s, b)
-            | Organization (s, b)
-            | Prefix (s, b)
-            | Presence (s, b)
-            | Reference (s, b)
-                -> sprintf "%s %s %s" id (ps s) (pb b)
-
-            | Namespace (uri, block)        -> sprintf "%s %s %s" id (uri.ToString()) (pb block)
-            | YangVersion (version, block)  -> sprintf "%s %s %s" id (version.ToString()) (pb block)
-
-            | Unknown (id, arg, body)       -> sprintf "Unknown: %A %s %s"  id (pso arg) (pb body)
-            | Unparsed (id, arg, body)      -> sprintf "Unparsed: %A %s %s" id (pso arg) (pb body)
-    /// Short name for the extra statements that may appear
-    and ExtraStatements         = Statement list option
-    and ContactStatement        = string  * ExtraStatements
-    and DescriptionStatement    = string  * ExtraStatements
-    and ErrorAppTagStatement    = string  * ExtraStatements
-    and ErrorMessageStatement   = string  * ExtraStatements
-    and NamespaceStatement      = Uri     * ExtraStatements
-    and OrganizationStatement   = string  * ExtraStatements
-    and PrefixStatement         = string  * ExtraStatements
-    and PresenceStatement       = string  * ExtraStatements
-    and ReferenceStatement      = string  * ExtraStatements
-    and YangVersionStatement    = Version * ExtraStatements
-    and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
-
     // Helper definitions that consume trailing whitespace
     let inline private read_keyword<'a> : Parser<string, 'a> = Strings.parse_string .>> spaces
     let inline private end_of_statement<'a> : Parser<unit, 'a> = skipChar ';' >>. spaces
@@ -163,7 +57,7 @@ module Statements =
                   (read_keyword .>>. end_of_statement_or_block parser
                    |>> (fun (argument, body)    -> Some argument, body))
                  )
-            |>> (fun (identifier, (argument, body)) -> Unknown (identifier, argument, body))
+            |>> (fun (identifier, (argument, body)) -> Statement.Unknown (identifier, argument, body))
 
     let inline private unparsed_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
             Identifier.parse_identifier
@@ -207,15 +101,15 @@ module Statements =
                             let version' = Version.Parse version
                             YangVersion (version', options)
                         )) parse_statement
-                <|> yang_keyword_string_statement ("contact", Contact)              parse_statement
-                <|> yang_keyword_string_statement ("description", Description)      parse_statement
-                <|> yang_keyword_string_statement ("error-app-tag", ErrorMessage)   parse_statement
-                <|> yang_keyword_string_statement ("error-message", ErrorMessage)   parse_statement
-                <|> yang_keyword_uri_statement    ("namespace", Namespace)          parse_statement
-                <|> yang_keyword_string_statement ("organization", Organization)    parse_statement
-                <|> yang_keyword_string_statement ("prefix", Prefix)                parse_statement
-                <|> yang_keyword_string_statement ("presence", Presence)            parse_statement
-                <|> yang_keyword_string_statement ("reference", Reference)          parse_statement
+                <|> yang_keyword_string_statement ("contact", Statement.Contact)            parse_statement
+                <|> yang_keyword_string_statement ("description", Statement.Description)    parse_statement
+                <|> yang_keyword_string_statement ("error-app-tag", Statement.ErrorMessage) parse_statement
+                <|> yang_keyword_string_statement ("error-message", Statement.ErrorMessage) parse_statement
+                <|> yang_keyword_uri_statement    ("namespace", Statement.Namespace)        parse_statement
+                <|> yang_keyword_string_statement ("organization", Statement.Organization)  parse_statement
+                <|> yang_keyword_string_statement ("prefix", Statement.Prefix)              parse_statement
+                <|> yang_keyword_string_statement ("presence", Statement.Presence)          parse_statement
+                <|> yang_keyword_string_statement ("reference", Statement.Reference)        parse_statement
                 <|> unknown_statement parse_statement
                 <|> unparsed_statement parse_statement
 

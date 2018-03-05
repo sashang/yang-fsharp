@@ -974,6 +974,17 @@ module Statements =
         | ContainerBodyStatement.Notification  st -> Statement.Notification st
         | ContainerBodyStatement.Unknown       st -> Statement.Unknown      st
 
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> ContainerBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> ContainerBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> ContainerBodyStatement.LeafList     st
+        | BodyStatement.List          st -> ContainerBodyStatement.List         st
+        | BodyStatement.Choice        st -> ContainerBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> ContainerBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> ContainerBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> ContainerBodyStatement.Uses         st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+
     /// Helper methods for the DeviateAddBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module DeviateAddBodyStatement =
@@ -1226,12 +1237,45 @@ module Statements =
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module MetaBodyStatement =
 
+        let IsOrganization = function
+        | MetaBodyStatement.Organization    _   -> true
+        | _                                     -> false
+
+        let IsContact = function
+        | MetaBodyStatement.Contact         _   -> true
+        | _                                     -> false
+
+        let IsDescription = function
+        | MetaBodyStatement.Description     _   -> true
+        | _                                     -> false
+
+        let IsReference = function
+        | MetaBodyStatement.Reference       _   -> true
+        | _                                     -> false
+
+        let IsUnknown = function
+        | MetaBodyStatement.Unknown         _   -> true
+        | _                                     -> false
+
         let Translate = function
         | MetaBodyStatement.Organization  st -> Statement.Organization  st
         | MetaBodyStatement.Contact       st -> Statement.Contact       st
         | MetaBodyStatement.Description   st -> Statement.Description   st
         | MetaBodyStatement.Reference     st -> Statement.Reference     st
         | MetaBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the MetaBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module MetaStatements =
+
+        /// Get the organization meta information; None if not exists
+        let Organization (this : MetaStatements) = this |> List.tryFind MetaBodyStatement.IsOrganization
+        /// Get the organization meta information; None if not exists
+        let Contact      (this : MetaStatements) = this |> List.tryFind MetaBodyStatement.IsContact
+        /// Get the description meta information; None if not exists
+        let Description  (this : MetaStatements) = this |> List.tryFind MetaBodyStatement.IsDescription
+        /// Get the reference meta information; None if not exists
+        let Reference    (this : MetaStatements) = this |> List.tryFind MetaBodyStatement.IsReference
 
     /// Helper methods for the ModuleStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

@@ -3,13 +3,10 @@
 
 namespace Yang.Parser
 
-// TODO: Make the Type parser part of yang-stmt definition
-//       We will need a way to make the statements and parsers below known
-//       in the definition of parse_statement.
-
 /// Type definitions and parsers for types used in YANG
 module Types =
     open FParsec
+    open Yang.Model
 
     // [RFC 7950, p.188]
     //   type-stmt           = type-keyword sep identifier-ref-arg-str optsep
@@ -35,13 +32,8 @@ module Types =
     // TODO: Define types for type restrictions and specifications
     // TODO: Enrich parser to handle custom types
 
-    type Type =
-    | TString
-
-    type TypeStatement = Type * ExtraStatements
-
     let parse_type<'a> : Parser<TypeStatement, 'a> =
         skipString "type" >>. spaces >>.
-        skipString "string" >>. spaces >>.
-        skipChar ';' >>. spaces
-        |>> (fun _ -> TString, None)
+        Identifier.parse_identifier_reference .>> spaces .>>
+        skipChar ';' .>> spaces
+        |>> (fun id -> id, None, None)

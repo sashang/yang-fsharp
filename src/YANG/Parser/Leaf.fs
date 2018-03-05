@@ -18,6 +18,7 @@ namespace Yang.Parser
 module Leaf =
     open FParsec
     open Types
+    open Yang.Model
 
     // [RFC 7950, p. 194]
     //leaf-stmt           = leaf-keyword sep identifier-arg-str optsep
@@ -36,50 +37,23 @@ module Leaf =
     //                            [reference-stmt]
     //                        "}" stmtsep
 
-    type LeafStatement =
-    | Type          of TypeStatement
-    | Description   of DescriptionStatement
-    | Unknown       of UnknownStatement
-
-    let IsTypeStatement         = function | Type _ -> true         | _ -> false
-    let IsDescriptionStatement  = function | Description _ -> true  | _ -> false
-
-    type Leaf = {
-        Identifier  : Identifier.Identifier
-        Statements  : LeafStatement list
-    }
-        with
-            member this.Type        =
-                match List.find IsTypeStatement this.Statements with
-                | Type statement -> statement
-                | _              -> raise (YangParserException (sprintf "Cannot find type for %s" this.Identifier.Value))
-
-            member this.Description = List.tryFind IsDescriptionStatement this.Statements
-
-    let private parse_leaf_body<'a> : Parser<LeafStatement list, 'a> =
+    let private parse_leaf_body<'a> : Parser<LeafBodyStatement list, 'a> =
         many (
-                (Types.parse_type |>> Type)
-            <|> (parse_description_statement |>> Description)
+                (Types.parse_type               |>> LeafBodyStatement.Type)
+            <|> (parse_description_statement    |>> LeafBodyStatement.Description)
         )
 
-    let parse_leaf<'a> : Parser<Leaf, 'a> =
+    let parse_leaf<'a> : Parser<LeafStatement, 'a> =
         skipString "leaf" >>. spaces >>.
         Identifier.parse_identifier .>> spaces .>>
         skipChar '{' .>> spaces .>>.
         parse_leaf_body .>> spaces .>>
         skipChar '}' .>> spaces
-        |>> (
-            fun (name, body) ->
-                {
-                    Identifier  = name
-                    Statements  = body
-                }
-        )
-
 
 module LeafList =
     open FParsec
     open Types
+    open Yang.Model
 
     // [RFC 7950, p. 194]
     //leaf-list-stmt      = leaf-list-keyword sep identifier-arg-str optsep
@@ -100,42 +74,15 @@ module LeafList =
     //                            [reference-stmt]
     //                        "}" stmtsep
 
-    type LeafListStatement =
-    | Type          of TypeStatement
-    | Description   of DescriptionStatement
-    | Unknown       of UnknownStatement
-
-    let IsTypeStatement         = function | Type _ -> true         | _ -> false
-    let IsDescriptionStatement  = function | Description _ -> true  | _ -> false
-
-    type LeafList = {
-        Identifier  : Identifier.Identifier
-        Statements  : LeafListStatement list
-    }
-        with
-            member this.Type        =
-                match List.find IsTypeStatement this.Statements with
-                | Type statement -> statement
-                | _              -> raise (YangParserException (sprintf "Cannot find type for %s" this.Identifier.Value))
-
-            member this.Description = List.tryFind IsDescriptionStatement this.Statements
-
-    let private parse_leaf_body<'a> : Parser<LeafListStatement list, 'a> =
+    let private parse_leaf_body<'a> : Parser<LeafListBodyStatement list, 'a> =
         many (
-                (Types.parse_type |>> Type)
-            <|> (parse_description_statement |>> Description)
+                (Types.parse_type               |>> LeafListBodyStatement.Type)
+            <|> (parse_description_statement    |>> LeafListBodyStatement.Description)
         )
 
-    let parse_leaf_list<'a> : Parser<LeafList, 'a> =
+    let parse_leaf_list<'a> : Parser<LeafListStatement, 'a> =
         skipString "leaf-list" >>. spaces >>.
         Identifier.parse_identifier .>> spaces .>>
         skipChar '{' .>> spaces .>>.
         parse_leaf_body .>> spaces .>>
         skipChar '}' .>> spaces
-        |>> (
-            fun (name, body) ->
-                {
-                    Identifier  = name
-                    Statements  = body
-                }
-        )

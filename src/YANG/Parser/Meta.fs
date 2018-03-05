@@ -9,76 +9,55 @@ module Meta =
     open System
     open FParsec
     open Identifier
-
-    type Meta = {
-        Organization    : OrganizationStatement option
-        Contact         : ContactStatement option
-        Description     : DescriptionStatement option
-        Reference       : ReferenceStatement option
-
-        /// Extra unparsed statements that appear in the body.
-        /// (those statements are kept in order, but caller should
-        /// not make any assumption of position of description and
-        /// reference statements)
-        Options : ExtraStatements
-    }
-    with
-        static member Empty = {
-            Organization    = None
-            Contact         = None
-            Description     = None
-            Reference       = None
-            Options         = None
-        }
-
-    type private MetaStatement =
-    | Organization  of OrganizationStatement
-    | Contact       of ContactStatement
-    | Description   of DescriptionStatement
-    | Reference     of ReferenceStatement
-    | Unknown       of UnknownStatement
+    open Yang.Model
 
     /// Parse a meta statement
-    let private parse_meta_body_statement<'a> : Parser<MetaStatement, 'a> =
-            (parse_organization_statement   |>> Organization)
-        <|> (parse_contact_statement        |>> Contact)
-        <|> (parse_description_statement    |>> Description)
-        <|> (parse_reference_statement      |>> Reference)
-        <|> (parse_unknown_statement        |>> Unknown)
+    let private parse_meta_body_statement<'a> : Parser<MetaBodyStatement, 'a> =
+            (parse_organization_statement   |>> MetaBodyStatement.Organization)
+        <|> (parse_contact_statement        |>> MetaBodyStatement.Contact)
+        <|> (parse_description_statement    |>> MetaBodyStatement.Description)
+        <|> (parse_reference_statement      |>> MetaBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> MetaBodyStatement.Unknown)
 
     /// Parses all meta statements
-    let parse_meta<'a> : Parser<Meta, 'a> =
-        // TODO: check that there is exactly one definition of each header statement.
-        // [RFC 7950, Sec. 7.1.1, p. 56] specifies that the cardinality of
-        // organization, contact, description, and reference is either 0 or 1.
-        // This can be done by having mutable variables and checking at the end of the parser.
-
+    let parse_meta<'a> : Parser<MetaStatements, 'a> =
         /// Element parser
         let elementParser = spaces >>. parse_meta_body_statement
 
         /// Create the state from the first element
         let stateFromFirstElement = function
-            | Organization  e   -> { Meta.Empty with Organization  = Some e }
-            | Contact       e   -> { Meta.Empty with Contact       = Some e }
-            | Description   e   -> { Meta.Empty with Description   = Some e }
-            | Reference     e   -> { Meta.Empty with Reference     = Some e }
-            | Unknown       e   -> { Meta.Empty with Options       = Some [ Statements.Unknown e ] }
+        | Organization              _ as e  -> [e], (true, false, false, false)
+        | Contact                   _ as e  -> [e], (false, true, false, false)
+        | Description               _ as e  -> [e], (false, false, true, false)
+        | Reference                 _ as e  -> [e], (false, false, false, true)
+        | MetaBodyStatement.Unknown _ as e  -> [e], (false, false, false, false)
 
         /// Update state from element
         let foldState state element =
-            match element with
-            | Organization  e   -> { state with Organization  = Some e }
-            | Contact       e   -> { state with Contact       = Some e }
-            | Description   e   -> { state with Description   = Some e }
-            | Reference     e   -> { state with Reference     = Some e }
-            | Unknown       e   ->
-                match state.Options with
-                | None          -> { state with Options = Some [ Statements.Unknown e ] }
-                | Some op       -> { state with Options = Some ( op @ [Statements.Unknown e] ) }
+            match state, element with
+            | (st, (false, co, de, re)), (Organization _)   -> st @ [element], (true, co, de, re)
+            | (_,  (true, _, _, _)),     (Organization _)   ->
+                raise (YangParserException "Detected duplicate organization statement in meta data")
+
+            | (st, (og, false, de, re)), (Contact _)        -> st @ [element], (og, true, de, re)
+            | (_,  (_, true, _, _)),     (Contact _)        ->
+                raise (YangParserException "Detected duplicate contact statement in meta data")
+
+            | (st, (og, co, false, de)), (Description _)    -> st @ [element], (og, co, true, de)
+            | (_,  (_, _, true, _)),     (Description _)    ->
+                raise (YangParserException "Detected duplicate description statement in meta data")
+
+            | (st, (og, co, de, false)), (Reference _)      -> st @ [element], (og, co, de, true)
+            | (_,  (_, _, _, true)),     (Reference _)      ->
+                raise (YangParserException "Detected duplicate reference statement in meta data")
+
+            | (st, flags), (MetaBodyStatement.Unknown _)    -> st @ [element], flags
+
+        let result (state, _) = state
 
         ParserHelper.ConsumeMany(
             elementParser           = elementParser,
             stateFromFirstElement   = stateFromFirstElement,
             foldState               = foldState,
-            resultFromState         = id
+            resultFromState         = result
         )
