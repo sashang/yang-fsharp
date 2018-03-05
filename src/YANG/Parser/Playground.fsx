@@ -1,6 +1,8 @@
 ﻿// Playground.fsx
 // Testing of parser functionality during development.
 
+#r @"..\..\..\packages\FSharp.Core\lib\net45\FSharp.Core.dll"
+
 #load @"../../../.paket/load/net471/FParsec-Big-Data-Edition.fsx"
 #load @"../../../.paket/load/net471/NLog.fsx"
 #r @"../Model/bin/Debug/Yang.Model.dll"
