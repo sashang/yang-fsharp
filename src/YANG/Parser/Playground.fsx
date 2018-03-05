@@ -3,11 +3,12 @@
 
 #load @"../../../.paket/load/net471/FParsec-Big-Data-Edition.fsx"
 #load @"../../../.paket/load/net471/NLog.fsx"
+#r @"../Model/bin/Debug/Yang.Model.dll"
 
 #load "Utilities.fs"
 #load "Errors.fs"
 #load "Comments.fs"
-#load "Tokens.fs"
+#load "Arguments.fs"
 #load "Strings.fs"
 #load "Generic.fs"
 #load "Identifier.fs"
@@ -17,8 +18,7 @@
 #load "Revisions.fs"
 #load "Types.fs"
 #load "Leaf.fs"
-#load "DataDefinitions.fs"
-#load "Body.fs"
+#load "BodyStatements.fs"
 #load "Module.fs"
 #load "Parser.fs"
 
@@ -26,6 +26,8 @@ open System.IO
 open System.Text
 open FParsec
 open Yang.Parser
+open System.Data
+open Yang.Model.Statements
 
 //
 // Test code to parse files
@@ -37,6 +39,62 @@ Directory.Exists(sample_dir)
 let example = Path.Combine(sample_dir, @"RFC7950/example-system.yang")
 
 let model = ReadAndClean example
+
+let xxx = apply_parser Module.parse_module model
+
+let body = """container system {
+        leaf host-name {
+            type string;
+            description
+                "Hostname for this system.";
+        }
+
+        leaf-list domain-search {
+            type string;
+            description
+                "List of domain names to search.";
+        }
+
+        container login {
+            leaf message {
+                type string;
+                description
+                "Message given at start of login session.";
+            }
+
+            list user {
+                key "name";
+                leaf name {
+                    type string;
+                }
+                leaf full-name {
+                    type string;
+                }
+                leaf class {
+                    type string;
+                }
+            }
+        }
+    }"""
+
+apply_parser BodyStatements.parse_body_statement body
+
+let leaf = """leaf full-name {
+    type string;
+}"""
+
+apply_parser Leaf.parse_leaf leaf
+
+let leaf_body = "type string;"
+apply_parser Leaf.parse_leaf_body leaf_body
+let yy = apply_parser Types.parse_type leaf_body
+yy.GetType()
+let zz = LeafBodyStatement.Make.Do yy
+let zzz = LeafBodyStatement.Description ("fff", None)
+apply_parser (Types.parse_type |>> (fun v -> LeafBodyStatement.Type v)) leaf_body
+
+LeafBodyStatement.Description ("help", None)
+
 
 #time
 let big_model =

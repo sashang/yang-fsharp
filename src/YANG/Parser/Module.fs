@@ -7,7 +7,6 @@ module Module =
     open FParsec
     open System
     open Yang.Model
-    open BodyStatements
 
     // The module statement is defined in RFC 7950, page 184:
     // module-stmt     = optsep module-keyword sep identifier-arg-str
@@ -60,12 +59,13 @@ module Module =
     // TODO: Parsing unknown-statement declarations, see Note-03.
 
     /// Parser for the module statement
-    let parse_module<'a> : Parser<ModuleStatement, 'a> =
+    //let parse_module<'a> : Parser<ModuleStatement, 'a> =
+    let parse_module<'a> : Parser<Identifier * ModuleHeaderStatements * MetaStatements * (RevisionStatement list) * (BodyStatement list), 'a> =
         let parser =
             spaces .>> skipStringCI "module" .>> spaces >>.
             Identifier.parse_identifier .>> spaces .>>
             skipChar '{' .>> spaces .>>.
-            tuple4 parse_header (opt parse_meta) (opt parse_revision_list) parse_body_statements .>>
+            tuple4 parse_header (opt parse_meta) (opt parse_revision_list) BodyStatements.parse_body_statements .>>
             spaces .>> skipChar '}' .>> spaces
         parser |>> (
             fun (identifier, (header, meta, revision, body)) ->
@@ -75,16 +75,17 @@ module Module =
                 let meta' = match meta with | None -> [] | Some m -> m
                 let revision' = match revision with | None -> [] | Some r -> r
 
-                {
-                    Name        = identifier
-                    Header      = header
-                    Linkage     = []
-                    Meta        = meta'
-                    Revision    = revision'
-                    Body        = body
-                }
+                identifier, header, meta', revision', body
+                //{
+                //    Name        = identifier
+                //    Header      = header
+                //    Linkage     = []
+                //    Meta        = meta'
+                //    Revision    = revision'
+                //    Body        = body
+                //}
         )
 
-    let parse_module_as_statement<'a> : Parser<Statement, 'a> =
-        parse_module |>> Statement.Module
+    //let parse_module_as_statement<'a> : Parser<Statement, 'a> =
+    //    parse_module |>> Statement.Module
 

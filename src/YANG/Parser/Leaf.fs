@@ -37,7 +37,7 @@ module Leaf =
     //                            [reference-stmt]
     //                        "}" stmtsep
 
-    let private parse_leaf_body<'a> : Parser<LeafBodyStatement list, 'a> =
+    let parse_leaf_body<'a> : Parser<LeafBodyStatement list, 'a> =
         many (
                 (Types.parse_type               |>> LeafBodyStatement.Type)
             <|> (parse_description_statement    |>> LeafBodyStatement.Description)

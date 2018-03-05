@@ -78,53 +78,48 @@ module BodyStatements =
 
     // TODO: Parsers for list keys
 
-    type private BodyStatementParser<'a> () =
-        class
-            static let (parse_data_definition : Parser<BodyStatement, 'a>), (parse_data_definition_ref : Parser<BodyStatement, 'a> ref) =
-                createParserForwardedToRef<BodyStatement, 'a>()
+    type private BodyParsers<'a> = {
+        DataDefinition  : Parser<BodyStatement, 'a>
+        ContainerBody   : Parser<ContainerBodyStatement, 'a>
+        Container       : Parser<ContainerStatement, 'a>
+    }
 
-            static member SetParser parser = parse_data_definition_ref := parser
-            static member GetParser () = parse_data_definition
-        end
+    let private parsers<'a> =
+        let (parse_data_definition : Parser<BodyStatement, 'a>), (parse_data_definition_ref : Parser<BodyStatement, 'a> ref) =
+            createParserForwardedToRef<BodyStatement, 'a>()
 
-    let parse_data_definition<'a> : Parser<BodyStatement, 'a> = BodyStatementParser.GetParser()
+        let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
+                (parse_description_statement    |>> ContainerBodyStatement.Description)
+            <|> (parse_data_definition          |>> ContainerBodyStatement.FromDataDefinition)
 
-    //let (parse_data_definition : Parser<BodyStatement, 'a>), (private parse_data_definition_ref : Parser<BodyStatement, 'a> ref) =
-    //    let dummyParser = fun stream -> failwith "a parser created with createParserForwardedToRef was not initialized"
-    //    let r = ref dummyParser
-    //    (fun stream -> !r stream), r
+        let parse_container_statement : Parser<ContainerStatement, 'a> =
+            skipString "container" >>. spaces >>.
+            Identifier.parse_identifier .>> spaces .>>.
+            (
+                    (skipChar ';' |>> (fun _ -> None))
+                <|> (skipChar '{' >>. spaces >>.
+                     (many parse_container_body_statement) .>> spaces .>>
+                     skipChar '}'
+                     |>> Some
+                    )
+            )
 
-    let inline parse_container_body_statement<'a> : Parser<ContainerBodyStatement, 'a> =
-            (parse_description_statement    |>> ContainerBodyStatement.Description)
-        <|> (parse_data_definition          |>> ContainerBodyStatement.FromDataDefinition)
+        let parse_data_definition_impl : Parser<BodyStatement, 'a> =
+                (parse_container_statement  |>> BodyStatement.Container)
+            <|> (parse_leaf                 |>> BodyStatement.Leaf)
+            <|> (parse_leaf_list            |>> BodyStatement.LeafList)
 
-    let inline parse_container_statement<'a> : Parser<ContainerStatement, 'a> =
-        skipString "container" >>. spaces >>.
-        Identifier.parse_identifier .>> spaces .>>.
-        (
-                (skipChar ';' |>> (fun _ -> None))
-            <|> (skipChar '{' >>. spaces >>.
-                 (many parse_container_body_statement) .>> spaces .>>
-                 skipChar '}'
-                 |>> Some
-                )
-        )
+        parse_data_definition_ref := parse_data_definition_impl
 
-    //let parse_list_body_statement<'a> : Parser<ListBodyStatement, 'a> =
-    //        (skipString "key" >>. spaces >>. Strings.parse_string .>> spaces .>> skipChar ';' .>> spaces
-    //         |>> ListBodyStatement.Key)
-    //    <|> (parse_description_statement |>> ListBodyStatement.Description)
-    //    <|> 
+        {
+            DataDefinition  = parse_data_definition
+            ContainerBody   = parse_container_body_statement
+            Container       = parse_container_statement
+        }
 
-        //let parse_list_body_item =
-        //        (skipString "key" >>. spaces >>. Strings.parse_string .>> spaces .>> skipChar ';' .>> spaces |>> YListStatementBody.ListKey)
-        //    <|> (parse_data_definition |>> YListStatementBody.DataDefinition)
-        //many parse_list_body_item
-
-    let private parse_data_definition_impl<'a> : Parser<BodyStatement, 'a> =
-            (parse_container_statement  |>> BodyStatement.Container)
-        <|> (parse_leaf                 |>> BodyStatement.Leaf)
-        <|> (parse_leaf_list            |>> BodyStatement.LeafList)
+    let parse_body_statement<'a> : Parser<BodyStatement, 'a> = parsers.DataDefinition
+    let parse_body_statements<'a> : Parser<BodyStatement list, 'a> =
+        many parsers.DataDefinition
 
     //let parse_data_definition<'a> : Parser<DataDefinitionStatement, 'a> =
     //    let (parse_data_definition : Parser<DataDefinitionStatement, 'a>),
@@ -171,12 +166,3 @@ module BodyStatements =
     //    parse_data_definition_ref := parse_data_definition_implementation
     //    parse_data_definition
 
-    let parse_body_statement<'a> : Parser<BodyStatement, 'a> =
-        parse_data_definition
-
-    let parse_body_statements<'a> : Parser<BodyStatement list, 'a> =
-        many parse_data_definition
-
-    do
-        //parse_data_definition_ref := parse_data_definition_impl
-        BodyStatementParser.SetParser(parse_data_definition_impl)
