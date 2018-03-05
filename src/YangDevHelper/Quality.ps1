@@ -141,3 +141,17 @@ function Show-CodeCoverage {
         . $index_page
     }
 }
+
+function Show-Cloc {
+    [CmdletBinding()]
+    param()
+
+    if (-not (Get-Command -Name cloc -ErrorAction SilentlyContinue)) {
+        Write-Error -Message "Cannot find 'cloc' utility; exiting"
+        return
+    }
+
+    Push-Location -Path $rootDir
+    cloc --exclude-dir=packages,build,test,paket-files,TestResults,Models-External,.paket,node_modules --exclude-ext=xml  .
+    Pop-Location
+}

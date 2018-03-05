@@ -60,7 +60,8 @@
     # Functions to export from this module
     FunctionsToExport = @(
         'Get-WorkItems',
-        'Show-CodeCoverage'
+        'Show-CodeCoverage',
+        'Show-Cloc'
     )
 
     # Cmdlets to export from this module
