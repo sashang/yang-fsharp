@@ -160,6 +160,7 @@ module Statements =
     and ArgumentBodyStatement   =
     | YinElement    of YinElementStatement
     | Unknown       of UnknownStatement
+    /// Captures the 'argument-stmt' statement from [RFC 7950, p. 187]
     and ArgumentStatement       = Identifier            * (ArgumentBodyStatement list option)
     and AugmentBodyStatement    =
     | When          of WhenStatement
@@ -183,10 +184,12 @@ module Statements =
     | Unknown       of UnknownStatement
     /// Captures the 'augment-stmt' statement from [RFC 7950, p. 199]
     and AugmentStatement        = Augment               * (AugmentBodyStatement list)
+    /// Captures the 'base-stmt' statement from [RFC 7950, p. 187]
     and BaseStatement           = IdentifierReference   * ExtraStatements
     and BelongsToBodyStatement  =
     | Prefix        of PrefixStatement
     | Unknown       of UnknownStatement
+    /// Captures the 'belongs-to-stmt' statement from [RFC 7950, p. 186]
     and BelongsToStatement      = Identifier    * (BelongsToBodyStatement list)
     and BitBodyStatement        =
     | IfFeature     of IfFeatureStatement
@@ -195,6 +198,7 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
+    /// Captures the 'bit-stmt' statement from [RFC 7950, p. 191]
     and BitStatement            = Identifier    * (BitBodyStatement list option)
     and CaseBodyStatement       =
     | When          of WhenStatement
@@ -237,7 +241,9 @@ module Statements =
     | Unknown       of UnknownStatement
     /// Captures the 'choice-stmt' statement from [RFC 7950, p. 196].
     and ChoiceStatement         = Identifier    * (ChoiceBodyStatement list option)
+    /// Captures the 'config-stmt' statement from [RFC 7950, p. 191]
     and ConfigStatement         = bool          * ExtraStatements
+    /// Captures the 'contact-stmt' statement from [RFC 7950, p. 186]
     and ContactStatement        = string        * ExtraStatements
     and ContainerBodyStatement  =
     | When          of WhenStatement
@@ -265,7 +271,9 @@ module Statements =
     | Unknown       of UnknownStatement
     /// Captures the 'container-stmt' statement from [RFC 7950, p. 193].
     and ContainerStatement      = Identifier    * (ContainerBodyStatement list option)
+    /// Captures the 'default-stmt' statement from [RFC 7950, p. 190]
     and DefaultStatement        = string        * ExtraStatements
+    /// Captures the 'description-stmt' statement from [RFC 7950, p. 186]
     and DescriptionStatement    = string        * ExtraStatements
     and DeviateAddBodyStatement =
     | Units         of UnitsStatement
@@ -297,7 +305,9 @@ module Statements =
     | MinElements   of MinElementsStatement
     | MaxElements   of MaxElementsStatement
     | Unknown       of UnknownStatement
+    /// Captures the 'deviate-replace-stmt' statement from [RFC 7950, p. 202].
     and DeviateReplaceStatement         = DeviateReplaceBodyStatement list option
+    /// Captures the 'deviate-not-supported-stmt' statement from [RFC 7950, p. 201].
     and DeviateNotSupportedStatement    = ExtraStatements
     and DeviationBodyStatement  =
     | Description   of DescriptionStatement
@@ -307,6 +317,7 @@ module Statements =
     | DeviateReplace        of DeviateReplaceStatement
     | DeviateDelete         of DeviateDeleteStatement
     | Unknown               of UnknownStatement
+    /// Captures the 'deviation-stmt' statement from [RFC 7950, p. 201].
     and DeviationStatement      = Deviation     * (DeviationBodyStatement list option)
     and EnumBodyStatement       =
     | IfFeature     of IfFeatureStatement
@@ -315,8 +326,11 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
+    /// Captures the 'enum-stmt' statement from [RFC 7950, p. 190].
     and EnumStatement           = string        * (EnumBodyStatement list option)
+    /// Captures the 'error-app-tag-stmt' statement from [RFC 7950, p. 192].
     and ErrorAppTagStatement    = string        * ExtraStatements
+    /// Captures the 'error-message-stmt' statement from [RFC 7950, p. 192].
     and ErrorMessageStatement   = string        * ExtraStatements
     and ExtensionBodyStatement  =
     | Argument      of ArgumentStatement
@@ -324,6 +338,7 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
+    /// Captures the 'extension-stmt' statement from [RFC 7950, p. 192].
     and ExtensionStatement      = Identifier            * (ExtensionBodyStatement list option)
     and FeatureBodyStatement    =
     | IfFeature     of IfFeatureStatement
@@ -331,7 +346,9 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
+    /// Captures the 'feature-stmt' statement from [RFC 7950, p. 187].
     and FeatureStatement        = Identifier            * (FeatureBodyStatement list option)
+    /// Captures the 'fraction-digits-stmt' statement from [RFC 7950, p. 189].
     and FractionDigitsStatement = byte                  * ExtraStatements
     and GroupingBodyStatement =
     | Status        of StatusStatement
@@ -1215,6 +1232,13 @@ module Statements =
         | MetaBodyStatement.Reference     st -> Statement.Reference     st
         | MetaBodyStatement.Unknown       st -> Statement.Unknown       st
 
+    /// Helper methods for the ModuleStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ModuleStatement =
+        let BodyAsStatement (this : ModuleStatement) =
+            this.Body
+            |> List.map (BodyStatement.Translate)
+
     /// Helper methods for the MustBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module MustBodyStatement =
@@ -1329,6 +1353,13 @@ module Statements =
         | RpcBodyStatement.Input         st -> Statement.Input st
         | RpcBodyStatement.Output        st -> Statement.Output st
         | RpcBodyStatement.Unknown       st -> Statement.Unknown st
+
+    /// Helper methods for the SubmoduleStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module SubmoduleStatement =
+        let BodyAsStatement (this : SubmoduleStatement) =
+            this.Body
+            |> List.map (BodyStatement.Translate)
 
     /// Helper methods for the TypeBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
