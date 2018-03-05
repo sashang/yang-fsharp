@@ -1,12 +1,15 @@
+bprintf
 defaultof
 elif
 endif
 failwith
 forall
 Hostname
+iter
 Namespaces
 optsep
 pchar
+Printf
 printfn
 pstring
 sprintf

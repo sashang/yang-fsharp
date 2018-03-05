@@ -579,6 +579,9 @@ module Statements =
     | BitsSpecification                 of BitsSpecification
     | UnionSpecification                of UnionSpecification
     | BinarySpecification               of BinarySpecification
+    /// Captures the 'type-stmt' statement from [RFC 7950, p. 188].
+    /// The definition assumes a number of unknown statements (from the stmtsep),
+    /// followed by zero or one type-body-stmts.
     and TypeStatement           = IdentifierReference   * (TypeBodyStatement option) * (UnknownStatement list option)
     and TypeDefBodyStatement    =
     | Type          of TypeStatement
@@ -588,6 +591,7 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
+    /// Captures the 'typedef-stmt' statement from [RFC 7950, p. 188].
     and TypeDefStatement        = Identifier        * (TypeDefBodyStatement list option)
     /// Captures the type-stmt [RFC 7950, p.188]. If there are unknown statements, then they precede the TypeBodyStatement
     and UniqueStatement         = Unique            * ExtraStatements
@@ -676,8 +680,8 @@ module Statements =
 
     // The following types are used in the definition of the module and sub-module statements
 
-    and ModuleHeaderStatements      = YangVersionStatement * NamespaceStatement * PrefixStatement
-    and SubmoduleHeaderStatements   = YangVersionStatement * BelongsToStatement
+    and ModuleHeaderStatements      = YangVersionStatement * NamespaceStatement * PrefixStatement * (UnknownStatement list option)
+    and SubmoduleHeaderStatements   = YangVersionStatement * BelongsToStatement * (UnknownStatement list option)
     and LinkageBodyStatement        =
     | Import        of ImportStatement
     | Include       of IncludeStatement
@@ -850,6 +854,30 @@ module Statements =
         | BitBodyStatement.Description   st -> Statement.Description    st
         | BitBodyStatement.Reference     st -> Statement.Reference      st
         | BitBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the BodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module BodyStatement =
+
+        let Translate = function
+        | BodyStatement.Extension       st -> Statement.Extension       st
+        | BodyStatement.Feature         st -> Statement.Feature         st
+        | BodyStatement.Identity        st -> Statement.Identity        st
+        | BodyStatement.TypeDef         st -> Statement.TypeDef         st
+        | BodyStatement.Grouping        st -> Statement.Grouping        st
+        | BodyStatement.Container       st -> Statement.Container       st
+        | BodyStatement.Leaf            st -> Statement.Leaf            st
+        | BodyStatement.LeafList        st -> Statement.LeafList        st
+        | BodyStatement.List            st -> Statement.List            st
+        | BodyStatement.Choice          st -> Statement.Choice          st
+        | BodyStatement.AnyData         st -> Statement.AnyData         st
+        | BodyStatement.AnyXml          st -> Statement.AnyXml          st
+        | BodyStatement.Uses            st -> Statement.Uses            st
+        | BodyStatement.Augment         st -> Statement.Augment         st
+        | BodyStatement.Rpc             st -> Statement.Rpc             st
+        | BodyStatement.Notification    st -> Statement.Notification    st
+        | BodyStatement.Deviation       st -> Statement.Deviation       st
+        | BodyStatement.Unknown         st -> Statement.Unknown         st
 
     /// Helper methods for the CaseBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1137,6 +1165,14 @@ module Statements =
         | LengthBodyStatement.Reference     st -> Statement.Reference       st
         | LengthBodyStatement.Unknown       st -> Statement.Unknown         st
 
+    /// Helper methods for the LinkageBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module LinkageBodyStatement =
+
+        let Translate = function
+        | LinkageBodyStatement.Import   st -> Statement.Import  st
+        | LinkageBodyStatement.Include  st -> Statement.Include st
+
     /// Helper methods for the ListBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module ListBodyStatement =
@@ -1167,6 +1203,17 @@ module Statements =
         | ListBodyStatement.Action        st -> Statement.Action        st
         | ListBodyStatement.Notification  st -> Statement.Notification  st
         | ListBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the MetaBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module MetaBodyStatement =
+
+        let Translate = function
+        | MetaBodyStatement.Organization  st -> Statement.Organization  st
+        | MetaBodyStatement.Contact       st -> Statement.Contact       st
+        | MetaBodyStatement.Description   st -> Statement.Description   st
+        | MetaBodyStatement.Reference     st -> Statement.Reference     st
+        | MetaBodyStatement.Unknown       st -> Statement.Unknown       st
 
     /// Helper methods for the MustBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1283,6 +1330,49 @@ module Statements =
         | RpcBodyStatement.Output        st -> Statement.Output st
         | RpcBodyStatement.Unknown       st -> Statement.Unknown st
 
+    /// Helper methods for the TypeBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module TypeBodyStatement =
+        open System.Text
+
+        let Print (sb : StringBuilder, _indentation : int) = function
+        // TODO: Fix printing of type restrictions and specifications
+        | TypeBodyStatement.NumericalRestrictions    rs                     ->
+            Printf.bprintf sb "%A" rs
+        | TypeBodyStatement.Decimal64Specification  (fraction, None)        ->
+            Printf.bprintf sb "%A" fraction
+        | TypeBodyStatement.Decimal64Specification  (fraction, Some range)  ->
+            Printf.bprintf sb "%A %A" fraction range
+        | TypeBodyStatement.StringRestrictions      (None, [])              ->
+            ()
+        | TypeBodyStatement.StringRestrictions      (Some length, [])       ->
+            Printf.bprintf sb "%A" length
+        | TypeBodyStatement.StringRestrictions      (None, patterns)        ->
+            patterns |> List.iter (fun pattern -> Printf.bprintf sb "%A " pattern)
+        | TypeBodyStatement.StringRestrictions      (Some length, patterns) ->
+            Printf.bprintf sb "%A" length
+            patterns |> List.iter (fun pattern -> Printf.bprintf sb "%A " pattern)
+        | TypeBodyStatement.EnumSpecification        enums                  ->
+            enums |> List.iter (fun enum -> Printf.bprintf sb "%A " enum)
+        | TypeBodyStatement.LeafRefSpecification    (path, None)            ->
+            Printf.bprintf sb "%A" path
+        | TypeBodyStatement.LeafRefSpecification    (path, requires)        ->
+            Printf.bprintf sb "%A %A" path requires
+        | TypeBodyStatement.IdentityRefSpecification statements             ->
+            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
+        | TypeBodyStatement.InstanceIdentifierSpecification     None        ->
+            ()
+        | TypeBodyStatement.InstanceIdentifierSpecification     requires    ->
+            Printf.bprintf sb "%A" requires
+        | TypeBodyStatement.BitsSpecification statements ->
+            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
+        | TypeBodyStatement.UnionSpecification          statements ->
+            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
+        | TypeBodyStatement.BinarySpecification  None ->
+            ()
+        | TypeBodyStatement.BinarySpecification  (Some length) ->
+            Printf.bprintf sb "%A" length
+
     /// Helper methods for the TypeDefBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module TypeDefBodyStatement =
@@ -1295,6 +1385,11 @@ module Statements =
         | TypeDefBodyStatement.Description   st -> Statement.Description    st
         | TypeDefBodyStatement.Reference     st -> Statement.Reference      st
         | TypeDefBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the UnknownStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module UnknownStatement =
+        let Translate this = Statement.Unknown this
 
     /// Helper methods for the UsesBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1526,6 +1621,12 @@ module Statements =
             /// Print identifier
             let psi (id : Identifier) = ps (id.ToString())
 
+            /// Print reference identifier
+            let psr (id : IdentifierReference) =
+                match id with
+                | Simple id'    -> psi id'
+                | Custom id'    -> ps (id'.ToString())
+
             /// Print space
             let sp () = ps " "
 
@@ -1576,38 +1677,89 @@ module Statements =
             ps keyword; sp ()
 
             match this with
-            | Statement.List                                (id, block) -> psi id; pbt ListBodyStatement.Translate      block
-            | Statement.Mandatory                           (ma, block) -> ps (BoolAsString ma); pb                     block
-            // TODO: Call the printer for MaxValue
-            | Statement.MaxElements                         (v,  block) -> ps (v.ToString()); pb                        block
-            // TODO: Call the printer for MinValue
-            | Statement.MinElements                         (v,  block) -> ps (v.ToString()); pb                        block
-            // TODO: Call the printer for Modifier
-            | Statement.Modifier                            (v,  block) -> ps (v.ToString()); pb                        block
-            | Statement.Must                                (st, block) -> ps st; pbo MustBodyStatement.Translate       block
-            | Statement.Notification                        (id, block) -> psi id; pbo NotificationBodyStatement.Translate  block
-            // TODO: Call the printer for OrderedBy
-            | Statement.OrderedBy                           (ob, block) -> ps (ob.ToString()); pb                       block
-            | Statement.Output                                   block  -> pbt OutputBodyStatement.Translate            block
-            // TODO: Call the printer for path list
-            | Statement.Path                              (path, block) -> ps (path.ToString()); pb                     block
-            | Statement.Pattern                        (pattern, block) -> ps pattern; pbo PatternBodyStatement.Translate   block
-            | Statement.Position                      (position, block) -> Printf.bprintf sb "%d" position; pb          block
-            // TODO: Call the printer for Range
-            | Statement.Range                            (range, block) -> ps (range.ToString()); pbo RangeBodyStatement.Translate      block
-            // TODO: Call the printer for Refine
-            | Statement.Refine                          (refine, block) -> ps (refine.ToString()); pbo RefineBodyStatement.Translate    block
-            | Statement.RequireInstance                    (req, block) -> ps (BoolAsString req); pb                    block
-            // TODO: Call the printer for Revision
-            | Statement.Revision                           (rev, block) -> ps (rev.ToString()); pbo RevisionBodyStatement.Translate     block
-            // TODO: Call the printer for Revision
-            | Statement.RevisionDate                       (rev, block) -> ps (rev.ToString()); pb                      block
-            | Statement.Rpc                                 (id, block) -> psi id; pbo RpcBodyStatement.Translate       block
             // TODO: Call the printer for IdentifierReference
-            //| Statement.Type                                (id, block) -> ps (id.ToString())
+            | Statement.Type                             (id, t, block) ->
+                psr id
+                ps " "
+                match t, block with
+                | None,     None        -> pse ";"
+                | Some t',  None        ->
+                    pse "{ "
+                    TypeBodyStatement.Print (sb, tabs) t'
+                    psnl "}"
+                | None,     Some block  ->
+                    pbt UnknownStatement.Translate block
+                | Some t',  Some block  ->
+                    pse "{ "
+                    TypeBodyStatement.Print (sb, tabs+1) t'; ps ";"
+                    block
+                    |> List.map UnknownStatement.Translate
+                    |> List.iter (print (sb, tabs + 1))
+                    psnl "}"
 
-            | Statement.Module                              m           -> failwith "Print module"
-            | Statement.Submodule                           sm          -> failwith "Print sub-module"
+            | Statement.Module                              m           ->
+                psi m.Name
+                ps "{"
+
+                let (yv, ns, pr, un) = m.Header
+                let un' = if un.IsNone then [] else un.Value
+                [ Statement.YangVersion yv;
+                  Statement.Namespace   ns;
+                  Statement.Prefix      pr
+                ] @ (un' |> List.map (Statement.Unknown))
+                |> List.iter (fun st -> print (sb, tabs + 1) st; nl())
+
+                m.Linkage
+                |> List.map (LinkageBodyStatement.Translate)
+                |> List.iter (print (sb, tabs+1))
+                nl()
+
+                m.Meta
+                |> List.map (MetaBodyStatement.Translate)
+                |> List.iter (print (sb, tabs+1))
+                nl()
+
+                m.Revision
+                |> List.map (Statement.Revision)
+                |> List.iter (print (sb, tabs+1))
+                nl()
+
+                m.Body
+                |> List.map (BodyStatement.Translate)
+                |> List.iter (print (sb, tabs+1))
+                nl()
+
+                ps "}"
+
+            | Statement.Submodule                           sm          ->
+                let (yv, bt, un) = sm.Header
+                let un' = if un.IsNone then [] else un.Value
+                [ Statement.YangVersion yv;
+                  Statement.BelongsTo   bt
+                ] @ (un' |> List.map (Statement.Unknown))
+                |> List.iter (fun st -> print (sb, tabs + 1) st; nl())
+
+                sm.Linkage
+                |> List.map (LinkageBodyStatement.Translate)
+                |> List.iter (print (sb, tabs+1))
+                nl()
+
+                sm.Meta
+                |> List.map (MetaBodyStatement.Translate)
+                |> List.iter (print (sb, tabs+1))
+                nl()
+
+                sm.Revision
+                |> List.map (Statement.Revision)
+                |> List.iter (print (sb, tabs+1))
+                nl()
+
+                sm.Body
+                |> List.map (BodyStatement.Translate)
+                |> List.iter (print (sb, tabs+1))
+                nl()
+
+                ps "}"
 
             | Statement.Contact             (s, block)
             | Statement.Default             (s, block)
@@ -1653,6 +1805,42 @@ module Statements =
             | Statement.LeafList                            (id, block) -> psi id; pbt LeafListBodyStatement.Translate  block
             // TODO: Call the printer for Length
             | Statement.Length                          (length, block) -> Printf.bprintf sb "%A" length; pbo LengthBodyStatement.Translate block
+            | Statement.List                                (id, block) -> psi id; pbt ListBodyStatement.Translate      block
+            | Statement.Mandatory                           (ma, block) -> ps (BoolAsString ma); pb                     block
+            // TODO: Call the printer for MaxValue
+            | Statement.MaxElements                         (v,  block) -> ps (v.ToString()); pb                        block
+            // TODO: Call the printer for MinValue
+            | Statement.MinElements                         (v,  block) -> ps (v.ToString()); pb                        block
+            // TODO: Call the printer for Modifier
+            | Statement.Modifier                            (v,  block) -> ps (v.ToString()); pb                        block
+            | Statement.Must                                (st, block) -> ps st; pbo MustBodyStatement.Translate       block
+            | Statement.Notification                        (id, block) -> psi id; pbo NotificationBodyStatement.Translate  block
+            // TODO: Call the printer for OrderedBy
+            | Statement.OrderedBy                           (ob, block) -> ps (ob.ToString()); pb                       block
+            | Statement.Output                                   block  -> pbt OutputBodyStatement.Translate            block
+            // TODO: Call the printer for path list
+            | Statement.Path                              (path, block) -> ps (path.ToString()); pb                     block
+            | Statement.Pattern                        (pattern, block) -> ps pattern; pbo PatternBodyStatement.Translate   block
+            | Statement.Position                      (position, block) -> Printf.bprintf sb "%d" position; pb          block
+            // TODO: Call the printer for Range
+            | Statement.Range                            (range, block) -> ps (range.ToString()); pbo RangeBodyStatement.Translate      block
+            // TODO: Call the printer for Refine
+            | Statement.Refine                          (refine, block) -> ps (refine.ToString()); pbo RefineBodyStatement.Translate    block
+            | Statement.RequireInstance                    (req, block) -> ps (BoolAsString req); pb                    block
+            // TODO: Call the printer for Revision
+            | Statement.Revision                           (rev, block) -> ps (rev.ToString()); pbo RevisionBodyStatement.Translate     block
+            // TODO: Call the printer for Revision
+            | Statement.RevisionDate                       (rev, block) -> ps (rev.ToString()); pb                      block
+            | Statement.Rpc                                 (id, block) -> psi id; pbo RpcBodyStatement.Translate       block
+            | Statement.TypeDef                             (id, block) -> psi id; pbo TypeDefBodyStatement.Translate   block
+            // TODO: Call the printer for Unique
+            | Statement.Unique                              (un, block) -> ps (un.ToString()); pb block
+            | Statement.Uses                                (id, block) -> psr id; pbo UsesBodyStatement.Translate      block
+            // TODO: Call parser for UsesAugment
+            | Statement.UsesAugment                         (ua, block) -> ps (ua.ToString()); pbt UsesAugmentBodyStatement.Translate   block
+            | Statement.Value                               (v,  block) -> Printf.bprintf sb "%d" v; pb                 block
+            | Statement.When                                (p,  block) -> ps p; pbo WhenBodyStatement.Translate        block
+            | Statement.YinElement                          (y,  block) -> ps (BoolAsString y); pb                      block
 
             | Statement.Status                          (status, block) -> psa status;  pb block
             | Statement.Namespace                          (uri, block) -> psa uri;     pb block
