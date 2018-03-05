@@ -69,6 +69,7 @@
     <Compile Include="BodyStatements.fs" />
     <Compile Include="Module.fs" />
     <Compile Include="Parser.fs" />
+    <None Include="TestFsi.fsx" />
     <None Include="Playground.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>
