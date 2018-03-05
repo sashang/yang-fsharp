@@ -1,4 +1,5 @@
-﻿// Statenents.fs
+﻿// Statements.fs
+// Provides definitions that track the statements defined in the YANG model.
 namespace Yang.Model
 
 /// Definition of Yang statements
