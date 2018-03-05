@@ -116,3 +116,5 @@ module Arguments =
 
     // TODO: Fill definition of unique-arg
     type Unique = | NA
+
+    let BoolAsString v = if v then "true" else "false"

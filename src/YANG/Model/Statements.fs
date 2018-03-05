@@ -6,9 +6,6 @@ namespace Yang.Model
 module Statements =
     open System
     open Arguments
-    open System.ComponentModel
-    open System.Runtime.Remoting.Messaging
-    open System.Reflection
 
     (* The following captures the main part of the YANG model.
      * It tries to be reasonable close to [RFC 7950, Section 14, pp.184-210].
@@ -109,179 +106,17 @@ module Statements =
     | Unique        of UniqueStatement
     | Units         of UnitsStatement
     | Uses          of UsesStatement
+    | UsesAugment   of UsesAugmentStatement
     | Value         of ValueStatement
     | When          of WhenStatement
     | YangVersion   of YangVersionStatement
     | YinElement    of YinElementStatement
     | Unknown       of UnknownStatement
+    // TODO: Rename unparsed statement; where do we need it?
     | Unparsed      of Identifier:Identifier * Argument:(string option) * Body:(Statement list option)
-    | UsesAugment   of UsesAugmentStatement
     with
-        /// Retrieves the extra options that may appear at the end of the statement;
-        /// If the statement has a statement specific body, then this call will return None,
-        /// and the caller will need to apply per-statement processing to retrieve those statements.
-        member this.Options =
-            match this with
-            | Base          (_, options)
-            | Config        (_, options)
-            | Contact       (_, options)
-            | Default       (_, options)
-            | Description   (_, options)
-            | DeviateNotSupported options
-            | ErrorAppTag   (_, options)
-            | ErrorMessage  (_, options)
-            | FractionDigits (_, options)
-            | IfFeature     (_, options)
-            | Key           (_, options)
-            | Mandatory     (_, options)
-            | MaxElements   (_, options)
-            | MinElements   (_, options)
-            | Modifier      (_, options)
-            | Namespace     (_, options)
-            | OrderedBy     (_, options)
-            | Organization  (_, options)
-            | Path          (_, options)
-            | Position      (_, options)
-            | Prefix        (_, options)
-            | Presence      (_, options)
-            | Reference     (_, options)
-            | RevisionDate  (_, options)
-            | RequireInstance (_, options)
-            | Status        (_, options)
-            | Units         (_, options)
-            | Unique        (_, options)
-            | Value         (_, options)
-            | YangVersion   (_, options)
-            | YinElement    (_, options)
-                -> options
-
-            // The following have custom options; the caller need to treat them specially
-            | Action        (_, _)
-            | AnyData       (_, _)
-            | AnyXml        (_, _)
-            | Augment       (_, _)
-            | Argument      (_, _)
-            | BelongsTo     (_, _)
-            | Bit           (_, _)
-            | Case          (_, _)
-            | Choice        (_, _)
-            | Container     (_, _)
-            | DeviateAdd     _
-            | DeviateDelete  _
-            | DeviateReplace _
-            | Deviation     (_, _)
-            | Enum          (_, _)
-            | Extension     (_, _)
-            | Feature       (_, _)
-            | Grouping      (_, _)
-            | Identity      (_, _)
-            | Import        (_, _)
-            | Include       (_, _)
-            | Input         _
-            | Leaf          (_, _)
-            | LeafList      (_, _)
-            | Length        (_, _)
-            | List          (_, _)
-            | Module        _
-            | Must          (_, _)
-            | Notification  (_, _)
-            | Output        _
-            | Pattern       (_, _)
-            | Range         (_, _)
-            | Rpc           (_, _)
-            | Refine        (_, _)
-            | Revision      (_, _)
-            | Submodule     _
-            | Type          (_, _, _)
-            | TypeDef       (_, _)
-            | Uses          (_, _)
-            | UsesAugment   (_, _)
-            | When          (_, _)
-                -> None
-
-            | Unknown _
-            | Unparsed _
-                -> None
-
-        member this.Identifier =
-            match this with
-            | Action _          -> "action"
-            | AnyData _         -> "anydata"
-            | AnyXml _          -> "anyxml"
-            | Argument _        -> "argument"
-            | Augment _         -> "augment"
-            | Base _            -> "base"
-            | BelongsTo _       -> "belongs-to"
-            | Bit _             -> "bit"
-            | Case _            -> "case"
-            | Choice _          -> "choice"
-            | Config _          -> "config"
-            | Contact _         -> "contact"
-            | Container _       -> "container"
-            | Default _         -> "default"
-            | Description _     -> "description"
-            | DeviateAdd _      -> "deviate add"
-            | DeviateDelete _   -> "deviate delete"
-            | DeviateNotSupported _     -> "deviate not-supported"
-            | DeviateReplace _  -> "deviate replace"
-            | Deviation _       -> "deviation"
-            | Enum _            -> "enum"
-            | ErrorAppTag _     -> "error-app-tag"
-            | ErrorMessage _    -> "error-message"
-            | Extension _       -> "extension"
-            | Feature _         -> "feature"
-            | FractionDigits _  -> "fraction-digits"
-            | Grouping _        -> "grouping"
-            | Identity _        -> "identity"
-            | IfFeature _       -> "if-feature"
-            | Import _          -> "import"
-            | Include _         -> "include"
-            | Input _           -> "input"
-            | Key _             -> "key"
-            | Leaf _            -> "leaf"
-            | LeafList _        -> "leaf-list"
-            | Length _          -> "length"
-            | List _            -> "list"
-            | Mandatory _       -> "mandatory"
-            | MaxElements _     -> "max-elements"
-            | MinElements _     -> "min-elements"
-            | Modifier _        -> "modifier"
-            | Module _          -> "module"
-            | Must _            -> "must"
-            | Namespace _       -> "namespace"
-            | Notification _    -> "notification"
-            | OrderedBy _       -> "ordered-by"
-            | Organization _    -> "organization"
-            | Output _          -> "output"
-            | Path _            -> "path"
-            | Pattern _         -> "pattern"
-            | Position _        -> "position"
-            | Prefix _          -> "prefix"
-            | Presence _        -> "presence"
-            | Range _           -> "range"
-            | Reference _       -> "reference"
-            | Refine _          -> "refine"
-            | RequireInstance _ -> "require-instance"
-            | Revision _        -> "revision"
-            | RevisionDate _    -> "revision-date"
-            | Rpc _             -> "rpc"
-            | Status _          -> "status"
-            | Submodule _       -> "submodule"
-            | Type _            -> "type"
-            | TypeDef _         -> "typedef"
-            | Unique _          -> "unique"
-            | Units _           -> "units"
-            | Uses _            -> "uses"
-            // The following uses the same keyword as Uses.
-            | UsesAugment _     -> "uses"
-            | Value _           -> "value"
-            | When _            -> "when"
-            | YangVersion _     -> "yang-version"
-            | YinElement _      -> "yin-element"
-            | Unknown (id, _, _)    -> id.ToString()
-            | Unparsed (id, _, _)   -> id.ToString()
-
-        member this.PrettyPrint = Printer.Print this
+        member this.PrettyPrint     = Printer.Print this
+        override this.ToString()    = this.PrettyPrint
 
     /// Short name for the extra statements that may appear
     and ExtraStatements         = Statement list option
@@ -461,7 +296,7 @@ module Statements =
     | Mandatory     of MandatoryStatement
     | MinElements   of MinElementsStatement
     | MaxElements   of MaxElementsStatement
-    | Unknown               of UnknownStatement
+    | Unknown       of UnknownStatement
     and DeviateReplaceStatement         = DeviateReplaceBodyStatement list option
     and DeviateNotSupportedStatement    = ExtraStatements
     and DeviationBodyStatement  =
@@ -744,6 +579,7 @@ module Statements =
     | BitsSpecification                 of BitsSpecification
     | UnionSpecification                of UnionSpecification
     | BinarySpecification               of BinarySpecification
+    and TypeStatement           = IdentifierReference   * (TypeBodyStatement option) * (UnknownStatement list option)
     and TypeDefBodyStatement    =
     | Type          of TypeStatement
     | Units         of UnitsStatement
@@ -754,7 +590,6 @@ module Statements =
     | Unknown       of UnknownStatement
     and TypeDefStatement        = Identifier        * (TypeDefBodyStatement list option)
     /// Captures the type-stmt [RFC 7950, p.188]. If there are unknown statements, then they precede the TypeBodyStatement
-    and TypeStatement           = IdentifierReference   * (TypeBodyStatement option) * (UnknownStatement list option)
     and UniqueStatement         = Unique            * ExtraStatements
     and UnitsStatement          = string            * ExtraStatements
     and UsesBodyStatement       =
@@ -1004,6 +839,509 @@ module Statements =
         | BelongsToBodyStatement.Prefix     st -> Statement.Prefix      st
         | BelongsToBodyStatement.Unknown    st -> Statement.Unknown     st
 
+    /// Helper methods for the BitBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module BitBodyStatement =
+
+        let Translate = function
+        | BitBodyStatement.IfFeature     st -> Statement.IfFeature      st
+        | BitBodyStatement.Position      st -> Statement.Position       st
+        | BitBodyStatement.Status        st -> Statement.Status         st
+        | BitBodyStatement.Description   st -> Statement.Description    st
+        | BitBodyStatement.Reference     st -> Statement.Reference      st
+        | BitBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the CaseBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module CaseBodyStatement =
+
+        let Translate = function
+        | CaseBodyStatement.When          st -> Statement.When          st
+        | CaseBodyStatement.IfFeature     st -> Statement.IfFeature     st
+        | CaseBodyStatement.Status        st -> Statement.Status        st
+        | CaseBodyStatement.Description   st -> Statement.Description   st
+        | CaseBodyStatement.Reference     st -> Statement.Reference     st
+        | CaseBodyStatement.Container     st -> Statement.Container     st
+        | CaseBodyStatement.Leaf          st -> Statement.Leaf          st
+        | CaseBodyStatement.LeafList      st -> Statement.LeafList      st
+        | CaseBodyStatement.List          st -> Statement.List          st
+        | CaseBodyStatement.Choice        st -> Statement.Choice        st
+        | CaseBodyStatement.AnyData       st -> Statement.AnyData       st
+        | CaseBodyStatement.AnyXml        st -> Statement.AnyXml        st
+        | CaseBodyStatement.Uses          st -> Statement.Uses          st
+        | CaseBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the ChoiceBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ChoiceBodyStatement =
+
+        let Translate = function
+        | ChoiceBodyStatement.When          st -> Statement.When        st
+        | ChoiceBodyStatement.IfFeature     st -> Statement.IfFeature   st
+        | ChoiceBodyStatement.Default       st -> Statement.Default     st
+        | ChoiceBodyStatement.Config        st -> Statement.Config      st
+        | ChoiceBodyStatement.Mandatory     st -> Statement.Mandatory   st
+        | ChoiceBodyStatement.Status        st -> Statement.Status      st
+        | ChoiceBodyStatement.Description   st -> Statement.Description st
+        | ChoiceBodyStatement.Reference     st -> Statement.Reference   st
+        | ChoiceBodyStatement.Choice        st -> Statement.Choice      st
+        | ChoiceBodyStatement.Container     st -> Statement.Container   st
+        | ChoiceBodyStatement.Leaf          st -> Statement.Leaf        st
+        | ChoiceBodyStatement.LeafList      st -> Statement.LeafList    st
+        | ChoiceBodyStatement.List          st -> Statement.List        st
+        | ChoiceBodyStatement.AnyData       st -> Statement.AnyData     st
+        | ChoiceBodyStatement.AnyXml        st -> Statement.AnyXml      st
+        | ChoiceBodyStatement.Case          st -> Statement.Case        st
+        | ChoiceBodyStatement.Unknown       st -> Statement.Unknown     st
+
+    /// Helper methods for the ConfigStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ConfigStatement =
+        let ValueAsString (this : ConfigStatement) =
+            let (v, _) = this
+            if v then "true" else "false"
+
+    /// Helper methods for the ContainerBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ContainerBodyStatement =
+
+        let Translate = function
+        | ContainerBodyStatement.When          st -> Statement.When         st
+        | ContainerBodyStatement.IfFeature     st -> Statement.IfFeature    st
+        | ContainerBodyStatement.Must          st -> Statement.Must         st
+        | ContainerBodyStatement.Presence      st -> Statement.Presence     st
+        | ContainerBodyStatement.Config        st -> Statement.Config       st
+        | ContainerBodyStatement.Status        st -> Statement.Status       st
+        | ContainerBodyStatement.Description   st -> Statement.Description  st
+        | ContainerBodyStatement.Reference     st -> Statement.Reference    st
+        | ContainerBodyStatement.TypeDef       st -> Statement.TypeDef      st
+        | ContainerBodyStatement.Grouping      st -> Statement.Grouping     st
+        | ContainerBodyStatement.Container     st -> Statement.Container    st
+        | ContainerBodyStatement.Leaf          st -> Statement.Leaf         st
+        | ContainerBodyStatement.LeafList      st -> Statement.LeafList     st
+        | ContainerBodyStatement.List          st -> Statement.List         st
+        | ContainerBodyStatement.Choice        st -> Statement.Choice       st
+        | ContainerBodyStatement.AnyData       st -> Statement.AnyData      st
+        | ContainerBodyStatement.AnyXml        st -> Statement.AnyXml       st
+        | ContainerBodyStatement.Uses          st -> Statement.Uses         st
+        | ContainerBodyStatement.Action        st -> Statement.Action       st
+        | ContainerBodyStatement.Notification  st -> Statement.Notification st
+        | ContainerBodyStatement.Unknown       st -> Statement.Unknown      st
+
+    /// Helper methods for the DeviateAddBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module DeviateAddBodyStatement =
+
+        let Translate = function
+        | DeviateAddBodyStatement.Units         st -> Statement.Units       st
+        | DeviateAddBodyStatement.Must          st -> Statement.Must        st
+        | DeviateAddBodyStatement.Unique        st -> Statement.Unique      st
+        | DeviateAddBodyStatement.Default       st -> Statement.Default     st
+        | DeviateAddBodyStatement.Config        st -> Statement.Config      st
+        | DeviateAddBodyStatement.Mandatory     st -> Statement.Mandatory   st
+        | DeviateAddBodyStatement.MinElements   st -> Statement.MinElements st
+        | DeviateAddBodyStatement.MaxElements   st -> Statement.MaxElements st
+        | DeviateAddBodyStatement.Unknown       st -> Statement.Unknown     st
+
+    /// Helper methods for the DeviateDeleteBobyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module DeviateDeleteBobyStatement =
+
+        let Translate = function
+        | DeviateDeleteBobyStatement.Units         st -> Statement.Units    st
+        | DeviateDeleteBobyStatement.Must          st -> Statement.Must     st
+        | DeviateDeleteBobyStatement.Unique        st -> Statement.Unique   st
+        | DeviateDeleteBobyStatement.Default       st -> Statement.Default  st
+        | DeviateDeleteBobyStatement.Unknown       st -> Statement.Unknown  st
+
+    /// Helper methods for the DeviateReplaceBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module DeviateReplaceBodyStatement =
+
+        let Translate = function
+        | DeviateReplaceBodyStatement.Type          st -> Statement.Type        st
+        | DeviateReplaceBodyStatement.Units         st -> Statement.Units       st
+        | DeviateReplaceBodyStatement.Default       st -> Statement.Default     st
+        | DeviateReplaceBodyStatement.Config        st -> Statement.Config      st
+        | DeviateReplaceBodyStatement.Mandatory     st -> Statement.Mandatory   st
+        | DeviateReplaceBodyStatement.MinElements   st -> Statement.MinElements st
+        | DeviateReplaceBodyStatement.MaxElements   st -> Statement.MaxElements st
+        | DeviateReplaceBodyStatement.Unknown       st -> Statement.Unknown     st
+
+    /// Helper methods for the DeviationBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module DeviationBodyStatement =
+
+        let Translate = function
+        | DeviationBodyStatement.Description            st -> Statement.Description         st
+        | DeviationBodyStatement.Reference              st -> Statement.Reference           st
+        | DeviationBodyStatement.DeviateNotSupported    st -> Statement.DeviateNotSupported st
+        | DeviationBodyStatement.DeviateAdd             st -> Statement.DeviateAdd          st
+        | DeviationBodyStatement.DeviateReplace         st -> Statement.DeviateReplace      st
+        | DeviationBodyStatement.DeviateDelete          st -> Statement.DeviateDelete       st
+        | DeviationBodyStatement.Unknown                st -> Statement.Unknown             st
+
+    /// Helper methods for the EnumBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module EnumBodyStatement =
+
+        let Translate = function
+        | EnumBodyStatement.IfFeature     st -> Statement.IfFeature     st
+        | EnumBodyStatement.Value         st -> Statement.Value         st
+        | EnumBodyStatement.Status        st -> Statement.Status        st
+        | EnumBodyStatement.Description   st -> Statement.Description   st
+        | EnumBodyStatement.Reference     st -> Statement.Reference     st
+        | EnumBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the ExtensionBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ExtensionBodyStatement =
+
+        let Translate = function
+        | ExtensionBodyStatement.Argument      st -> Statement.Argument     st
+        | ExtensionBodyStatement.Status        st -> Statement.Status       st
+        | ExtensionBodyStatement.Description   st -> Statement.Description  st
+        | ExtensionBodyStatement.Reference     st -> Statement.Reference    st
+        | ExtensionBodyStatement.Unknown       st -> Statement.Unknown      st
+
+    /// Helper methods for the FeatureBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module FeatureBodyStatement =
+
+        let Translate = function
+        | FeatureBodyStatement.IfFeature     st -> Statement.IfFeature      st
+        | FeatureBodyStatement.Status        st -> Statement.Status         st
+        | FeatureBodyStatement.Description   st -> Statement.Description    st
+        | FeatureBodyStatement.Reference     st -> Statement.Reference      st
+        | FeatureBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the GroupingBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module GroupingBodyStatement =
+
+        let Translate = function
+        | GroupingBodyStatement.Status        st -> Statement.Status        st
+        | GroupingBodyStatement.Description   st -> Statement.Description   st
+        | GroupingBodyStatement.Reference     st -> Statement.Reference     st
+        | GroupingBodyStatement.TypeDef       st -> Statement.TypeDef       st
+        | GroupingBodyStatement.Grouping      st -> Statement.Grouping      st
+        | GroupingBodyStatement.Container     st -> Statement.Container     st
+        | GroupingBodyStatement.Leaf          st -> Statement.Leaf          st
+        | GroupingBodyStatement.LeafList      st -> Statement.LeafList      st
+        | GroupingBodyStatement.List          st -> Statement.List          st
+        | GroupingBodyStatement.Choice        st -> Statement.Choice        st
+        | GroupingBodyStatement.AnyData       st -> Statement.AnyData       st
+        | GroupingBodyStatement.AnyXml        st -> Statement.AnyXml        st
+        | GroupingBodyStatement.Uses          st -> Statement.Uses          st
+        | GroupingBodyStatement.Action        st -> Statement.Action        st
+        | GroupingBodyStatement.Notification  st -> Statement.Notification  st
+        | GroupingBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the IdentityBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module IdentityBodyStatement =
+
+        let Translate = function
+        | IdentityBodyStatement.IfFeature     st -> Statement.IfFeature     st
+        | IdentityBodyStatement.Base          st -> Statement.Base          st
+        | IdentityBodyStatement.Status        st -> Statement.Status        st
+        | IdentityBodyStatement.Description   st -> Statement.Description   st
+        | IdentityBodyStatement.Reference     st -> Statement.Reference     st
+        | IdentityBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the ImportBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ImportBodyStatement =
+
+        let Translate = function
+        | ImportBodyStatement.Prefix        st -> Statement.Prefix          st
+        | ImportBodyStatement.RevisionDate  st -> Statement.RevisionDate    st
+        | ImportBodyStatement.Description   st -> Statement.Description     st
+        | ImportBodyStatement.Reference     st -> Statement.Reference       st
+        | ImportBodyStatement.Unknown       st -> Statement.Unknown         st
+
+    /// Helper methods for the IncludeBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module IncludeBodyStatement =
+
+        let Translate = function
+        | IncludeBodyStatement.RevisionDate  st -> Statement.RevisionDate   st
+        | IncludeBodyStatement.Description   st -> Statement.Description    st
+        | IncludeBodyStatement.Reference     st -> Statement.Reference      st
+        | IncludeBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the InputBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module InputBodyStatement =
+
+        let Translate = function
+        | InputBodyStatement.Must          st -> Statement.Must             st
+        | InputBodyStatement.TypeDef       st -> Statement.TypeDef          st
+        | InputBodyStatement.Grouping      st -> Statement.Grouping         st
+        | InputBodyStatement.Container     st -> Statement.Container        st
+        | InputBodyStatement.Leaf          st -> Statement.Leaf             st
+        | InputBodyStatement.LeafList      st -> Statement.LeafList         st
+        | InputBodyStatement.List          st -> Statement.List             st
+        | InputBodyStatement.Choice        st -> Statement.Choice           st
+        | InputBodyStatement.AnyData       st -> Statement.AnyData          st
+        | InputBodyStatement.AnyXml        st -> Statement.AnyXml           st
+        | InputBodyStatement.Uses          st -> Statement.Uses             st
+        | InputBodyStatement.Unknown       st -> Statement.Unknown          st
+
+    /// Helper methods for the LeafBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module LeafBodyStatement =
+
+        let Translate = function
+        | LeafBodyStatement.When          st -> Statement.When              st
+        | LeafBodyStatement.IfFeature     st -> Statement.IfFeature         st
+        | LeafBodyStatement.Type          st -> Statement.Type              st
+        | LeafBodyStatement.Units         st -> Statement.Units             st
+        | LeafBodyStatement.Must          st -> Statement.Must              st
+        | LeafBodyStatement.Default       st -> Statement.Default           st
+        | LeafBodyStatement.Config        st -> Statement.Config            st
+        | LeafBodyStatement.Mandatory     st -> Statement.Mandatory         st
+        | LeafBodyStatement.Status        st -> Statement.Status            st
+        | LeafBodyStatement.Description   st -> Statement.Description       st
+        | LeafBodyStatement.Reference     st -> Statement.Reference         st
+        | LeafBodyStatement.Unknown       st -> Statement.Unknown           st
+
+    /// Helper methods for the LeafListBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module LeafListBodyStatement =
+
+        let Translate = function
+        | LeafListBodyStatement.When          st -> Statement.When          st
+        | LeafListBodyStatement.IfFeature     st -> Statement.IfFeature     st
+        | LeafListBodyStatement.Type          st -> Statement.Type          st
+        | LeafListBodyStatement.Units         st -> Statement.Units         st
+        | LeafListBodyStatement.Must          st -> Statement.Must          st
+        | LeafListBodyStatement.Default       st -> Statement.Default       st
+        | LeafListBodyStatement.Config        st -> Statement.Config        st
+        | LeafListBodyStatement.MinElements   st -> Statement.MinElements   st
+        | LeafListBodyStatement.MaxElements   st -> Statement.MaxElements   st
+        | LeafListBodyStatement.OrderedBy     st -> Statement.OrderedBy     st
+        | LeafListBodyStatement.Status        st -> Statement.Status        st
+        | LeafListBodyStatement.Description   st -> Statement.Description   st
+        | LeafListBodyStatement.Reference     st -> Statement.Reference     st
+        | LeafListBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the LengthBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module LengthBodyStatement =
+
+        let Translate = function
+        | LengthBodyStatement.ErrorMessage  st -> Statement.ErrorMessage    st
+        | LengthBodyStatement.ErrorAppTag   st -> Statement.ErrorAppTag     st
+        | LengthBodyStatement.Description   st -> Statement.Description     st
+        | LengthBodyStatement.Reference     st -> Statement.Reference       st
+        | LengthBodyStatement.Unknown       st -> Statement.Unknown         st
+
+    /// Helper methods for the ListBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module ListBodyStatement =
+
+        let Translate = function
+        | ListBodyStatement.When          st -> Statement.When          st
+        | ListBodyStatement.IfFeature     st -> Statement.IfFeature     st
+        | ListBodyStatement.Must          st -> Statement.Must          st
+        | ListBodyStatement.Key           st -> Statement.Key           st
+        | ListBodyStatement.Unique        st -> Statement.Unique        st
+        | ListBodyStatement.Config        st -> Statement.Config        st
+        | ListBodyStatement.MinElements   st -> Statement.MinElements   st
+        | ListBodyStatement.MaxElements   st -> Statement.MaxElements   st
+        | ListBodyStatement.OrderedBy     st -> Statement.OrderedBy     st
+        | ListBodyStatement.Status        st -> Statement.Status        st
+        | ListBodyStatement.Description   st -> Statement.Description   st
+        | ListBodyStatement.Reference     st -> Statement.Reference     st
+        | ListBodyStatement.TypeDef       st -> Statement.TypeDef       st
+        | ListBodyStatement.Grouping      st -> Statement.Grouping      st
+        | ListBodyStatement.Container     st -> Statement.Container     st
+        | ListBodyStatement.Leaf          st -> Statement.Leaf          st
+        | ListBodyStatement.LeafList      st -> Statement.LeafList      st
+        | ListBodyStatement.List          st -> Statement.List          st
+        | ListBodyStatement.Choice        st -> Statement.Choice        st
+        | ListBodyStatement.AnyData       st -> Statement.AnyData       st
+        | ListBodyStatement.AnyXml        st -> Statement.AnyXml        st
+        | ListBodyStatement.Uses          st -> Statement.Uses          st
+        | ListBodyStatement.Action        st -> Statement.Action        st
+        | ListBodyStatement.Notification  st -> Statement.Notification  st
+        | ListBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the MustBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module MustBodyStatement =
+
+        let Translate = function
+        | MustBodyStatement.ErrorMessage  st -> Statement.ErrorMessage  st
+        | MustBodyStatement.ErrorAppTag   st -> Statement.ErrorAppTag   st
+        | MustBodyStatement.Description   st -> Statement.Description   st
+        | MustBodyStatement.Reference     st -> Statement.Reference     st
+        | MustBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the NotificationBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module NotificationBodyStatement =
+
+        let Translate = function
+        | NotificationBodyStatement.IfFeature     st -> Statement.IfFeature     st
+        | NotificationBodyStatement.Must          st -> Statement.Must          st
+        | NotificationBodyStatement.Status        st -> Statement.Status        st
+        | NotificationBodyStatement.Description   st -> Statement.Description   st
+        | NotificationBodyStatement.Reference     st -> Statement.Reference     st
+        | NotificationBodyStatement.TypeDef       st -> Statement.TypeDef       st
+        | NotificationBodyStatement.Grouping      st -> Statement.Grouping      st
+        | NotificationBodyStatement.Container     st -> Statement.Container     st
+        | NotificationBodyStatement.Leaf          st -> Statement.Leaf          st
+        | NotificationBodyStatement.LeafList      st -> Statement.LeafList      st
+        | NotificationBodyStatement.List          st -> Statement.List          st
+        | NotificationBodyStatement.Choice        st -> Statement.Choice        st
+        | NotificationBodyStatement.AnyData       st -> Statement.AnyData       st
+        | NotificationBodyStatement.AnyXml        st -> Statement.AnyXml        st
+        | NotificationBodyStatement.Uses          st -> Statement.Uses          st
+        | NotificationBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the OutputBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module OutputBodyStatement =
+
+        let Translate = function
+        | OutputBodyStatement.Must          st -> Statement.Must        st
+        | OutputBodyStatement.TypeDef       st -> Statement.TypeDef     st
+        | OutputBodyStatement.Grouping      st -> Statement.Grouping    st
+        | OutputBodyStatement.Container     st -> Statement.Container   st
+        | OutputBodyStatement.Leaf          st -> Statement.Leaf        st
+        | OutputBodyStatement.LeafList      st -> Statement.LeafList    st
+        | OutputBodyStatement.List          st -> Statement.List        st
+        | OutputBodyStatement.Choice        st -> Statement.Choice      st
+        | OutputBodyStatement.AnyData       st -> Statement.AnyData     st
+        | OutputBodyStatement.AnyXml        st -> Statement.AnyXml      st
+        | OutputBodyStatement.Uses          st -> Statement.Uses        st
+        | OutputBodyStatement.Unknown       st -> Statement.Unknown     st
+
+    /// Helper methods for the PatternBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module PatternBodyStatement =
+
+        let Translate = function
+        | PatternBodyStatement.Modifier      st -> Statement.Modifier       st
+        | PatternBodyStatement.ErrorMessage  st -> Statement.ErrorMessage   st
+        | PatternBodyStatement.ErrorAppTag   st -> Statement.ErrorAppTag    st
+        | PatternBodyStatement.Description   st -> Statement.Description    st
+        | PatternBodyStatement.Reference     st -> Statement.Reference      st
+        | PatternBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the RangeBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module RangeBodyStatement =
+
+        let Translate = function
+        | RangeBodyStatement.ErrorMessage  st -> Statement.ErrorMessage st
+        | RangeBodyStatement.ErrorAppTag   st -> Statement.ErrorAppTag  st
+        | RangeBodyStatement.Description   st -> Statement.Description  st
+        | RangeBodyStatement.Reference     st -> Statement.Reference    st
+        | RangeBodyStatement.Unknown       st -> Statement.Unknown      st
+
+    /// Helper methods for the RefineBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module RefineBodyStatement =
+
+        let Translate = function
+        | RefineBodyStatement.IfFeature     st -> Statement.IfFeature   st
+        | RefineBodyStatement.Must          st -> Statement.Must        st
+        | RefineBodyStatement.Presence      st -> Statement.Presence    st
+        | RefineBodyStatement.Default       st -> Statement.Default     st
+        | RefineBodyStatement.Config        st -> Statement.Config      st
+        | RefineBodyStatement.Mandatory     st -> Statement.Mandatory   st
+        | RefineBodyStatement.MinElements   st -> Statement.MinElements st
+        | RefineBodyStatement.MaxElements   st -> Statement.MaxElements st
+        | RefineBodyStatement.Description   st -> Statement.Description st
+        | RefineBodyStatement.Reference     st -> Statement.Reference   st
+        | RefineBodyStatement.Unknown       st -> Statement.Unknown     st
+
+    /// Helper methods for the RevisionBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module RevisionBodyStatement =
+
+        let Translate = function
+        | RevisionBodyStatement.Description   st -> Statement.Description   st
+        | RevisionBodyStatement.Reference     st -> Statement.Reference     st
+        | RevisionBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    /// Helper methods for the RpcBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module RpcBodyStatement =
+
+        let Translate = function
+        | RpcBodyStatement.IfFeature     st -> Statement.IfFeature st
+        | RpcBodyStatement.Status        st -> Statement.Status st
+        | RpcBodyStatement.Description   st -> Statement.Description st
+        | RpcBodyStatement.Reference     st -> Statement.Reference st
+        | RpcBodyStatement.TypeDef       st -> Statement.TypeDef st
+        | RpcBodyStatement.Grouping      st -> Statement.Grouping st
+        | RpcBodyStatement.Input         st -> Statement.Input st
+        | RpcBodyStatement.Output        st -> Statement.Output st
+        | RpcBodyStatement.Unknown       st -> Statement.Unknown st
+
+    /// Helper methods for the TypeDefBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module TypeDefBodyStatement =
+
+        let Translate = function
+        | TypeDefBodyStatement.Type          st -> Statement.Type           st
+        | TypeDefBodyStatement.Units         st -> Statement.Units          st
+        | TypeDefBodyStatement.Default       st -> Statement.Default        st
+        | TypeDefBodyStatement.Status        st -> Statement.Status         st
+        | TypeDefBodyStatement.Description   st -> Statement.Description    st
+        | TypeDefBodyStatement.Reference     st -> Statement.Reference      st
+        | TypeDefBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the UsesBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module UsesBodyStatement =
+
+        let Translate = function
+        | UsesBodyStatement.When          st -> Statement.When st
+        | UsesBodyStatement.IfFeature     st -> Statement.IfFeature st
+        | UsesBodyStatement.Status        st -> Statement.Status st
+        | UsesBodyStatement.Description   st -> Statement.Description st
+        | UsesBodyStatement.Reference     st -> Statement.Reference st
+        | UsesBodyStatement.Refine        st -> Statement.Refine st
+        | UsesBodyStatement.UsesAugment   st -> Statement.UsesAugment st
+        | UsesBodyStatement.Unknown       st -> Statement.Unknown st
+
+    /// Helper methods for the UsesAugmentBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module UsesAugmentBodyStatement =
+
+        let Translate = function
+        | UsesAugmentBodyStatement.When          st -> Statement.When           st
+        | UsesAugmentBodyStatement.IfFeature     st -> Statement.IfFeature      st
+        | UsesAugmentBodyStatement.Status        st -> Statement.Status         st
+        | UsesAugmentBodyStatement.Description   st -> Statement.Description    st
+        | UsesAugmentBodyStatement.Reference     st -> Statement.Reference      st
+        | UsesAugmentBodyStatement.Container     st -> Statement.Container      st
+        | UsesAugmentBodyStatement.Leaf          st -> Statement.Leaf           st
+        | UsesAugmentBodyStatement.LeafList      st -> Statement.LeafList       st
+        | UsesAugmentBodyStatement.List          st -> Statement.List           st
+        | UsesAugmentBodyStatement.Choice        st -> Statement.Choice         st
+        | UsesAugmentBodyStatement.AnyData       st -> Statement.AnyData        st
+        | UsesAugmentBodyStatement.AnyXml        st -> Statement.AnyXml         st
+        | UsesAugmentBodyStatement.Uses          st -> Statement.Uses           st
+        | UsesAugmentBodyStatement.Case          st -> Statement.Case           st
+        | UsesAugmentBodyStatement.Action        st -> Statement.Action         st
+        | UsesAugmentBodyStatement.Notification  st -> Statement.Notification   st
+        | UsesAugmentBodyStatement.Unknown       st -> Statement.Unknown        st
+
+    /// Helper methods for the WhenBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module WhenBodyStatement =
+
+        let Translate = function
+        | WhenBodyStatement.Description   st -> Statement.Description   st
+        | WhenBodyStatement.Reference     st -> Statement.Reference     st
+        | WhenBodyStatement.Unknown       st -> Statement.Unknown       st
+
     /// Helper methods for the Statement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module Statement =
@@ -1095,6 +1433,7 @@ module Statements =
             | Statement.Unparsed _
                 -> None
 
+        /// Get the YANG keyword used to define the statement
         let Keyword (this : Statement) =
             match this with
             | Statement.Action _                -> "action"
@@ -1237,40 +1576,83 @@ module Statements =
             ps keyword; sp ()
 
             match this with
-            //| Statement.Config              (s, block)
+            | Statement.List                                (id, block) -> psi id; pbt ListBodyStatement.Translate      block
+            | Statement.Mandatory                           (ma, block) -> ps (BoolAsString ma); pb                     block
+            // TODO: Call the printer for MaxValue
+            | Statement.MaxElements                         (v,  block) -> ps (v.ToString()); pb                        block
+            // TODO: Call the printer for MinValue
+            | Statement.MinElements                         (v,  block) -> ps (v.ToString()); pb                        block
+            // TODO: Call the printer for Modifier
+            | Statement.Modifier                            (v,  block) -> ps (v.ToString()); pb                        block
+            | Statement.Must                                (st, block) -> ps st; pbo MustBodyStatement.Translate       block
+            | Statement.Notification                        (id, block) -> psi id; pbo NotificationBodyStatement.Translate  block
+            // TODO: Call the printer for OrderedBy
+            | Statement.OrderedBy                           (ob, block) -> ps (ob.ToString()); pb                       block
+            | Statement.Output                                   block  -> pbt OutputBodyStatement.Translate            block
+            // TODO: Call the printer for path list
+            | Statement.Path                              (path, block) -> ps (path.ToString()); pb                     block
+            | Statement.Pattern                        (pattern, block) -> ps pattern; pbo PatternBodyStatement.Translate   block
+            | Statement.Position                      (position, block) -> Printf.bprintf sb "%d" position; pb          block
+            // TODO: Call the printer for Range
+            | Statement.Range                            (range, block) -> ps (range.ToString()); pbo RangeBodyStatement.Translate      block
+            // TODO: Call the printer for Refine
+            | Statement.Refine                          (refine, block) -> ps (refine.ToString()); pbo RefineBodyStatement.Translate    block
+            | Statement.RequireInstance                    (req, block) -> ps (BoolAsString req); pb                    block
+            // TODO: Call the printer for Revision
+            | Statement.Revision                           (rev, block) -> ps (rev.ToString()); pbo RevisionBodyStatement.Translate     block
+            // TODO: Call the printer for Revision
+            | Statement.RevisionDate                       (rev, block) -> ps (rev.ToString()); pb                      block
+            | Statement.Rpc                                 (id, block) -> psi id; pbo RpcBodyStatement.Translate       block
+            // TODO: Call the printer for IdentifierReference
+            //| Statement.Type                                (id, block) -> ps (id.ToString())
+
+            | Statement.Module                              m           -> failwith "Print module"
+            | Statement.Submodule                           sm          -> failwith "Print sub-module"
+
             | Statement.Contact             (s, block)
-            //| Statement.Default             (s, block)
+            | Statement.Default             (s, block)
             | Statement.Description         (s, block)
             | Statement.ErrorAppTag         (s, block)
             | Statement.ErrorMessage        (s, block)
-            //| Statement.FractionDigits      (s, block)
-            //| Statement.IfFeature           (s, block)
-            //| Statement.Key                 (s, block)
-            //| Statement.Mandatory           (s, block)
-            //| Statement.MaxElements         (s, block)
-            //| Statement.MinElements         (s, block)
-            //| Statement.Modifier            (s, block)
-            //| Statement.OrderedBy           (s, block)
             | Statement.Organization        (s, block)
-            //| Statement.Path                (s, block)
-            //| Statement.Position            (s, block)
             | Statement.Prefix              (s, block)
-            //| Statement.Presence            (s, block)
+            | Statement.Presence            (s, block)
             | Statement.Reference           (s, block)
-            //| Statement.RevisionDate        (s, block)
-            //| Statement.RequireInstance     (s, block)
             | Statement.Units               (s, block)
-            //| Statement.Unique              (s, block)
-            //| Statement.Value               (s, block)
-            //| Statement.YinElement          (s, block)
                                                                         -> ps s; pb block
 
             | Statement.Action                              (id, block) -> psi id; pbo ActionBodyStatement.Translate    block
             | Statement.AnyData                             (id, block) -> psi id; pbo AnyDataBodyStatement.Translate   block
             | Statement.AnyXml                              (id, block) -> psi id; pbo AnyXmlBodyStatement.Translate    block
             | Statement.Argument                            (id, block) -> psi id; pbo ArgumentBodyStatement.Translate  block
-            | Statement.Augment                             (au, block) -> psa au; pbt AugmentBodyStatement.Translate block
+            | Statement.Augment                             (au, block) -> psa au; pbt AugmentBodyStatement.Translate   block
             | Statement.BelongsTo                           (bt, block) -> psa bt; pbt BelongsToBodyStatement.Translate block
+            | Statement.Bit                                 (id, block) -> psi id; pbo BitBodyStatement.Translate       block
+            | Statement.Case                                (id, block) -> psi id; pbo CaseBodyStatement.Translate      block
+            | Statement.Choice                              (id, block) -> psi id; pbo ChoiceBodyStatement.Translate    block
+            | Statement.Config                          (config, block) -> ps (BoolAsString config); pb                 block
+            | Statement.Container                           (id, block) -> psi id; pbo ContainerBodyStatement.Translate block
+            | Statement.DeviateAdd                               block  -> pbo DeviateAddBodyStatement.Translate        block
+            | Statement.DeviateDelete                            block  -> pbo DeviateDeleteBobyStatement.Translate     block
+            | Statement.DeviateReplace                           block  -> pbo DeviateReplaceBodyStatement.Translate    block
+            | Statement.Deviation                           (dv, block) -> ps (dv.ToString()); pbo DeviationBodyStatement.Translate block
+            | Statement.Enum                                (id, block) -> ps id; pbo EnumBodyStatement.Translate       block
+            | Statement.Extension                           (id, block) -> psi id; pbo ExtensionBodyStatement.Translate block
+            | Statement.Feature                             (id, block) -> psi id; pbo FeatureBodyStatement.Translate   block
+            | Statement.FractionDigits                   (value, block) -> Printf.bprintf sb "%d" value; pb             block
+            | Statement.Grouping                            (id, block) -> psi id; pbo GroupingBodyStatement.Translate  block
+            | Statement.Identity                            (id, block) -> psi id; pbo IdentityBodyStatement.Translate  block
+            // TODO: Call the printer for IfFeatureExpression
+            | Statement.IfFeature                           (ex, block) -> Printf.bprintf sb "%A" ex; pb                block
+            | Statement.Import                              (id, block) -> psi id; pbt ImportBodyStatement.Translate    block
+            | Statement.Include                             (id, block) -> psi id; pbo IncludeBodyStatement.Translate   block
+            | Statement.Input                                    block  -> pbt InputBodyStatement.Translate             block
+            // TODO: Call the printer on Key
+            | Statement.Key                                (key, block) -> ps (key.ToString()); pb                      block
+            | Statement.Leaf                                (id, block) -> psi id; pbt LeafBodyStatement.Translate      block
+            | Statement.LeafList                            (id, block) -> psi id; pbt LeafListBodyStatement.Translate  block
+            // TODO: Call the printer for Length
+            | Statement.Length                          (length, block) -> Printf.bprintf sb "%A" length; pbo LengthBodyStatement.Translate block
 
             | Statement.Status                          (status, block) -> psa status;  pb block
             | Statement.Namespace                          (uri, block) -> psa uri;     pb block
