@@ -1233,6 +1233,17 @@ module Statements =
         | ListBodyStatement.Notification  st -> Statement.Notification  st
         | ListBodyStatement.Unknown       st -> Statement.Unknown       st
 
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> ListBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> ListBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> ListBodyStatement.LeafList     st
+        | BodyStatement.List          st -> ListBodyStatement.List         st
+        | BodyStatement.Choice        st -> ListBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> ListBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> ListBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> ListBodyStatement.Uses         st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+
     /// Helper methods for the MetaBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module MetaBodyStatement =

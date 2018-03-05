@@ -93,6 +93,24 @@ module BodyStatements =
             <|> (parse_data_definition          |>> ContainerBodyStatement.FromDataDefinition)
 
         let parse_container_statement : Parser<ContainerStatement, 'a> =
+            //container-stmt      = container-keyword sep identifier-arg-str optsep
+            //                      (";" /
+            //                       "{" stmtsep
+            //                           ;; these stmts can appear in any order
+            //                           [when-stmt]
+            //                           *if-feature-stmt
+            //                           *must-stmt
+            //                           [presence-stmt]
+            //                           [config-stmt]
+            //                           [status-stmt]
+            //                           [description-stmt]
+            //                           [reference-stmt]
+            //                           *(typedef-stmt / grouping-stmt)
+            //                           *data-def-stmt
+            //                           *action-stmt
+            //                           *notification-stmt
+            //                       "}") stmtsep
+
             skipString "container" >>. spaces >>.
             Identifier.parse_identifier .>> spaces .>>.
             (
@@ -104,10 +122,44 @@ module BodyStatements =
                     )
             )
 
+        let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
+                (skipString "key" >>. spaces >>. Strings.parse_string .>> spaces .>>. (end_of_statement_or_block parse_statement)
+                 |>> (fun (key, block) -> (Arguments.Key.MakeFromString key, block) |> ListBodyStatement.Key ))
+            <|> (parse_data_definition |>> ListBodyStatement.FromDataDefinition)
+
+        let parse_list_statement : Parser<ListStatement, 'a> =
+            //list-stmt           = list-keyword sep identifier-arg-str optsep
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            [when-stmt]
+            //                            *if-feature-stmt
+            //                            *must-stmt
+            //                            [key-stmt]
+            //                            *unique-stmt
+            //                            [config-stmt]
+            //                            [min-elements-stmt]
+            //                            [max-elements-stmt]
+            //                            [ordered-by-stmt]
+            //                            [status-stmt]
+            //                            [description-stmt]
+            //                            [reference-stmt]
+            //                            *(typedef-stmt / grouping-stmt)
+            //                            1*data-def-stmt
+            //                            *action-stmt
+            //                            *notification-stmt
+            //                        "}" stmtsep
+
+            skipString "list" >>. spaces >>.
+            Identifier.parse_identifier .>> spaces .>>
+            skipChar '{' .>> spaces .>>.
+            (many parse_list_body_statement) .>> spaces
+            .>> skipChar '}' .>> spaces
+
         let parse_data_definition_impl : Parser<BodyStatement, 'a> =
                 (parse_container_statement  |>> BodyStatement.Container)
-            <|> (parse_leaf                 |>> BodyStatement.Leaf)
             <|> (parse_leaf_list            |>> BodyStatement.LeafList)
+            <|> (parse_leaf                 |>> BodyStatement.Leaf)
+            <|> (parse_list_statement       |>> BodyStatement.List)
 
         parse_data_definition_ref := parse_data_definition_impl
 
@@ -120,49 +172,3 @@ module BodyStatements =
     let parse_body_statement<'a> : Parser<BodyStatement, 'a> = parsers.DataDefinition
     let parse_body_statements<'a> : Parser<BodyStatement list, 'a> =
         many parsers.DataDefinition
-
-    //let parse_data_definition<'a> : Parser<DataDefinitionStatement, 'a> =
-    //    let (parse_data_definition : Parser<DataDefinitionStatement, 'a>),
-    //        (parse_data_definition_ref : Parser<DataDefinitionStatement, 'a> ref) =
-    //            createParserForwardedToRef<DataDefinitionStatement, 'a>()
-
-    //    let parse_container_body =
-    //        let parse_container_body_item =
-    //            parse_data_definition |>> ContainerStatementBody.DataDefinition
-    //        many parse_container_body_item
-
-    //    let parse_container =
-    //        skipString "container" >>. spaces >>.
-    //        Identifier.parse_identifier .>> spaces .>>.
-    //        (
-    //                (skipChar ';'                                                                   |>> (fun _ -> None))
-    //            <|> (skipChar '{' >>. spaces >>. parse_container_body .>> spaces .>> skipChar '}'   |>> Some)
-    //        ) .>> spaces
-    //        |>> (fun (name, body) -> Container (name, body))
-
-    //    let parse_list_body =
-    //        let parse_list_body_item =
-    //                (skipString "key" >>. spaces >>. Strings.parse_string .>> spaces .>> skipChar ';' .>> spaces |>> YListStatementBody.ListKey)
-    //            <|> (parse_data_definition |>> YListStatementBody.DataDefinition)
-    //        many parse_list_body_item
-
-    //    let parse_list =
-    //        skipString "list" >>. spaces >>.
-    //        Identifier.parse_identifier .>> spaces .>>
-    //        skipChar '{' .>> spaces .>>.
-    //        parse_list_body .>> spaces
-    //        .>> skipChar '}' .>> spaces
-    //        |>> (fun (name, body) -> YList (name, body))
-
-    //    let inline parse_data_definition_implementation (input : CharStream<'a>) : Reply<DataDefinitionStatement> =
-    //        let parser =
-    //                parse_container
-    //            <|> (LeafList.parse_leaf_list   |>> LeafList)
-    //            <|> (Leaf.parse_leaf            |>> Leaf)
-    //            <|> parse_list
-
-    //        parser input
-
-    //    parse_data_definition_ref := parse_data_definition_implementation
-    //    parse_data_definition
-

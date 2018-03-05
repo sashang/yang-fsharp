@@ -75,7 +75,17 @@ module Arguments =
     type Deviation = | NA
 
     // TODO: Fill details for key-arg
-    type Key = Identifier list
+    type Key = IdentifierReference list
+
+    /// Helper methods for the Statement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module Key =
+        /// Create a key from a string
+        let MakeFromString (keys : string) : Key =
+            if String.IsNullOrWhiteSpace(keys) then invalidArg "keys" "keys cannot be null or whitespace"
+            let keys = keys.Split([| ' '; '\t'; '\r'; '\t' |], StringSplitOptions.RemoveEmptyEntries) |> Array.toList
+            keys |> List.map (IdentifierReference.Make)
+
 
     // TODO: Fill detail of length-arg
     type Length = | NA

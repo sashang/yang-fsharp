@@ -87,12 +87,41 @@ module Identifier =
         /// <param name="name">The name of the identifier</param>
         static member Make (prefix, name) =
             if (is_identifier_valid prefix) = false then
-                _logger.Error(sprintf "Invalid prefix for identifier: %s" prefix)
-                raise (new YangModelException(sprintf "Invalid prefix for identifier: %s" prefix))
+                let msg = sprintf "Invalid prefix for identifier: %s" prefix
+                _logger.Error msg
+                raise (new YangModelException(msg))
             if (is_identifier_valid name) = false then
-                _logger.Error(sprintf "Invalid name of (prefixed) identifier: %s" name)
-                raise (new YangModelException(sprintf "Invalid name of (prefixed) identifier : %s" name))
+                let msg = sprintf "Invalid name of (prefixed) identifier: %s" name
+                _logger.Error msg
+                raise (new YangModelException(msg))
+
             { Prefix = prefix; Name = name }
+
+        /// <summary>
+        /// Create a composite identifier
+        /// </summary>
+        /// <param name="id">The identifier as a string</param>
+        static member Make (id) =
+            if String.IsNullOrWhiteSpace(id) then
+                let msg = "Cannot create key from empty string"
+                _logger.Error msg
+                raise (new YangModelException(msg))
+
+            let separator = id.IndexOf(':')
+            if separator < 0 then
+                let msg = sprintf "Invalid name for custom identifier (missing colon ':'): %s" id
+                _logger.Error msg
+                raise (new YangModelException(msg))
+
+            let rseparator = id.IndexOf(':')
+            if separator <> rseparator then
+                let msg = sprintf "Invalid name for custom identifier (multiple prefixes): %s" id
+                _logger.Error msg
+                raise (new YangModelException(msg))
+
+            let prefix      = id.Substring(0, separator)
+            let identifier  = id.Substring(separator+1)
+            IdentifierWithPrefix.Make(prefix, identifier)
 
         /// <summary>
         /// Gets the string value of the identifier
@@ -112,6 +141,24 @@ module Identifier =
     | Simple of Identifier
     | Custom of IdentifierWithPrefix
     with
+        /// <summary>
+        /// Create an identifier from a string
+        /// </summary>
+        /// <param name="id">The identifier</param>
+        static member Make (id) =
+            if String.IsNullOrWhiteSpace(id) then
+                let msg = "Cannot create key from empty string"
+                _logger.Error msg
+                raise (new YangModelException(msg))
+
+            if id.IndexOf(':') < 0 then
+                Simple (Identifier.Make id)
+            else
+                Custom (IdentifierWithPrefix.Make id)
+
+        /// <summary>
+        /// Get the string representation of the identifier
+        /// </summary>
         member this.Value =
             match this with
             | Simple identifier -> identifier.Value
@@ -119,6 +166,9 @@ module Identifier =
 
         override this.ToString() = this.Value
 
+        /// <summary>
+        /// Checks whether the identifier is valid
+        /// </summary>
         member this.IsValid =
             match this with
             | Simple identifier -> identifier.IsValid

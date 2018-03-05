@@ -59,8 +59,7 @@ module Module =
     // TODO: Parsing unknown-statement declarations, see Note-03.
 
     /// Parser for the module statement
-    //let parse_module<'a> : Parser<ModuleStatement, 'a> =
-    let parse_module<'a> : Parser<Identifier * ModuleHeaderStatements * MetaStatements * (RevisionStatement list) * (BodyStatement list), 'a> =
+    let parse_module<'a> : Parser<ModuleStatement, 'a> =
         let parser =
             spaces .>> skipStringCI "module" .>> spaces >>.
             Identifier.parse_identifier .>> spaces .>>
@@ -75,17 +74,16 @@ module Module =
                 let meta' = match meta with | None -> [] | Some m -> m
                 let revision' = match revision with | None -> [] | Some r -> r
 
-                identifier, header, meta', revision', body
-                //{
-                //    Name        = identifier
-                //    Header      = header
-                //    Linkage     = []
-                //    Meta        = meta'
-                //    Revision    = revision'
-                //    Body        = body
-                //}
+                {
+                    Name        = identifier
+                    Header      = header
+                    Linkage     = []
+                    Meta        = meta'
+                    Revision    = revision'
+                    Body        = body
+                }
         )
 
-    //let parse_module_as_statement<'a> : Parser<Statement, 'a> =
-    //    parse_module |>> Statement.Module
+    let parse_module_as_statement<'a> : Parser<Statement, 'a> =
+        parse_module |>> Statement.Module
 
