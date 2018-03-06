@@ -1391,6 +1391,9 @@ module Statements =
             )
             |> (fun l -> if l.Length = 0 then None else Some l)
 
+        // Returns an empty list of meta-statements
+        let Empty : MetaStatements = []
+
     /// Helper methods for the ModuleStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module ModuleStatement =

@@ -34,6 +34,9 @@ module Meta =
 
         /// Update state from element
         let foldState state element =
+            // The meta statements can appear at most once, so we keep track of which
+            // we have seen, and fail if we see duplicates.
+
             match state, element with
             | (st, (false, co, de, re)), (Organization _)   -> st @ [element], (true, co, de, re)
             | (_,  (true, _, _, _)),     (Organization _)   ->
@@ -59,5 +62,6 @@ module Meta =
             elementParser           = elementParser,
             stateFromFirstElement   = stateFromFirstElement,
             foldState               = foldState,
-            resultFromState         = result
+            resultFromState         = result,
+            resultForEmptySequence  = fun _ -> []
         )

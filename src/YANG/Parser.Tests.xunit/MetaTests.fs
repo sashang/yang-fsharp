@@ -11,7 +11,7 @@ module MetaTests =
     let ``parse empty meta`` () =
         let body = ""
         let meta = FParsecHelper.apply (spaces >>. parse_meta) body
-        Assert.Null(meta)
+        Assert.Equal<MetaStatements>(MetaStatements.Empty, meta)
 
     [<Fact>]
     let ``parse simple meta statements`` () =

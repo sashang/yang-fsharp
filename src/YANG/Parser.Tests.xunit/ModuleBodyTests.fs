@@ -15,7 +15,7 @@ module ModuleBodyTests =
                 ""
 
         Assert.Null(header)
-        Assert.Null(meta)
+        Assert.Equal<MetaStatements>(MetaStatements.Empty, meta)
         Assert.NotNull(revisions)
         Assert.Empty(revisions)
 

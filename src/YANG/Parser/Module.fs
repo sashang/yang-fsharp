@@ -71,7 +71,11 @@ module Module =
                 // We need the two adjustments below, because the parsers
                 // are guaranteed to return a value, even if the values are empty.
 
-                let meta' = match meta with | None -> [] | Some m -> m
+                let meta' =
+                    match meta with
+                    | None      -> []
+                    | Some m    -> m
+
                 let revision' = match revision with | None -> [] | Some r -> r
 
                 {

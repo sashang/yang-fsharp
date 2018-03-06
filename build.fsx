@@ -103,8 +103,8 @@ Target "Test" (fun _ ->
       |> xUnit2 (fun p ->
         {
             p with
-                HtmlOutputPath = Some (Path.Combine(testDirResults, "Parser.tests.result.html"))
-                XmlOutputPath = Some (Path.Combine(testDirResults, "Parser.tests.result.xml"))
+                HtmlOutputPath = Some (Path.Combine(testDirResults, "YANG.tests.result.html"))
+                XmlOutputPath = Some (Path.Combine(testDirResults, "YANG.tests.result.xml"))
         }
       )
 )

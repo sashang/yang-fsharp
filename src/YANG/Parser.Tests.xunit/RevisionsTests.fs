@@ -56,7 +56,7 @@ module RevisionsTests =
         Assert.Equal(None,      RevisionStatement.Reference revision)
 
         Assert.Equal(
-            (   "InitialRevision",
+            (   "Initial revision.",
                 Some [
                     Statement.Unknown (
                         IdentifierWithPrefix.Make "ex:documentation-flag", 
