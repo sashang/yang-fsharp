@@ -214,7 +214,7 @@ module Statements =
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
-    /// Parses an organization statement
+    /// Parses a presence statement
     let parse_presence_statement<'a> : Parser<PresenceStatement, 'a> =
         // [RFC 7950, p. 192]
         // presence-stmt       = presence-keyword sep string stmtend
