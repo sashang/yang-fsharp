@@ -66,7 +66,7 @@ apply_parser Module.parse_module model
 
 #time
 let big_model =
-    Path.Combine(__SOURCE_DIRECTORY__, @"../../../", @"Models-External\Juniper\16.1\configuration2.yang")
+    Path.Combine(__SOURCE_DIRECTORY__, @"../../../", @"Models-External\Juniper\16.1\configuration.yang")
     |> ReadAndClean
 
 let juniper = apply_parser Generic.parse_many_statements big_model |> List.head

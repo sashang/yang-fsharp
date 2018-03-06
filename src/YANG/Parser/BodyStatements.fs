@@ -8,6 +8,7 @@ module BodyStatements =
     open Yang.Model
     open Leaf
     open LeafList
+    open Yang.Model.Arguments
 
     // [RFC 7950, p. 185]
     //body-stmts          = *(extension-stmt /
@@ -85,12 +86,47 @@ module BodyStatements =
         Container       : Parser<ContainerStatement, 'a>
     }
 
+    /// Create parsers for the high-level constructs of the model (data  types, etc).
+    /// All parsers created below depend on each other.
     let private parsers<'a> =
+        //
+        // First, create some placeholders for parsers in order to break the dependencies.
+        //
+
         let (parse_data_definition : Parser<BodyStatement, 'a>), (parse_data_definition_ref : Parser<BodyStatement, 'a> ref) =
             createParserForwardedToRef<BodyStatement, 'a>()
 
         let (parse_grouping : Parser<GroupingStatement, 'a>), (parse_grouping_ref : Parser<GroupingStatement, 'a> ref) =
             createParserForwardedToRef<GroupingStatement, 'a>()
+
+        //
+        // Second, some helper methods
+        //
+
+        /// Creates a parser for a statement that has optional body
+        let make_parser_optional keyword identifier body_parser =
+            skipString keyword >>. spaces >>.
+            identifier .>> spaces .>>.
+            (
+                    (skipChar ';' |>> (fun _ -> None))
+                <|> (skipChar '{' >>. spaces >>.
+                     (many body_parser) .>> spaces .>>
+                     skipChar '}'
+                     |>> Some
+                    ) .>> spaces
+            )
+
+        /// Creates a parser for a statement with mandatory body
+        let make_parser keyword identifier body_parser =
+            skipString keyword >>. spaces >>.
+            identifier .>> spaces .>>
+            skipChar '{' .>> spaces .>>.
+            (many body_parser) .>> spaces .>>
+            skipChar '}' .>> spaces
+
+        //
+        // Next, create the parsers for the various statements
+        //
 
         let (parse_choice_statement : Parser<ChoiceStatement, 'a>), (parse_choice_statement_ref : Parser<ChoiceStatement, 'a> ref) =
             createParserForwardedToRef<ChoiceStatement, 'a>()
@@ -121,17 +157,7 @@ module BodyStatements =
             //                           *action-stmt
             //                           *notification-stmt
             //                       "}") stmtsep
-
-            skipString "container" >>. spaces >>.
-            Identifier.parse_identifier .>> spaces .>>.
-            (
-                    (skipChar ';' |>> (fun _ -> None))
-                <|> (skipChar '{' >>. spaces >>.
-                     (many parse_container_body_statement) .>> spaces .>>
-                     skipChar '}'
-                     |>> Some
-                    ) .>> spaces
-            )
+            make_parser_optional "container" Identifier.parse_identifier parse_container_body_statement
 
         let parse_typedef_body_statement : Parser<TypeDefBodyStatement, 'a> =
             // TODO: fill in missing parsing for TypeDefBodyStatement
@@ -152,11 +178,7 @@ module BodyStatements =
             //                            [description-stmt]
             //                            [reference-stmt]
             //                        "}" stmtsep
-            skipString "typedef" >>. spaces >>.
-            Identifier.parse_identifier .>> spaces .>>
-            skipChar '{' .>> spaces .>>.
-            (many parse_typedef_body_statement) .>> spaces .>>
-            skipChar '}' .>> spaces
+            make_parser "typedef" Identifier.parse_identifier parse_typedef_body_statement
 
         let parse_grouping_body_statement : Parser<GroupingBodyStatement, 'a> =
             // TODO: fill in missing parsing for GroupingBodyStatement
@@ -181,16 +203,7 @@ module BodyStatements =
             //                            *action-stmt
             //                            *notification-stmt
             //                        "}") stmtsep
-            skipString "grouping" >>. spaces >>.
-            Identifier.parse_identifier .>> spaces .>>.
-            (
-                    (skipChar ';'                               |>> (fun _ -> None))
-                <|> (skipChar '{' >>. spaces >>.
-                     (many parse_grouping_body_statement) .>>
-                     spaces .>> skipChar '}'
-                     |>> Some
-                    ) .>> spaces
-            )
+            make_parser_optional "grouping" Identifier.parse_identifier parse_grouping_body_statement
 
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
             // TODO: fill in missing parsing for ListBodyStatement
@@ -221,12 +234,7 @@ module BodyStatements =
             //                            *action-stmt
             //                            *notification-stmt
             //                        "}" stmtsep
-
-            skipString "list" >>. spaces >>.
-            Identifier.parse_identifier .>> spaces .>>
-            skipChar '{' .>> spaces .>>.
-            (many parse_list_body_statement) .>> spaces
-            .>> skipChar '}' .>> spaces
+            make_parser "list" Identifier.parse_identifier parse_list_body_statement
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
             // TODO: fill in missing parsing for UsesBodyStatement
@@ -248,16 +256,7 @@ module BodyStatements =
             //                            *refine-stmt
             //                            *uses-augment-stmt
             //                        "}") stmtsep
-            skipString "uses" >>. spaces >>.
-            Identifier.parse_identifier_reference .>> spaces .>>.
-            (
-                    (skipChar ';' |>> (fun _ -> None))
-                <|> (skipChar '{' >>. spaces >>.
-                     (many parse_uses_body_statement) .>> spaces .>>
-                     skipChar '}'
-                     |>> Some
-                    )
-            ) .>> spaces
+            make_parser_optional "uses" Identifier.parse_identifier_reference parse_uses_body_statement
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
             // TODO: fill in missing parsing for ChoiceBodyStatement
@@ -288,7 +287,6 @@ module BodyStatements =
             //                            [reference-stmt]
             //                            *(short-case-stmt / case-stmt)
             //                        "}") stmtsep
-
             //short-case-stmt     = choice-stmt /
             //                        container-stmt /
             //                        leaf-stmt /
@@ -296,16 +294,7 @@ module BodyStatements =
             //                        list-stmt /
             //                        anydata-stmt /
             //                        anyxml-stmt
-            skipString "choice" >>. spaces >>.
-            Identifier.parse_identifier .>> spaces .>>.
-            (
-                    (skipChar ';' |>> (fun _ -> None))
-                <|> (skipChar '{' >>. spaces >>.
-                     (many parse_choice_body_statement) .>> spaces .>>
-                     skipChar '}'
-                     |>> Some
-                    ) .>> spaces
-            )
+            make_parser_optional "choice" Identifier.parse_identifier parse_choice_body_statement
 
         let parse_data_definition_implementation : Parser<BodyStatement, 'a> =
             // TODO: fill in missing parsing for data-def-stmt
