@@ -92,6 +92,9 @@ module BodyStatements =
         let (parse_grouping : Parser<GroupingStatement, 'a>), (parse_grouping_ref : Parser<GroupingStatement, 'a> ref) =
             createParserForwardedToRef<GroupingStatement, 'a>()
 
+        let (parse_choice_statement : Parser<ChoiceStatement, 'a>), (parse_choice_statement_ref : Parser<ChoiceStatement, 'a> ref) =
+            createParserForwardedToRef<ChoiceStatement, 'a>()
+
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
             // TODO: fill in missing parsing for ContainerBodyStatement
                 (parse_config_statement         |>> ContainerBodyStatement.Config)
@@ -256,16 +259,66 @@ module BodyStatements =
                     )
             ) .>> spaces
 
+        let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
+            // TODO: fill in missing parsing for ChoiceBodyStatement
+                (parse_config_statement         |>> ChoiceBodyStatement.Config)
+            <|> (parse_status_statement         |>> ChoiceBodyStatement.Status)
+            <|> (parse_description_statement    |>> ChoiceBodyStatement.Description)
+            <|> (parse_reference_statement      |>> ChoiceBodyStatement.Reference)
+            <|> (parse_choice_statement         |>> ChoiceBodyStatement.Choice)
+            <|> (parse_container_statement      |>> ChoiceBodyStatement.Container)
+            <|> (parse_leaf_list                |>> ChoiceBodyStatement.LeafList)
+            <|> (parse_leaf                     |>> ChoiceBodyStatement.Leaf)
+            <|> (parse_list_statement           |>> ChoiceBodyStatement.List)
+            <|> (parse_unknown_statement        |>> ChoiceBodyStatement.Unknown)
+
+        let parse_choice_statement_implementation : Parser<ChoiceStatement, 'a> =
+            // [RFC 7950, p. 196]
+            //choice-stmt         = choice-keyword sep identifier-arg-str optsep
+            //                        (";" /
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            [when-stmt]
+            //                            *if-feature-stmt
+            //                            [default-stmt]
+            //                            [config-stmt]
+            //                            [mandatory-stmt]
+            //                            [status-stmt]
+            //                            [description-stmt]
+            //                            [reference-stmt]
+            //                            *(short-case-stmt / case-stmt)
+            //                        "}") stmtsep
+
+            //short-case-stmt     = choice-stmt /
+            //                        container-stmt /
+            //                        leaf-stmt /
+            //                        leaf-list-stmt /
+            //                        list-stmt /
+            //                        anydata-stmt /
+            //                        anyxml-stmt
+            skipString "choice" >>. spaces >>.
+            Identifier.parse_identifier .>> spaces .>>.
+            (
+                    (skipChar ';' |>> (fun _ -> None))
+                <|> (skipChar '{' >>. spaces >>.
+                     (many parse_choice_body_statement) .>> spaces .>>
+                     skipChar '}'
+                     |>> Some
+                    ) .>> spaces
+            )
+
         let parse_data_definition_implementation : Parser<BodyStatement, 'a> =
             // TODO: fill in missing parsing for data-def-stmt
                 (parse_container_statement  |>> BodyStatement.Container)
             <|> (parse_leaf_list            |>> BodyStatement.LeafList)
             <|> (parse_leaf                 |>> BodyStatement.Leaf)
             <|> (parse_list_statement       |>> BodyStatement.List)
+            <|> (parse_choice_statement     |>> BodyStatement.Choice)
             <|> (parse_uses_statement       |>> BodyStatement.Uses)
 
         parse_data_definition_ref   := parse_data_definition_implementation
         parse_grouping_ref          := parse_grouping_statement_implementation
+        parse_choice_statement_ref  := parse_choice_statement_implementation
 
         let parse_body : Parser<BodyStatement, 'a> =
             // TODO: fill in missing parsing for body-stmt
