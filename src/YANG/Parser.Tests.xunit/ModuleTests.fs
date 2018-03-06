@@ -61,3 +61,5 @@ module example-system {
         Assert.Equal<RevisionStatement list>([], m.Revision)
         Assert.NotNull(m.Body)
         Assert.Empty(m.Body)
+
+    // TODO: add more module tests
