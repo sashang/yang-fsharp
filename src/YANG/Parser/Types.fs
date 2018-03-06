@@ -7,6 +7,7 @@ namespace Yang.Parser
 module Types =
     open FParsec
     open Yang.Model
+    open System
 
     // [RFC 7950, p.188]
     //   type-stmt           = type-keyword sep identifier-ref-arg-str optsep
@@ -34,6 +35,12 @@ module Types =
 
     let parse_type<'a> : Parser<TypeStatement, 'a> =
         skipString "type" >>. spaces >>.
-        Identifier.parse_identifier_reference .>> spaces .>>
-        skipChar ';' .>> spaces
-        |>> (fun id -> id, None, None)
+        Identifier.parse_identifier_reference .>> spaces .>>.
+        (       skipChar ';'                    |>> (fun _ -> None, None)
+            <|> (skipChar '{' >>. spaces >>.
+                 (many parse_unknown_statement) .>> spaces .>>
+                 skipChar '}'
+                 |>> (fun unknowns -> None, Some unknowns)
+                )
+        ) .>> spaces
+        |>> (fun (id, (statements, unknown)) -> id, statements, unknown)

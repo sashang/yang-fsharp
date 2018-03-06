@@ -26,3 +26,8 @@ module Arguments =
             let day = (value 8) * 10 + value 9
             Date.Make (year, month, day)
         )
+
+    let parse_status<'a> : Parser<Status, 'a> =
+            (skipString "current"       >>. spaces  |>> (fun _ -> Status.Current))
+        <|> (skipString "obsolete"      >>. spaces  |>> (fun _ -> Status.Obsolete))
+        <|> (skipString "deprecated"    >>. spaces  |>> (fun _ -> Status.Deprecated))

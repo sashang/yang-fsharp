@@ -170,6 +170,19 @@ module Statements =
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
+    /// Parses a key statement
+    let parse_key_statement<'a> : Parser<KeyStatement, 'a> =
+        // [RFC 7950, p195]
+        //key-stmt            = key-keyword sep key-arg-str stmtend
+        //key-arg-str         = < a string that matches the rule >
+        //                        < key-arg >
+        //key-arg             = node-identifier *(sep node-identifier)
+
+        skipString "key" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>. 
+        (end_of_statement_or_block parse_statement) .>> spaces
+        |>> (fun (key, block) -> Arguments.Key.MakeFromString key, block)
+
     /// Parses a reference statement
     let parse_namespace_statement<'a> : Parser<NamespaceStatement, 'a> =
         // [RFC 7950, p. 186]
@@ -237,6 +250,18 @@ module Statements =
         // revision-date-keyword    = %s"revision-date"
         skipString "revision-date" >>. spaces >>.
         Arguments.parse_date .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    let parse_status_statement<'a> : Parser<StatusStatement, 'a> =
+        // [RFC 7950, p. 191]
+        //status-stmt         = status-keyword sep status-arg-str stmtend
+        //status-arg-str      = < a string that matches the rule >
+        //                        < status-arg >
+        //status-arg          = current-keyword /
+        //                        obsolete-keyword /
+        //                        deprecated-keyword
+        skipString "status" >>. spaces >>.
+        Arguments.parse_status .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
     /// Parses a YANG version information

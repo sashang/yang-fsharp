@@ -95,6 +95,7 @@ module BodyStatements =
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
             // TODO: fill in missing parsing for ContainerBodyStatement
                 (parse_config_statement         |>> ContainerBodyStatement.Config)
+            <|> (parse_status_statement         |>> ContainerBodyStatement.Status)
             <|> (parse_description_statement    |>> ContainerBodyStatement.Description)
             <|> (parse_data_definition          |>> ContainerBodyStatement.FromDataDefinition)
 
@@ -132,6 +133,7 @@ module BodyStatements =
         let parse_typedef_body_statement : Parser<TypeDefBodyStatement, 'a> =
             // TODO: fill in missing parsing for TypeDefBodyStatement
                 (Types.parse_type               |>> TypeDefBodyStatement.Type)
+            <|> (parse_status_statement         |>> TypeDefBodyStatement.Status)
             <|> (parse_description_statement    |>> TypeDefBodyStatement.Description)
             <|> (parse_reference_statement      |>> TypeDefBodyStatement.Reference)
 
@@ -155,7 +157,8 @@ module BodyStatements =
 
         let parse_grouping_body_statement : Parser<GroupingBodyStatement, 'a> =
             // TODO: fill in missing parsing for GroupingBodyStatement
-                (parse_description_statement        |>> GroupingBodyStatement.Description)
+                (parse_status_statement             |>> GroupingBodyStatement.Status)
+            <|> (parse_description_statement        |>> GroupingBodyStatement.Description)
             <|> (parse_reference_statement          |>> GroupingBodyStatement.Reference)
             <|> (parse_typedef_statement            |>> GroupingBodyStatement.TypeDef)
             <|> (parse_grouping                     |>> GroupingBodyStatement.Grouping)
@@ -188,9 +191,9 @@ module BodyStatements =
 
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
             // TODO: fill in missing parsing for ListBodyStatement
-                (skipString "key" >>. spaces >>. Strings.parse_string .>> spaces .>>. (end_of_statement_or_block parse_statement)
-                 |>> (fun (key, block) -> (Arguments.Key.MakeFromString key, block) |> ListBodyStatement.Key ))
+                (parse_key_statement            |>> ListBodyStatement.Key)
             <|> (parse_ordered_by_statement     |>> ListBodyStatement.OrderedBy)
+            <|> (parse_status_statement         |>> ListBodyStatement.Status)
             <|> (parse_description_statement    |>> ListBodyStatement.Description)
             <|> (parse_data_definition          |>> ListBodyStatement.FromDataDefinition)
 
@@ -224,7 +227,8 @@ module BodyStatements =
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
             // TODO: fill in missing parsing for UsesBodyStatement
-                (parse_description_statement    |>> UsesBodyStatement.Description)
+                (parse_status_statement         |>> UsesBodyStatement.Status)
+            <|> (parse_description_statement    |>> UsesBodyStatement.Description)
             <|> (parse_reference_statement      |>> UsesBodyStatement.Reference)
 
         let parse_uses_statement : Parser<UsesStatement, 'a> =
