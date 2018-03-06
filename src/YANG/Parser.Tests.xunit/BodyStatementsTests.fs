@@ -3,8 +3,9 @@
 module DataDefinitionsTests =
     open Xunit
     open FParsec
+    open Yang.Model
     open Yang.Parser
-    open Yang.Parser.DataDefinitions
+    open Yang.Parser.BodyStatements
     open Yang.Parser.Types
 
     [<Fact>]
@@ -17,20 +18,20 @@ module DataDefinitionsTests =
         }
         """
 
-        let t = FParsecHelper.apply (spaces >>. parse_data_definition) body
-        Assert.True(IsLeaf t)
+        let t = FParsecHelper.apply (spaces >>. parse_body_statement) body
+        Assert.True(BodyStatement.IsLeaf t)
 
         match t with
         | Leaf leaf ->
-            Assert.Equal("host-name", leaf.Identifier.Value)
-            Assert.NotEmpty(leaf.Statements)
-            Assert.Equal(2, leaf.Statements.Length)
+            Assert.Equal("host-name", LeafStatement.IdentifierAsString leaf)
+            let statements = LeafStatement.Statements leaf
+            Assert.Equal(2, statements.Length)
 
-            match leaf.Statements with
+            match statements with
             | ts :: ds :: [] ->
                 // We want the statements to appear in the same order as they are in the input
-                Assert.True(Leaf.IsTypeStatement ts)
-                Assert.True(Leaf.IsDescriptionStatement ds)
+                Assert.True(LeafBodyStatement.IsType ts)
+                Assert.True(LeafBodyStatement.IsDescription ds)
             | _ -> failwith "Internal error: unit test should not have reached this point"
         | _ -> failwith "Internal error: unit test should not have reached this point"
 
@@ -44,19 +45,19 @@ leaf-list domain-search {
 }
 """
 
-        let t = FParsecHelper.apply (spaces >>. DataDefinitions.parse_data_definition) body
-        Assert.True(IsLeafList t)
+        let t = FParsecHelper.apply (spaces >>. parse_body_statement) body
+        Assert.True(BodyStatement.IsLeafList t)
 
         match t with
         | LeafList ll ->
-            Assert.Equal("domain-search", ll.Identifier.Value)
-            Assert.NotEmpty(ll.Statements)
-            Assert.Equal(2, ll.Statements.Length)
+            Assert.Equal("domain-search", LeafListStatement.IdentifierAsString ll)
+            let statements = LeafListStatement.Statements ll
+            Assert.Equal(2, statements.Length)
 
-            match ll.Statements with
+            match statements with
             | ts :: ds :: [] ->
-                Assert.True(LeafList.IsTypeStatement ts)
-                Assert.True(LeafList.IsDescriptionStatement ds)
+                Assert.True(LeafListBodyStatement.IsType ts)
+                Assert.True(LeafListBodyStatement.IsDescription ds)
             | _ -> failwith "Internal error: unit test should not have reached this point"
         | _ -> failwith "Internal error: unit test should not have reached this point"
 
@@ -98,8 +99,8 @@ container system {
     }
 }
 """
-        let t = FParsecHelper.apply (spaces >>. DataDefinitions.parse_data_definition) body
-        Assert.True(IsContainer t)
+        let t = FParsecHelper.apply (spaces >>. parse_body_statement) body
+        Assert.True(BodyStatement.IsContainer t)
 
         match t with
         | Container (id, body) ->
@@ -111,10 +112,12 @@ container system {
             Assert.Equal(3, b.Length)
 
             match b with
-            | (ContainerStatementBody.DataDefinition l1) :: (ContainerStatementBody.DataDefinition l2) :: (ContainerStatementBody.DataDefinition c2) :: [] ->
-                Assert.True(IsLeaf l1)
-                Assert.True(IsLeafList l2)
-                Assert.True(IsContainer c2)
-            // Force fail, if list is not of expected type
-            | _ -> Assert.True(false, "Unexpected list of elements in list")
+            | l1 :: l2 :: c2 :: [] ->
+                Assert.True(ContainerBodyStatement.IsLeaf l1)
+                Assert.True(ContainerBodyStatement.IsLeafList l2)
+                Assert.True(ContainerBodyStatement.IsContainer c2)
+
+            | _ -> failwith "Internal error: unit test should not have reached this point"
         | _ -> failwith "Internal error: unit test should not have reached this point"
+
+    // TODO: More extensive unit testing of BodyStatements

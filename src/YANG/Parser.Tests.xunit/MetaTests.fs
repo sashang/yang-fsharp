@@ -5,6 +5,7 @@ module MetaTests =
     open FParsec
     open Yang.Parser
     open Yang.Parser.Meta
+    open Yang.Model.Statements
 
     [<Fact>]
     let ``parse empty meta`` () =
@@ -20,10 +21,19 @@ module MetaTests =
         "The module for entities implementing the Example system.";
 """
         let meta = FParsecHelper.apply (spaces >>. parse_meta) body
-
-        Assert.Equal(Some ("Example Inc.", None),       meta.Organization)
-        Assert.Equal(Some ("joe@example.com", None),    meta.Contact)
+        let _x = MetaStatements.Organization meta
+        Assert.Equal(Some ("Example Inc.", None),       MetaStatements.Organization meta)
+        Assert.Equal(Some ("joe@example.com", None),    MetaStatements.Contact meta)
         Assert.Equal(Some ("The module for entities implementing the Example system.", None),
-                     meta.Description)
-        Assert.Equal(None, meta.Reference)
-        Assert.Equal(None, meta.Options)
+                     MetaStatements.Description meta)
+        Assert.Equal(None, MetaStatements.Reference meta)
+        Assert.Equal(None, MetaStatements.Unknown   meta)
+
+    // TODO: Add unit test for meta reference
+    // TODO: Add unit test for meta unknown
+    // TODO: Add unit test for meta organization with extension
+    // TODO: Add unit test for meta contact with extension
+    // TODO: Add unit test for meta description with extension
+    // TODO: Add unit test for meta reference with extension
+    // TODO: Add unit test for meta unknown with extension
+

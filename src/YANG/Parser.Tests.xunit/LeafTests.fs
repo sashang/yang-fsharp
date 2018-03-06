@@ -3,6 +3,7 @@
 module LeafTests =
     open Xunit
     open Yang.Parser
+    open Yang.Model
 
     [<Fact>]
     let ``parse leaf type with string`` () =
@@ -12,7 +13,17 @@ module LeafTests =
         "Hostname for this system.";
 }"""
 
-        let definition = FParsecHelper.apply Leaf.parse_leaf body
-        Assert.Equal("host-name", definition.Identifier.Value)
-        Assert.Equal((Types.TString, None), definition.Type)
-        Assert.Equal(Some (Leaf.Description ("Hostname for this system.", None)), definition.Description)
+        let leaf = FParsecHelper.apply Leaf.parse_leaf body
+
+        Assert.Equal("host-name", LeafStatement.IdentifierAsString leaf)
+        Assert.Equal(
+            LeafBodyStatement.Type (IdentifierReference.Make "string", None, None) |> Option.Some,
+            LeafStatement.Type leaf
+        )
+
+        Assert.Equal(
+            LeafBodyStatement.Description ("Hostname for this system.", None) |> Option.Some,
+            LeafStatement.Description leaf
+        )
+
+    // TODO: Add unit tests for more types of leafs and more properties

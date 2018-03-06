@@ -3,6 +3,7 @@
 module ModuleTests =
     open System
     open Xunit
+    open Yang.Model
     open Yang.Parser
     open Yang.Parser.Module
 
@@ -29,9 +30,8 @@ module example-system {
         Assert.Equal("example-system", m.Name.Value)
         Assert.NotNull(m.Header)
         Assert.NotNull(m.Meta)
-        Assert.NotNull(m.Revisions)
-        Assert.True(m.Revisions.IsSome)
-        Assert.Equal(1, m.Revisions.Value.Length)
+        Assert.NotNull(m.Revision)
+        Assert.Equal(1, m.Revision.Length)
         // The rest of the statements are covered by other unit tests
 
     [<Fact>]
@@ -56,10 +56,8 @@ module example-system {
         let m = FParsecHelper.apply parse_module "module name {}"
         Assert.Equal("name", m.Name.Value)
         Assert.Null(m.Header)
-        Assert.Equal(None, m.Imports)
-        Assert.Equal(None, m.Includes)
-        Assert.Equal(None, m.Meta)
-        Assert.Equal(None, m.Revisions)
-        Assert.NotNull(m.Statements)
-        Assert.Empty(m.Statements)
-
+        Assert.Equal<LinkageStatements>([], m.Linkage)
+        Assert.Equal<MetaStatements>([], m.Meta)
+        Assert.Equal<RevisionStatement list>([], m.Revision)
+        Assert.NotNull(m.Body)
+        Assert.Empty(m.Body)

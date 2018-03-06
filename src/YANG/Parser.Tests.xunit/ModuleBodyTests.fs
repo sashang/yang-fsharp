@@ -4,6 +4,7 @@ module ModuleBodyTests =
     open System
     open Xunit
     open FParsec
+    open Yang.Model
     open Yang.Parser
 
     [<Fact>]
@@ -39,29 +40,33 @@ revision 2007-06-09 {
                 body
 
         Assert.NotNull(header)
+        let version, ns, prefix, unknown_header = header
+
         Assert.NotNull(meta)
         Assert.NotNull(revisions)
 
-        Assert.Equal((Version (1, 1), None),            header.YangVersion)
-        Assert.Equal((Uri("urn:example:system"), None), header.Namespace)
-        Assert.Equal(("sys", None),                     header.Prefix)
-        Assert.Equal(None,                              header.Options)
+        Assert.Equal((Version (1, 1), None),            version)
+        Assert.Equal((Uri("urn:example:system"), None), ns)
+        Assert.Equal(("sys", None),                     prefix)
+        Assert.Equal(None,                              unknown_header)
 
-        Assert.Equal(Some ("Example Inc.", None),     meta.Organization)
-        Assert.Equal(Some ("joe@example.com", None),  meta.Contact)
+        Assert.Equal(Some ("Example Inc.", None),       MetaStatements.Organization meta)
+        Assert.Equal(Some ("joe@example.com", None),    MetaStatements.Contact meta)
         Assert.Equal(Some ("The module for entities implementing the Example system.", None),
-                     meta.Description)
-        Assert.Equal(None, meta.Reference)
-        Assert.Equal(None, meta.Options)
+                     MetaStatements.Description meta)
+        Assert.Equal(None, MetaStatements.Reference meta)
+        Assert.Equal(None, MetaStatements.Unknown meta)
 
         Assert.NotEmpty(revisions)
         Assert.Equal(1, revisions.Length)
         match revisions with
-        | rev :: [] ->
-            Assert.Equal(2007us,    rev.Version.Year)
-            Assert.Equal(06uy,      rev.Version.Month)
-            Assert.Equal(09uy,      rev.Version.Day)
-            Assert.Equal(Some ("Initial revision.", None), rev.Description)
-            Assert.Equal(None, rev.Options)
-            Assert.Equal(None, rev.Reference)
+        | (date, _) as rev :: [] ->
+            Assert.Equal(2007us,    date.Year)
+            Assert.Equal(06uy,      date.Month)
+            Assert.Equal(09uy,      date.Day)
+            Assert.Equal(Some ("Initial revision.", None), RevisionStatement.Description rev)
+            Assert.Equal(None, RevisionStatement.Unknown rev)
+            Assert.Equal(None, RevisionStatement.Reference rev)
         | _ -> failwith "Internal error: unit test should not have reached this point"
+
+    // TODO: more extensive unit tests for module body

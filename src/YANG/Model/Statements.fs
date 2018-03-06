@@ -897,6 +897,22 @@ module Statements =
         | BodyStatement.Deviation       st -> Statement.Deviation       st
         | BodyStatement.Unknown         st -> Statement.Unknown         st
 
+        let IsContainer (this : BodyStatement) =
+            match this with
+            | BodyStatement.Container   _   -> true
+            | _                             -> false
+
+        let IsLeaf (this : BodyStatement) =
+            match this with
+            | BodyStatement.Leaf        _   -> true
+            | _                             -> false
+
+        let IsLeafList (this : BodyStatement) =
+            match this with
+            | BodyStatement.LeafList    _   -> true
+            | _                             -> false
+
+
     /// Helper methods for the CaseBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module CaseBodyStatement =
@@ -984,6 +1000,22 @@ module Statements =
         | BodyStatement.AnyXml        st -> ContainerBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> ContainerBodyStatement.Uses         st
         | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+
+        let IsContainer (this : ContainerBodyStatement) =
+            match this with
+            | ContainerBodyStatement.Container  _   -> true
+            | _                                     -> false
+
+        let IsLeaf (this : ContainerBodyStatement) =
+            match this with
+            | ContainerBodyStatement.Leaf       _   -> true
+            | _                                     -> false
+
+        let IsLeafList (this : ContainerBodyStatement) =
+            match this with
+            | ContainerBodyStatement.LeafList   _   -> true
+            | _                                     -> false
+
 
     /// Helper methods for the DeviateAddBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1163,6 +1195,14 @@ module Statements =
         | LeafBodyStatement.Reference     st -> Statement.Reference         st
         | LeafBodyStatement.Unknown       st -> Statement.Unknown           st
 
+        let IsType        = function
+        | LeafBodyStatement.Type _          -> true
+        | _                                 -> false
+
+        let IsDescription = function
+        | LeafBodyStatement.Description _   -> true
+        | _                                 -> false
+
     /// Helper methods for the LeafListBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module LeafListBodyStatement =
@@ -1182,6 +1222,46 @@ module Statements =
         | LeafListBodyStatement.Description   st -> Statement.Description   st
         | LeafListBodyStatement.Reference     st -> Statement.Reference     st
         | LeafListBodyStatement.Unknown       st -> Statement.Unknown       st
+
+        let IsDescription = function
+        | LeafListBodyStatement.Description _   -> true
+        | _                                     -> false
+
+        let IsType = function
+        | LeafListBodyStatement.Type        _   -> true
+        | _                                     -> false
+
+    /// Helper methods for the LeafListBodyStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module LeafListStatement =
+        let private try_find filter (this : LeafListStatement) =
+            let _, statements = this
+            statements |> List.tryFind filter
+            
+        let Description = try_find LeafListBodyStatement.IsDescription
+        let Type = try_find LeafListBodyStatement.IsType
+
+        let Identifier (this : LeafListStatement) = let (id, _) = this in id
+        let IdentifierAsString (this : LeafListStatement) = let (id, _) = this in id.Value
+
+        let Statements (this : LeafListStatement) = let (_, st) = this in st
+
+
+    /// Helper methods for the LeafStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module LeafStatement =
+        let private try_find filter (this : LeafStatement) =
+            let _, statements = this
+            statements |> List.tryFind filter
+            
+        let Description = try_find LeafBodyStatement.IsDescription
+        let Type = try_find LeafBodyStatement.IsType
+
+        let Identifier (this : LeafStatement) = let (id, _) = this in id
+        let IdentifierAsString (this : LeafStatement) = let (id, _) = this in id.Value
+
+        let Statements (this : LeafStatement) = let (_, st) = this in st
+
 
     /// Helper methods for the LengthBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1278,15 +1358,38 @@ module Statements =
     /// Helper methods for the MetaBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module MetaStatements =
+        let private try_find filter (this : MetaStatements) = this |> List.tryFind filter
 
         /// Get the organization meta information; None if not exists
-        let Organization (this : MetaStatements) = this |> List.tryFind MetaBodyStatement.IsOrganization
+        let Organization (this : MetaStatements) = 
+            try_find MetaBodyStatement.IsOrganization this
+            |> Option.bind (fun s -> match s with | MetaBodyStatement.Organization o -> Some o | _ -> None)
+
         /// Get the organization meta information; None if not exists
-        let Contact      (this : MetaStatements) = this |> List.tryFind MetaBodyStatement.IsContact
+        let Contact      (this : MetaStatements) =
+            try_find MetaBodyStatement.IsContact this
+            |> Option.bind (fun s -> match s with | MetaBodyStatement.Contact o -> Some o | _ -> None)
+
         /// Get the description meta information; None if not exists
-        let Description  (this : MetaStatements) = this |> List.tryFind MetaBodyStatement.IsDescription
+        let Description  (this : MetaStatements) =
+            try_find MetaBodyStatement.IsDescription this
+            |> Option.bind (fun s -> match s with | MetaBodyStatement.Description o -> Some o | _ -> None)
+
         /// Get the reference meta information; None if not exists
-        let Reference    (this : MetaStatements) = this |> List.tryFind MetaBodyStatement.IsReference
+        let Reference    (this : MetaStatements) =
+            try_find MetaBodyStatement.IsReference this
+            |> Option.bind (fun s -> match s with | MetaBodyStatement.Reference o -> Some o | _ -> None)
+
+        /// Get the unknown statements that have been associated with the meta section
+        let Unknown      (this : MetaStatements) =
+            this
+            |> List.choose (
+                fun st ->
+                    match st with
+                    | MetaBodyStatement.Unknown st' -> Some st'
+                    | _                             -> None
+            )
+            |> (fun l -> if l.Length = 0 then None else Some l)
 
     /// Helper methods for the ModuleStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1394,6 +1497,45 @@ module Statements =
         | RevisionBodyStatement.Description   st -> Statement.Description   st
         | RevisionBodyStatement.Reference     st -> Statement.Reference     st
         | RevisionBodyStatement.Unknown       st -> Statement.Unknown       st
+
+        let IsDescription = function
+        | RevisionBodyStatement.Description _   -> true
+        | _                                     -> false
+
+        let IsReference = function
+        | RevisionBodyStatement.Reference _     -> true
+        | _                                     -> false
+
+        let IsUnknown = function
+        | RevisionBodyStatement.Unknown _       -> true
+        | _                                     -> false
+
+    /// Helper methods for the RevisionStatement type
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module RevisionStatement =
+        let private try_find filter = function
+        | _, Some statements    -> statements |> List.tryFind filter
+        | _, _                  -> None
+
+        let private try_find_all filter = function
+        | _, Some statements    ->
+            let statements' = statements |> List.filter filter
+            if statements'.Length = 0 then None else Some statements'
+        | _, _                  -> None
+
+        let Version (this : RevisionStatement) = let (v, _) = this in v
+
+        let Description (this : RevisionStatement) =
+            try_find RevisionBodyStatement.IsDescription this
+            |> Option.bind (fun o -> match o with | RevisionBodyStatement.Description d -> Some d | _ -> None)
+
+        let Reference   (this : RevisionStatement) =
+            try_find RevisionBodyStatement.IsReference this
+            |> Option.bind (fun o -> match o with | RevisionBodyStatement.Reference r -> Some r | _ -> None)
+
+        let Unknown     (this : RevisionStatement) =
+            try_find_all RevisionBodyStatement.IsUnknown this
+            |> Option.map (List.choose (fun o -> match o with | RevisionBodyStatement.Unknown u -> Some u | _ -> None))
 
     /// Helper methods for the RpcBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
