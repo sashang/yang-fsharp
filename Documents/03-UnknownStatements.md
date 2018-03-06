@@ -13,9 +13,9 @@ prefix              = identifier
 stmtsep             = *(WSP / line-break / unknown-statement)
 ```
 
-Observe that `unknown-statement` declarations exist in the very beginning of the
+Observe that `unknown-statement` declarations can exist in the very beginning of the
 module definition, and they can be identified by their name, which has a prefix
-followed by a `colon`. They can also exist wherever there is a stmtsep token,
+followed by a `colon`. They can also exist wherever there is a `stmtsep` token,
 which is in very many places. In most places, the parser needs to be on the lookout for unknown statements.
 
 The standard basically encourages to treat them as comments, and ignore them.
