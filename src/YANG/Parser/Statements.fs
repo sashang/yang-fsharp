@@ -71,13 +71,13 @@ module Statements =
             |>> (fun (identifier, (argument, body)) -> Unparsed (identifier, argument, body))
 
     let inline private yang_keyword_string_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
-        skipStringCI keyword >>. spaces >>.
+        skipString keyword >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parser
         |>> maker
 
     let inline private yang_keyword_uri_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
-        skipStringCI keyword >>. spaces >>.
+        skipString keyword >>. spaces >>.
         (Strings.parse_string |>> Uri) .>> spaces .>>.
         end_of_statement_or_block parser
         |>> maker
@@ -123,11 +123,26 @@ module Statements =
     let parse_many_statements<'a> : Parser<Statement list, 'a> =
         many (spaces >>. parse_statement .>> spaces)
 
+    /// Parses a config statement
+    let parse_config_statement<'a> : Parser<ConfigStatement, 'a> =
+        // [RFC 7950, p. 191]
+        //config-stmt         = config-keyword sep
+        //                        config-arg-str stmtend
+        //config-arg-str      = < a string that matches the rule >
+        //                        < config-arg >
+        //config-arg          = true-keyword / false-keyword
+        skipString "config" >>. spaces >>.
+        (
+                (skipString "true"  .>> spaces |>> (fun _ -> true))
+            <|> (skipString "false" .>> spaces |>> (fun _ -> false))
+        ) .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
     /// Parses a contact statement
     let parse_contact_statement<'a> : Parser<ContactStatement, 'a> =
         // [RFC 7950, p. 186]
         // contact-stmt        = contact-keyword sep string stmtend
-        skipStringCI "contact" >>. spaces >>.
+        skipString "contact" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -135,7 +150,7 @@ module Statements =
     let parse_description_statement<'a> : Parser<DescriptionStatement, 'a> =
         // [RFC 7950, p. 186]
         // description-stmt    = description-keyword sep string stmtend
-        skipStringCI "description" >>. spaces >>.
+        skipString "description" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -143,7 +158,7 @@ module Statements =
     let parse_error_app_tag_statement<'a> : Parser<ErrorAppTagStatement, 'a> =
         // [RFC 7950, p. 192]
         // error-app-tag-stmt  = error-app-tag-keyword sep string stmtend
-        skipStringCI "error-app-tag" >>. spaces >>.
+        skipString "error-app-tag" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -151,7 +166,7 @@ module Statements =
     let parse_error_message_statement<'a> : Parser<ErrorMessageStatement, 'a> =
         // [RFC 7950, p. 192]
         // error-message-stmt  = error-message-keyword sep string stmtend
-        skipStringCI "error-message" >>. spaces >>.
+        skipString "error-message" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -161,15 +176,29 @@ module Statements =
         //namespace-stmt      = namespace-keyword sep uri-str stmtend
         //uri-str             = < a string that matches the rule >
         //                      < URI in RFC 3986 >
-        skipStringCI "namespace" >>. spaces >>.
+        skipString "namespace" >>. spaces >>.
         (Strings.parse_string |>> Uri) .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
+    let parse_ordered_by_statement<'a> : Parser<OrderedByStatement, 'a> =
+        // [RFC 7950, p. 192]
+        //ordered-by-stmt     = ordered-by-keyword sep
+        //                        ordered-by-arg-str stmtend
+        //ordered-by-arg-str  = < a string that matches the rule >
+        //                        < ordered-by-arg >
+        //ordered-by-arg      = user-keyword / system-keyword
+        skipString "ordered-by" >>. spaces >>.
+        (
+                (skipString "user"      |>> (fun _ -> Arguments.OrderedBy.User))
+            <|> (skipString "system"    |>> (fun _ -> Arguments.OrderedBy.System))
+        ) .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
     /// Parses an organization statement
     let parse_organization_statement<'a> : Parser<OrganizationStatement, 'a> =
         // [RFC 7950, p. 186]
         // organization-stmt   = organization-keyword sep string stmtend
-        skipStringCI "organization" >>. spaces >>.
+        skipString "organization" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -181,7 +210,7 @@ module Statements =
         //                      < prefix-arg >
         //prefix-arg          = prefix
         //prefix              = identifier
-        skipStringCI "prefix" >>. spaces >>.
+        skipString "prefix" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -189,7 +218,7 @@ module Statements =
     let parse_presence_statement<'a> : Parser<PresenceStatement, 'a> =
         // [RFC 7950, p. 192]
         // presence-stmt       = presence-keyword sep string stmtend
-        skipStringCI "presence" >>. spaces >>.
+        skipString "presence" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -197,7 +226,7 @@ module Statements =
     let parse_reference_statement<'a> : Parser<ReferenceStatement, 'a> =
         // [RFC 7950, p. 186]
         // reference-stmt      = reference-keyword sep string stmtend
-        skipStringCI "reference" >>. spaces >>.
+        skipString "reference" >>. spaces >>.
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -206,7 +235,7 @@ module Statements =
         // revision-date-stmt  = revision-date-keyword sep revision-date stmtend
         // [RFC 7950, p.207]
         // revision-date-keyword    = %s"revision-date"
-        skipStringCI "revision-date" >>. spaces >>.
+        skipString "revision-date" >>. spaces >>.
         Arguments.parse_date .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
@@ -217,8 +246,8 @@ module Statements =
         //                      stmtend
         //yang-version-arg-str = < a string that matches the rule >
         //                          < yang-version-arg >
-        //yang-version-arg    = "1.1"        skipStringCI "reference" >>. spaces >>.
-        skipStringCI "yang-version" >>. spaces >>.
+        //yang-version-arg    = "1.1"        skipString "reference" >>. spaces >>.
+        skipString "yang-version" >>. spaces >>.
         (Strings.parse_string |>> Version.Parse) .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 

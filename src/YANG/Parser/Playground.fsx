@@ -66,7 +66,7 @@ apply_parser Module.parse_module model
 
 #time
 let big_model =
-    Path.Combine(__SOURCE_DIRECTORY__, @"../../../", @"Models-External\Juniper\16.1\configuration.yang")
+    Path.Combine(__SOURCE_DIRECTORY__, @"../../../", @"Models-External\Juniper\16.1\configuration2.yang")
     |> ReadAndClean
 
 let juniper = apply_parser Generic.parse_many_statements big_model |> List.head
@@ -90,5 +90,17 @@ let keywords = RetrieveKeywords juniper |> Seq.groupBy id |> Seq.map (fun (id, l
 // This is what we want to parse eventually
 myLog.AddTrace(Header._name)
 let juniper' = apply_parser Module.parse_module big_model
+
+let configuration = """container configuration {
+     uses juniper-config;
+     list groups {
+     }
+   }"""
+
+apply_parser BodyStatements.parse_container_body_statement "uses juniper-config;"
+apply_parser BodyStatements.parse_container_body_statement "list groups {}"
+
+apply_parser BodyStatements.parse_container_statement configuration
+apply_parser BodyStatements.parse_body_statement configuration
 
 #time

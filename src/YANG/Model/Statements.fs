@@ -610,7 +610,7 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'typedef-stmt' statement from [RFC 7950, p. 188].
-    and TypeDefStatement        = Identifier        * (TypeDefBodyStatement list option)
+    and TypeDefStatement        = Identifier        * (TypeDefBodyStatement list)
     /// Captures the type-stmt [RFC 7950, p.188]. If there are unknown statements, then they precede the TypeBodyStatement
     and UniqueStatement         = Unique            * ExtraStatements
     and UnitsStatement          = string            * ExtraStatements
@@ -2064,7 +2064,7 @@ module Statements =
             // TODO: Call the printer for Revision
             | Statement.RevisionDate                       (rev, block) -> ps (rev.ToString()); pb                      block
             | Statement.Rpc                                 (id, block) -> psi id; pbo RpcBodyStatement.Translate       block
-            | Statement.TypeDef                             (id, block) -> psi id; pbo TypeDefBodyStatement.Translate   block
+            | Statement.TypeDef                             (id, block) -> psi id; pbt TypeDefBodyStatement.Translate   block
             // TODO: Call the printer for Unique
             | Statement.Unique                              (un, block) -> ps (un.ToString()); pb block
             | Statement.Uses                                (id, block) -> psr id; pbo UsesBodyStatement.Translate      block
