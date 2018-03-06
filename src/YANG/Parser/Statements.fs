@@ -201,6 +201,15 @@ module Statements =
         Strings.parse_string .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
+    let parse_revision_date_statement<'a> : Parser<RevisionDateStatement, 'a> =
+        // [RFC 7950, p. 186]
+        // revision-date-stmt  = revision-date-keyword sep revision-date stmtend
+        // [RFC 7950, p.207]
+        // revision-date-keyword    = %s"revision-date"
+        skipStringCI "revision-date" >>. spaces >>.
+        Arguments.parse_date .>> spaces .>>.
+        end_of_statement_or_block parse_statement .>> spaces
+
     /// Parses a YANG version information
     let parse_yang_version_statement<'a> : Parser<YangVersionStatement, 'a> =
         // [RFC 7950, p. 185]

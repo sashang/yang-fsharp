@@ -64,10 +64,10 @@ module Module =
             spaces .>> skipStringCI "module" .>> spaces >>.
             Identifier.parse_identifier .>> spaces .>>
             skipChar '{' .>> spaces .>>.
-            tuple4 parse_header (opt parse_meta) (opt parse_revision_list) BodyStatements.parse_body_statements .>>
+            tuple5 parse_header Linkage.parse_linkage_section (opt parse_meta) (opt parse_revision_list) BodyStatements.parse_body_statements .>>
             spaces .>> skipChar '}' .>> spaces
         parser |>> (
-            fun (identifier, (header, meta, revision, body)) ->
+            fun (identifier, (header, linkage, meta, revision, body)) ->
                 // We need the two adjustments below, because the parsers
                 // are guaranteed to return a value, even if the values are empty.
 
@@ -81,7 +81,7 @@ module Module =
                 {
                     Name        = identifier
                     Header      = header
-                    Linkage     = []
+                    Linkage     = linkage
                     Meta        = meta'
                     Revision    = revision'
                     Body        = body

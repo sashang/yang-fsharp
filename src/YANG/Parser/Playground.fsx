@@ -36,6 +36,7 @@ module MyLog =
 #load "Identifier.fs"
 #load "Statements.fs"
 #load "Header.fs"
+#load "Linkage.fs"
 #load "Meta.fs"
 #load "Revisions.fs"
 #load "Types.fs"
