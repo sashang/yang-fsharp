@@ -55,6 +55,7 @@ module example-system {
     let ``parsing module with empty body`` () =
         let m = FParsecHelper.apply parse_module "module name {}"
         Assert.Equal("name", m.Name.Value)
+        // TODO: do we want to return null when the header does not exist?
         Assert.Null(m.Header)
         Assert.Equal<LinkageStatements>([], m.Linkage)
         Assert.Equal<MetaStatements>([], m.Meta)
