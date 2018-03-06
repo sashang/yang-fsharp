@@ -151,7 +151,8 @@ function Show-Cloc {
         return
     }
 
+    $excluded = "`"{0}`"" -f (Join-Path -Path $PSScriptRoot -ChildPath "ExcludedFilesForCloc.txt")
     Push-Location -Path $rootDir
-    cloc --exclude-dir=packages,build,test,paket-files,TestResults,Models-External,.paket,node_modules --exclude-ext=xml  .
+    cloc --exclude-dir=packages,build,test,paket-files,TestResults,Models-External,.paket,node_modules --exclude-ext=xml --exclude-list-file=$excluded .
     Pop-Location
 }
