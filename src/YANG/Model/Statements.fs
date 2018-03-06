@@ -1126,6 +1126,17 @@ module Statements =
         | GroupingBodyStatement.Notification  st -> Statement.Notification  st
         | GroupingBodyStatement.Unknown       st -> Statement.Unknown       st
 
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> GroupingBodyStatement.Container     st
+        | BodyStatement.Leaf          st -> GroupingBodyStatement.Leaf          st
+        | BodyStatement.LeafList      st -> GroupingBodyStatement.LeafList      st
+        | BodyStatement.List          st -> GroupingBodyStatement.List          st
+        | BodyStatement.Choice        st -> GroupingBodyStatement.Choice        st
+        | BodyStatement.AnyData       st -> GroupingBodyStatement.AnyData       st
+        | BodyStatement.AnyXml        st -> GroupingBodyStatement.AnyXml        st
+        | BodyStatement.Uses          st -> GroupingBodyStatement.Uses          st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type GroupingBodyStatement from %A" th))
+
     /// Helper methods for the IdentityBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module IdentityBodyStatement =

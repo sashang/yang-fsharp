@@ -79,6 +79,7 @@ module BodyStatements =
     // TODO: Parsers for list keys
 
     type private BodyParsers<'a> = {
+        Body            : Parser<BodyStatement, 'a>
         DataDefinition  : Parser<BodyStatement, 'a>
         ContainerBody   : Parser<ContainerBodyStatement, 'a>
         Container       : Parser<ContainerStatement, 'a>
@@ -87,6 +88,9 @@ module BodyStatements =
     let private parsers<'a> =
         let (parse_data_definition : Parser<BodyStatement, 'a>), (parse_data_definition_ref : Parser<BodyStatement, 'a> ref) =
             createParserForwardedToRef<BodyStatement, 'a>()
+
+        let (parse_grouping : Parser<GroupingStatement, 'a>), (parse_grouping_ref : Parser<GroupingStatement, 'a> ref) =
+            createParserForwardedToRef<GroupingStatement, 'a>()
 
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
             // TODO: fill in missing parsing for ContainerBodyStatement
@@ -148,6 +152,39 @@ module BodyStatements =
             skipChar '{' .>> spaces .>>.
             (many parse_typedef_body_statement) .>> spaces .>>
             skipChar '}' .>> spaces
+
+        let parse_grouping_body_statement : Parser<GroupingBodyStatement, 'a> =
+            // TODO: fill in missing parsing for GroupingBodyStatement
+                (parse_description_statement        |>> GroupingBodyStatement.Description)
+            <|> (parse_reference_statement          |>> GroupingBodyStatement.Reference)
+            <|> (parse_typedef_statement            |>> GroupingBodyStatement.TypeDef)
+            <|> (parse_grouping                     |>> GroupingBodyStatement.Grouping)
+            <|> (parse_data_definition              |>> GroupingBodyStatement.FromDataDefinition)
+
+        let parse_grouping_statement_implementation : Parser<GroupingStatement, 'a> =
+            //[RFC 7950, p. 193]
+            //grouping-stmt       = grouping-keyword sep identifier-arg-str optsep
+            //                        (";" /
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            [status-stmt]
+            //                            [description-stmt]
+            //                            [reference-stmt]
+            //                            *(typedef-stmt / grouping-stmt)
+            //                            *data-def-stmt
+            //                            *action-stmt
+            //                            *notification-stmt
+            //                        "}") stmtsep
+            skipString "grouping" >>. spaces >>.
+            Identifier.parse_identifier .>> spaces .>>.
+            (
+                    (skipChar ';'                               |>> (fun _ -> None))
+                <|> (skipChar '{' >>. spaces >>.
+                     (many parse_grouping_body_statement) .>>
+                     spaces .>> skipChar '}'
+                     |>> Some
+                    ) .>> spaces
+            )
 
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
             // TODO: fill in missing parsing for ListBodyStatement
@@ -216,23 +253,31 @@ module BodyStatements =
             ) .>> spaces
 
         let parse_data_definition_implementation : Parser<BodyStatement, 'a> =
+            // TODO: fill in missing parsing for data-def-stmt
                 (parse_container_statement  |>> BodyStatement.Container)
-            <|> (parse_typedef_statement    |>> BodyStatement.TypeDef)
             <|> (parse_leaf_list            |>> BodyStatement.LeafList)
             <|> (parse_leaf                 |>> BodyStatement.Leaf)
             <|> (parse_list_statement       |>> BodyStatement.List)
             <|> (parse_uses_statement       |>> BodyStatement.Uses)
 
-        parse_data_definition_ref := parse_data_definition_implementation
+        parse_data_definition_ref   := parse_data_definition_implementation
+        parse_grouping_ref          := parse_grouping_statement_implementation
+
+        let parse_body : Parser<BodyStatement, 'a> =
+            // TODO: fill in missing parsing for body-stmt
+                (parse_typedef_statement                    |>> BodyStatement.TypeDef)
+            <|> (parse_grouping_statement_implementation    |>> BodyStatement.Grouping)
+            <|> parse_data_definition_implementation
 
         {
+            Body            = parse_body
             DataDefinition  = parse_data_definition
             ContainerBody   = parse_container_body_statement
             Container       = parse_container_statement
         }
 
-    let parse_body_statement<'a> : Parser<BodyStatement, 'a> = parsers.DataDefinition
-    let parse_body_statements<'a> : Parser<BodyStatement list, 'a> = many parsers.DataDefinition
+    let parse_body_statement<'a> : Parser<BodyStatement, 'a> = parsers.Body
+    let parse_body_statements<'a> : Parser<BodyStatement list, 'a> = many parsers.Body
 
     let parse_container_body_statement<'a> : Parser<ContainerBodyStatement, 'a> = parsers.ContainerBody
     let parse_container_statement<'a> : Parser<ContainerStatement, 'a> = parsers.Container

@@ -91,14 +91,22 @@ let keywords = RetrieveKeywords juniper |> Seq.groupBy id |> Seq.map (fun (id, l
 myLog.AddTrace(Header._name)
 let juniper' = apply_parser Module.parse_module big_model
 
+
+
+
+
+
+
+
+
+
+
+
 let configuration = """container configuration {
      uses juniper-config;
      list groups {
      }
    }"""
-
-apply_parser BodyStatements.parse_container_body_statement "uses juniper-config;"
-apply_parser BodyStatements.parse_container_body_statement "list groups {}"
 
 apply_parser BodyStatements.parse_container_statement configuration
 apply_parser BodyStatements.parse_body_statement configuration
