@@ -5,7 +5,7 @@ module Types =
     open System
     open System.Reflection
     open ProviderImplementation.ProvidedTypes
-    open Yang.Parser
+    open Yang.Model
 
     (*
      * Boiler plate code for creating types
@@ -56,12 +56,10 @@ module Types =
      * end of boilerplate code
      *)
 
-    let internal appendModuleInformation (``module`` : Module.Module) =
+    let internal appendModuleInformation (``module`` : ModuleStatement) =
         SetLogger (Some (fun str -> printfn "%s" str))
 
-        let (version, _) = ``module``.Header.YangVersion
-        let (ns, _) = ``module``.Header.Namespace
-        let (prefix, _) = ``module``.Header.Prefix
+        let (version, _), (ns, _), (prefix, _), _ = ``module``.Header
 
         let header = [
             ProvidedField.Literal ("YangVersion", typeof<Version>, version);
@@ -69,20 +67,18 @@ module Types =
             ProvidedField.Literal ("Prefix", typeof<string>, prefix)
         ]
 
-        let meta =
-            match ``module``.Meta with
-            | None -> []
-            | Some meta ->
-                [
-                    meta.Contact        |> Option.map (fun (c, _) -> ProvidedField.Literal ("Contact", typeof<string>, c))
-                    meta.Description    |> Option.map (fun (d, _) -> ProvidedField.Literal ("Description", typeof<string>, d))
-                    meta.Organization   |> Option.map (fun (o, _) -> ProvidedField.Literal ("Organization", typeof<string>, o))
-                    meta.Reference      |> Option.map (fun (r, _) -> ProvidedField.Literal ("Reference", typeof<string>, r))
-                ] |> List.choose id
+        let map_meta = function
+        | MetaBodyStatement.Organization (org, _)   -> Some (ProvidedField.Literal ("Organization",   typeof<string>, org))
+        | MetaBodyStatement.Contact  (contact, _)   -> Some (ProvidedField.Literal ("Contact",        typeof<string>, contact))
+        | MetaBodyStatement.Description (info, _)   -> Some (ProvidedField.Literal ("Description",    typeof<string>, info))
+        | MetaBodyStatement.Reference    (ref, _)   -> Some (ProvidedField.Literal ("Reference",      typeof<string>, ref))
+        | _                                         -> None
+
+        let meta = ``module``.Meta |> List.choose map_meta
 
         (header @ meta)
 
-    let internal createModule (``module`` : Module.Module) =
+    let internal createModule (``module`` : ModuleStatement) =
         let statics = appendModuleInformation ``module``  |> List.map (fun v -> v :> MemberInfo)
         let fields  = [ ProvidedField("Test", typeof<string>) ] |> List.map (fun v -> v :> MemberInfo)
         // let constructors = [ createDefaultConstructor() ] |> List.map (fun v -> v :> MemberInfo)

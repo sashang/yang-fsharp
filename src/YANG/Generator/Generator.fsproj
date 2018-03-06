@@ -81,6 +81,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Model\Model.fsproj">
+      <Name>Model</Name>
+      <Project>{7ef9ecd7-2db7-482d-9cfe-cf705b6b31c2}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Parser\Parser.fsproj">
       <Name>Parser</Name>
       <Project>{e273db40-799e-44a9-8d73-602698e15e7c}</Project>
