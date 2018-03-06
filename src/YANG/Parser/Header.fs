@@ -7,9 +7,22 @@ namespace Yang.Parser
 [<AutoOpen>]
 module Header =
     open System
+    open System.Text
     open FParsec
-    open Identifier
+    open NLog
     open Yang.Model
+
+    /// Logger for this module
+    let private _logger = LogManager.GetCurrentClassLogger()
+
+#if INTERACTIVE
+    // The following are used only in interactive (fsi) to help with enabling disabling
+    // logging for particular modules.
+
+    type internal Marker = interface end
+    let _full_name = typeof<Marker>.DeclaringType.FullName
+    let _name = typeof<Marker>.DeclaringType.Name
+#endif
 
     type private HeaderStatement =
     | YangVersion   of YangVersionStatement
@@ -26,16 +39,12 @@ module Header =
 
     /// Parses all header statements
     let parse_header<'a> : Parser<ModuleHeaderStatements, 'a> =
-        // TODO: check that there is exactly one definition of each header statement.
-        // [RFC 7950, Sec. 7.1.1, p. 56] specifies that the cardinality of
-        // yang-version, prefix, and namespace is 1.
-        // This can be done by having mutable variables and checking at the end of the parser.
-
         /// Element parser
         let elementParser = spaces >>. parse_header_body_statement
 
         /// Create the state from the first element
         let stateFromFirstElement = function
+        // We keep track of which elements we have seen, to make sure that they appear exactly once.
         | YangVersion   e   -> Some e, None, None, None
         | Namespace     e   -> None, Some e, None, None
         | Prefix        e   -> None, None, Some e, None
@@ -46,14 +55,17 @@ module Header =
             match state, element with
             | (None, ns, ps, us), YangVersion e -> Some e, ns, ps, us
             | (Some _, _, _, _),  YangVersion e ->
+                _logger.Error("Detected duplicate yang-version statement in module")
                 raise (YangParserException "Detected duplicate yang-version statement in module")
 
             | (vs, None, ps, us), Namespace e   -> vs, Some e, ps, us
             | (_, Some _, _, _),  Namespace e   ->
+                _logger.Error("Detected duplicate namespace statement in module")
                 raise (YangParserException "Detected duplicate namespace statement in module")
 
             | (vs, ns, None, us), Prefix e      -> vs, ns, Some e, us
             | (_, _, Some _, _),  Prefix e      ->
+                _logger.Error("Detected duplicate prefix statement in module")
                 raise (YangParserException "Detected duplicate prefix statement in module")
 
             | (vs, ns, ps, None), Unknown e     -> vs, ns, ps, Some [e]
@@ -62,7 +74,22 @@ module Header =
         let result state =
             match state with
             | Some vs, Some ns, Some ps, us -> vs, ns, ps, us
-            | _                             -> raise (YangParserException "Failed to find all mandatory header statements for module")
+            | None,    Some ns, Some ps, us ->
+                // Special case: the yang-version statement must appear, but there are cases where it is omitted.
+                // So we will generate it.
+                _logger.Warn("Module missing yang-version statement; will assume 1.1")
+                let vs = Version(1, 1), None
+                vs, ns, ps, us
+            | _                             ->
+                let sb = StringBuilder("Failed to find all mandatory header statements for module; missing:")
+                let (vs, ns, ps, _) = state
+                if vs.IsNone then Printf.bprintf sb " yang-version"
+                if ns.IsNone then Printf.bprintf sb " namespace"
+                if ps.IsNone then Printf.bprintf sb " prefix"
+
+                _logger.Error("Error parsing header statements: Missing header statements; got state:\n{0}", state)
+
+                raise (YangParserException (sb.ToString()))
 
         ParserHelper.ConsumeMany(
             elementParser           = elementParser,

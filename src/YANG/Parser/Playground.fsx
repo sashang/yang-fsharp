@@ -5,6 +5,28 @@
 #load @"../../../.paket/load/net471/NLog.fsx"
 #r @"../Model/bin/Debug/Yang.Model.dll"
 
+
+[<AutoOpen>]
+module MyLog =
+    open NLog
+
+    type MyLog internal () =
+        let config = new Config.LoggingConfiguration()
+        let target = new Targets.ConsoleTarget("fsi")
+
+        do
+            config.AddTarget(target)
+            LogManager.Configuration <- config
+
+        member this.AddTrace (name : string) =
+            let name' = sprintf "*_%s" name
+            let rule = new Config.LoggingRule(name', NLog.LogLevel.Trace, target)
+            config.LoggingRules.Add(rule)
+            LogManager.Configuration <- config
+
+    let myLog = MyLog ()
+
+
 #load "Utilities.fs"
 #load "Errors.fs"
 #load "Comments.fs"
@@ -49,9 +71,23 @@ let big_model =
 let juniper = apply_parser Generic.parse_many_statements big_model |> List.head
 juniper.Keyword
 juniper.Argument
-juniper.Body
+let st = juniper.Body.Value
+st |> List.map (fun s -> s.Keyword) |> List.groupBy id |> List.map (fun (i, v) -> i, List.length v)
+
+let rec RetrieveKeywords (model : Generic.Statement) : string seq = seq {
+    yield model.Keyword
+
+    match model.Body with
+    | None      -> ()
+    | Some st   ->
+        for s in st do
+            yield! (RetrieveKeywords s)
+}
+
+let keywords = RetrieveKeywords juniper |> Seq.groupBy id |> Seq.map (fun (id, l) -> id, Seq.length l) |> Seq.toList
 
 // This is what we want to parse eventually
+myLog.AddTrace(Header._name)
 let juniper' = apply_parser Module.parse_module big_model
-#time
 
+#time
