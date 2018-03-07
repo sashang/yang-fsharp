@@ -13,7 +13,7 @@ module LeafTests =
         "Hostname for this system.";
 }"""
 
-        let leaf = FParsecHelper.apply Leaf.parse_leaf body
+        let leaf = FParsecHelper.apply Leaf.parse_leaf_statement body
 
         Assert.Equal("host-name", LeafStatement.IdentifierAsString leaf)
         Assert.Equal(

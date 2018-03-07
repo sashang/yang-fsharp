@@ -56,8 +56,8 @@
     <Compile Include="Utilities.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Comments.fs" />
-    <Compile Include="Arguments.fs" />
     <Compile Include="Strings.fs" />
+    <Compile Include="Arguments.fs" />
     <Compile Include="Generic.fs" />
     <Compile Include="Identifier.fs" />
     <Compile Include="Statements.fs" />

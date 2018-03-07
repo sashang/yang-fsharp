@@ -132,10 +132,7 @@ module Statements =
         //                        < config-arg >
         //config-arg          = true-keyword / false-keyword
         skipString "config" >>. spaces >>.
-        (
-                (skipString "true"  .>> spaces |>> (fun _ -> true))
-            <|> (skipString "false" .>> spaces |>> (fun _ -> false))
-        ) .>> spaces .>>.
+        Arguments.parse_boolean .>> spaces .>>.
         end_of_statement_or_block parse_statement .>> spaces
 
     /// Parses a contact statement
@@ -172,7 +169,7 @@ module Statements =
 
     /// Parses a key statement
     let parse_key_statement<'a> : Parser<KeyStatement, 'a> =
-        // [RFC 7950, p195]
+        // [RFC 7950, p. 195]
         //key-stmt            = key-keyword sep key-arg-str stmtend
         //key-arg-str         = < a string that matches the rule >
         //                        < key-arg >
@@ -182,6 +179,25 @@ module Statements =
         Strings.parse_string .>> spaces .>>. 
         (end_of_statement_or_block parse_statement) .>> spaces
         |>> (fun (key, block) -> Arguments.Key.MakeFromString key, block)
+
+    let parse_mandatory_statement<'a> : Parser<MandatoryStatement, 'a> =
+        // [RFC 7950, p. 192]
+        //mandatory-stmt      = mandatory-keyword sep
+        //                        mandatory-arg-str stmtend
+        //mandatory-arg-str   = < a string that matches the rule >
+        //                        < mandatory-arg >
+        //mandatory-arg       = true-keyword / false-keyword
+        skipString "mandatory" >>. spaces >>.
+        Arguments.parse_boolean .>> spaces .>>.
+        (end_of_statement_or_block parse_statement) .>> spaces
+
+    let parse_max_elements_statement<'a> : Parser<MaxElementsStatement, 'a> =
+        // [RFC 7950, p. 192]
+        //max-elements-stmt   = max-elements-keyword sep
+        //                        max-value-arg-str stmtend
+        skipString "max-elements" >>. spaces >>.
+        Arguments.parse_max_value .>> spaces .>>.
+        (end_of_statement_or_block parse_statement) .>> spaces
 
     /// Parses a reference statement
     let parse_namespace_statement<'a> : Parser<NamespaceStatement, 'a> =
@@ -288,3 +304,61 @@ module Statements =
                 )
         |>> (fun (identifier, (argument, body)) -> identifier, argument, body)
 
+    let parse_length_body_statement<'a> : Parser<LengthBodyStatement, 'a> =
+            (parse_error_message_statement  |>> LengthBodyStatement.ErrorMessage)
+        <|> (parse_error_app_tag_statement  |>> LengthBodyStatement.ErrorAppTag)
+        <|> (parse_description_statement    |>> LengthBodyStatement.Description)
+        <|> (parse_reference_statement      |>> LengthBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> LengthBodyStatement.Unknown)
+
+    /// Parses a length statement
+    let parse_length_statement<'a> : Parser<LengthStatement, 'a> =
+        // [RFC 7950, p. 189]
+        //length-stmt         = length-keyword sep length-arg-str optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [error-message-stmt]
+        //                            [error-app-tag-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        skipString "length" >>. spaces >>.
+        Arguments.parse_length .>> spaces .>>.
+        (
+                (skipChar ';' |>> (fun _ -> None))
+            <|> (skipChar '{' >>. spaces >>.
+                 (many (parse_length_body_statement .>> spaces)) .>> spaces .>>
+                 skipChar '}' |>> Some
+                )
+        ) .>> spaces
+
+    let parse_pattern_body_statement<'a> : Parser<PatternBodyStatement, 'a> =
+            (parse_error_message_statement      |>> PatternBodyStatement.ErrorMessage)
+        <|> (parse_error_app_tag_statement      |>> PatternBodyStatement.ErrorAppTag)
+        <|> (parse_description_statement        |>> PatternBodyStatement.Description)
+        <|> (parse_reference_statement          |>> PatternBodyStatement.Reference)
+        <|> (parse_unknown_statement            |>> PatternBodyStatement.Unknown)
+
+    let parse_pattern_statement<'a> : Parser<PatternStatement, 'a> =
+        // [RFC 7950, p. 190]
+        //pattern-stmt        = pattern-keyword sep string optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [modifier-stmt]
+        //                            [error-message-stmt]
+        //                            [error-app-tag-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        skipString "pattern" >>. spaces >>.
+        Strings.parse_string .>> spaces .>>.
+        (
+                (skipChar ';'       |>> (fun _ -> None))
+            <|> (skipChar '{' >>. spaces >>.
+                 (many parse_pattern_body_statement) .>> spaces .>>
+                 skipChar '}'
+                 |>> Some
+                )
+        ) .>> spaces

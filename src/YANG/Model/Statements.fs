@@ -933,6 +933,17 @@ module Statements =
         | CaseBodyStatement.Uses          st -> Statement.Uses          st
         | CaseBodyStatement.Unknown       st -> Statement.Unknown       st
 
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> CaseBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> CaseBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> CaseBodyStatement.LeafList     st
+        | BodyStatement.List          st -> CaseBodyStatement.List         st
+        | BodyStatement.Choice        st -> CaseBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> CaseBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> CaseBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> CaseBodyStatement.Uses         st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+
     /// Helper methods for the ChoiceBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module ChoiceBodyStatement =

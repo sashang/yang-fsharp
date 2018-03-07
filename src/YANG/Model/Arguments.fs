@@ -87,8 +87,8 @@ module Arguments =
             keys |> List.map (IdentifierReference.Make)
 
 
-    // TODO: Fill detail of length-arg
-    type Length = | NA
+    // TODO: Fill detail of length-arg (currently it is just string)
+    type Length = | Length of string
 
     type MaxValue =
     | Unbounded

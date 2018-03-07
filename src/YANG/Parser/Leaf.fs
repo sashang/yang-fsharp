@@ -37,17 +37,21 @@ module Leaf =
     //                            [reference-stmt]
     //                        "}" stmtsep
 
-    let parse_leaf_body<'a> : Parser<LeafBodyStatement list, 'a> =
-        many (
-                (Types.parse_type               |>> LeafBodyStatement.Type)
-            <|> (parse_description_statement    |>> LeafBodyStatement.Description)
-        )
+    let parse_leaf_body_statement<'a> : Parser<LeafBodyStatement, 'a> =
+        // TODO: fill in the rest of the statements for LeafBodyStatement
+            (Types.parse_type_statement     |>> LeafBodyStatement.Type)
+        <|> (parse_config_statement         |>> LeafBodyStatement.Config)
+        <|> (parse_mandatory_statement      |>> LeafBodyStatement.Mandatory)
+        <|> (parse_status_statement         |>> LeafBodyStatement.Status)
+        <|> (parse_description_statement    |>> LeafBodyStatement.Description)
+        <|> (parse_reference_statement      |>> LeafBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> LeafBodyStatement.Unknown)
 
-    let parse_leaf<'a> : Parser<LeafStatement, 'a> =
+    let parse_leaf_statement<'a> : Parser<LeafStatement, 'a> =
         skipString "leaf" >>. spaces >>.
         Identifier.parse_identifier .>> spaces .>>
         skipChar '{' .>> spaces .>>.
-        parse_leaf_body .>> spaces .>>
+        (many parse_leaf_body_statement .>> spaces) .>>
         skipChar '}' .>> spaces
 
 module LeafList =
@@ -74,16 +78,15 @@ module LeafList =
     //                            [reference-stmt]
     //                        "}" stmtsep
 
-    let private parse_leaf_body<'a> : Parser<LeafListBodyStatement list, 'a> =
+    let private parse_leaf_body_statement<'a> : Parser<LeafListBodyStatement, 'a> =
         // TODO: fill in the missing statements for LeafListBodyStatement
-        many (
-                (Types.parse_type               |>> LeafListBodyStatement.Type)
-            <|> (parse_description_statement    |>> LeafListBodyStatement.Description)
-        )
+            (Types.parse_type_statement     |>> LeafListBodyStatement.Type)
+        <|> (parse_description_statement    |>> LeafListBodyStatement.Description)
+        <|> (parse_unknown_statement        |>> LeafListBodyStatement.Unknown)
 
-    let parse_leaf_list<'a> : Parser<LeafListStatement, 'a> =
+    let parse_leaf_list_statement<'a> : Parser<LeafListStatement, 'a> =
         skipString "leaf-list" >>. spaces >>.
         Identifier.parse_identifier .>> spaces .>>
         skipChar '{' .>> spaces .>>.
-        parse_leaf_body .>> spaces .>>
+        (many parse_leaf_body_statement .>> spaces) .>>
         skipChar '}' .>> spaces
