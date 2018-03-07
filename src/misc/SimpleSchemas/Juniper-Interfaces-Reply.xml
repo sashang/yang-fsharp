@@ -1,0 +1,77 @@
+<rpc-reply xmlns:junos="http://xml.juniper.net/junos/15.1X24/junos">
+    <configuration junos:commit-seconds="1518227656" junos:commit-localtime="2018-02-10 01:54:16 UTC" junos:commit-user="autotest">
+		<version>14.XX or 15.XX or 16.XX or 17.XX or whatever</version>
+		<system>
+			<interfaces>
+				<interface>
+					<name>xe-0/0/0</name>
+					<unit>
+						<name>0</name>
+						<family>
+							<inet>
+								<address>
+									<name>1.1.1.15/24</name>
+								</address>
+							</inet>
+						</family>
+					</unit>
+				</interface>
+				<interface>
+					<name>xe-0/0/2</name>
+					<description>A very important interface</description>
+					<mtu>9192</mtu>
+					<unit>
+						<name>0</name>
+						<description>A very important interface</description>
+						<family>
+							<inet>
+								<address>
+									<name>1.2.0.1/31</name>
+								</address>
+							</inet>
+						</family>
+					</unit>
+				</interface>
+				<interface>
+					<name>xe-1/1/0</name>
+					<description>A test interface</description>
+				</interface>
+				<interface>
+					<name>et-7/0/2</name>
+					<description>Some complicated description</description>
+					<mtu>9192</mtu>
+					<unit>
+						<name>100</name>
+						<vlan-id>100</vlan-id>
+						<family>
+							<inet>
+								<address>
+									<name>1.29.10.0/31</name>
+								</address>
+							</inet>
+						</family>
+					</unit>
+					<unit>
+						<name>200</name>
+						<vlan-id>200</vlan-id>
+						<family>
+							<inet>
+								<no-redirects/>
+								<address>
+									<name>1.29.20.0/31</name>
+								</address>
+							</inet>
+							<inet6>
+								<address>
+									<name>2001:400::237:23:120:1/126</name>
+								</address>
+							</inet6>
+							<mpls>
+							</mpls>
+						</family>
+					</unit>
+				</interface>
+			</interfaces>
+		</system>
+	</configuration>
+</rpc-reply>

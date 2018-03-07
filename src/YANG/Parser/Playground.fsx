@@ -70,10 +70,6 @@ let big_model =
     |> ReadAndClean
 
 let juniper = apply_parser Generic.parse_many_statements big_model |> List.head
-juniper.Keyword
-juniper.Argument
-let st = juniper.Body.Value
-st |> List.map (fun s -> s.Keyword) |> List.groupBy id |> List.map (fun (i, v) -> i, List.length v)
 
 let rec RetrieveKeywords (model : Generic.Statement) : string seq = seq {
     yield model.Keyword
@@ -86,6 +82,44 @@ let rec RetrieveKeywords (model : Generic.Statement) : string seq = seq {
 }
 
 let keywords = RetrieveKeywords juniper |> Seq.groupBy id |> Seq.map (fun (id, l) -> id, Seq.length l) |> Seq.toList
+
+type YangPathItem = string * (string option)
+type YangPath = YangPathItem list
+
+let FindAllNodes (filter : Generic.Statement -> bool) (model : Generic.Statement) =
+    let rec find (path : YangPath) (node : Generic.Statement) : YangPath list =
+        let label = (node.Keyword, node.Argument) :: path
+        let current = if filter node then [ label ] else []
+        let children =
+            match node.Body with
+            | None -> []
+            | Some children -> children |> List.collect (fun c -> find label c)
+
+        children @ current
+
+    let result = find [] model
+    result |> List.map (fun r -> List.rev r)
+
+let yang_filter_by_keyword_and_argument (keyword, argument) (node : Generic.Statement) =
+    node.Keyword.Equals(keyword) && (node.Argument = argument)
+
+let PrintPath (path : YangPath) =
+    path
+    |> List.map (
+        fun (keyword, argument) ->
+            match argument with
+            | Some arg  -> sprintf "%s %s" keyword arg
+            | None      -> sprintf "%s" keyword
+    )
+    |> String.concat " -> "
+
+FindAllNodes (yang_filter_by_keyword_and_argument ("container", Some "interfaces")) juniper |> List.map PrintPath |> List.iter (printfn "%A")
+FindAllNodes (yang_filter_by_keyword_and_argument ("container", Some "traceoptions")) juniper |> List.map PrintPath |> List.iter (printfn "%A")
+FindAllNodes (yang_filter_by_keyword_and_argument ("choice", Some "vlan_tag_mode")) juniper |> List.map PrintPath |> List.iter (printfn "%A")
+FindAllNodes (yang_filter_by_keyword_and_argument ("leaf", Some "vlan-id")) juniper |> List.map PrintPath |> List.iter (printfn "%A")
+FindAllNodes (yang_filter_by_keyword_and_argument ("container", Some "family")) juniper |> List.map PrintPath |> List.iter (printfn "%A")
+FindAllNodes (yang_filter_by_keyword_and_argument ("container", Some "inet6")) juniper |> List.map PrintPath |> List.iteri (fun v -> printfn "%A" v)
+
 
 // This is what we want to parse eventually
 myLog.AddTrace(Header._name)
