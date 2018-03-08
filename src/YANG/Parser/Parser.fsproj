@@ -71,6 +71,9 @@
     <Compile Include="Module.fs" />
     <Compile Include="Parser.fs" />
     <None Include="TestFsi.fsx" />
+    <None Include="Logging.fsx" />
+    <None Include="Initialize.fsx" />
+    <None Include="Statistics.fsx" />
     <None Include="Playground.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>

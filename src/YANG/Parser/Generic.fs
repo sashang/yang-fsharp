@@ -5,7 +5,7 @@ namespace Yang.Parser
 /// Parsers for generic (i.e. uninterpreted) elements
 module Generic =
     open FParsec
-    open System.Reflection
+    open Yang.Model.Generic
 
     /// Tracks the state of a generic parser
     type private TextState =
@@ -70,12 +70,6 @@ module Generic =
     // statement = keyword [argument] (";" / "{" *statement "}")
     //
     // The argument is a string.
-
-    type Statement = {
-        Keyword : string
-        Argument : string option
-        Body: (Statement list) option
-    }
 
     /// Implements a parser for generic statements.
     let inline statement_parser<'a> =
