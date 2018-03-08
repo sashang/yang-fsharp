@@ -23,6 +23,39 @@ module configuration {
         type string;
     }
 
+    container configuration {
+        config true;
+
+        leaf version {
+            description "Software version information";
+            type string;
+        }
+
+        uses juniper-config;
+    }
+
+    grouping juniper-config {
+        list logical-systems {
+            key name;
+            description "Logical systems";
+            uses juniper-logical-system;
+        }
+    }
+
+    grouping juniper-logical-system {
+        description "Logical system configuration";
+
+        container interfaces {
+            description "Interface configuration";
+
+            list interface {
+                key name;
+                description "(null)";
+                uses lr_interfaces_type;
+            }
+        }
+    }
+
     grouping lr_interfaces_type {
         description "Physical interface";
 
@@ -120,87 +153,4 @@ module configuration {
             }
         }
     }
-
-    container configuration {
-        config true;
-
-        leaf version {
-            description "Software version information";
-            type string;
-        }
-
-        container system {
-            description "System parameters";
-
-
-            container interfaces {
-                description "Interface configuration options";
-
-                list interface {
-                    key name;
-                    ordered-by user;
-                    description "One or more interfaces that belong to interface set";
-
-                    leaf name {
-                        description "Interface name";
-                        junos:must "(\"interfaces $$\")";
-                        junos:must-message "Interface should have configuration defined for adding to interface-set";
-                        type interface-device;
-                    }
-
-                    leaf description {
-                        description "Text description of interface";
-                        type string;
-                    }
-
-                    leaf mtu {
-                        description "Maximum transmit packet size";
-                        junos:must "(!(\"interfaces ${interface} container-options container-list\"))";
-                        junos:must-message "mtu is not supported for container child interfaces";
-                        type uint32 {
-                            range "256 .. 9216";
-                        }
-                    }
-
-                    list unit {
-                        key name;
-                        description "One or more logical interface unit numbers";
-                        junos:must "(!(\".. vlan-tags-outer\"))";
-                        junos:must-message "'unit' statement cannot be included along with 'vlan-tags-outer' statement";
-
-                        leaf name {
-                            description "Unit number";
-                            type uint32 {
-                                range "0 .. 1073741823";
-                            }
-                        }
-
-                        choice vlan_list {
-                            case case_1 {
-                                leaf vlan-id {
-                                    description "Access mode and trunk mode VLAN membership";
-                                    type uint32 {
-                                    range "1 .. 4094";
-                                    }
-                                }
-                            }
-
-                            case case_2 {
-                                leaf-list vlan-id-list {
-                                    description "Trunk mode VLAN membership for this interface";
-                                    junos:must "((!(\".. .. .. vlan-id\") && !(\".. .. .. vlan-tags\")))";
-                                    junos:must-message "'vlan-id-list' cannot be used on interface with vlan-id/vlan-tags";
-                                    junos:must "(!(\"interfaces ${interface} stacked-vlan-tagging\"))";
-                                    junos:must-message "'vlan-id-list' is not supported on stacked-vlan-tagging mode";
-                                    junos:must "(\".. interface-mode trunk\")";
-                                    junos:must-message "'vlan-id-list' statement supported only under trunk interface mode";
-                                    type string;
-                                }
-                            }
-                        } // end of <choice vlan_list>
-                    } // end of <list unit>
-                } // end of <list interface>
-            } // end of <container interfaces>
-        } // end of <container system>
-    } // end of <container configuration>
 } // end of <module configuration>

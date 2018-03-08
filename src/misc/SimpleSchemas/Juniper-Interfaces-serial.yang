@@ -1,0 +1,142 @@
+module configuration {
+    namespace "http://yang.juniper.net/yang/1.1/jc";
+    prefix jc;
+    import junos-extension {
+        prefix junos;
+    }
+
+    organization
+        "Juniper Networks, Inc.";
+
+    description
+        "Junos YANG module for configuration hierarchies";
+
+    typedef interface-unit {
+        type string;
+    }
+
+    typedef ipv4prefix {
+        type string;
+    }
+
+    typedef ipv6prefix {
+        type string;
+    }
+
+    container configuration {
+        config true;
+
+        leaf version {
+            description "Software version information";
+            type string;
+        }
+
+        container system {
+            key name;
+            description "Logical systems";
+
+            container interfaces {
+                description "Interface configuration";
+
+                list interface {
+                    key name;
+                    description "Physical interface";
+
+                    leaf name {
+                        description "Interface name";
+                        type interface-unit;
+                    }
+
+                    leaf description {
+                        description "Text description of interface";
+                        type string;
+                    }
+
+                    leaf mtu {
+                        description "Maximum transmission unit packet size";
+                        type uint32 {
+                            range "256 .. 9216";
+                        }
+                    }
+
+                    list unit {
+                        key name;
+                        description "Logical interface";
+
+                        leaf name {
+                            type string;
+                        }
+
+                        leaf description {
+                            description "Text description of interface";
+                            type string;
+                        }
+
+                        choice vlan_choice {
+                            case case_1 {
+                                leaf vlan-id {
+                                    description "Virtual LAN identifier value for 802.1q VLAN tags";
+                                    junos:must "(!(\"interfaces ${interface} stacked-vlan-tagging\"))";
+                                    junos:must-message "vlan-id is not supported on stacked-vlan-tagging mode";
+                                    type string;
+                                }
+                            }
+
+                            case case_2 {
+                                leaf vlan-id-range {
+                                    description "Virtual LAN identifier range of form vid1-vid2";
+                                    junos:must "((\"interfaces ${interface} vlan-tagging\" || \"interfaces ${interface} flexible-vlan-tagging\"))";
+                                    junos:must-message "valid only with vlan-tagging or flexible-vlan-tagging mode";
+                                    type string {
+                                        junos:posix-pattern "^(([1-9][0-9]{0,2}|[1-3][0-9]{3}|40[0-8][0-9]|409[0-4])-([1-9][0-9]{0,2}|[1-3][0-9]{3}|40[0-8][0-9]|409[0-4]))$";
+                                        junos:pattern-message "Must be a string in the format <1-4094>-<1-4094>";
+                                    }
+                                }
+                            }
+                        }
+
+                        container family {
+                            description "Protocol family";
+
+                            container inet {
+                                presence "enable inet";
+                                description "IPv4 parameters";
+
+                                list address {
+                                    key name;
+                                    ordered-by user;
+                                    description "Interface address/destination prefix";
+                                    junos:must "((!(\".. unnumbered-address\") && !(\".. location-pool-address\")))";
+                                    junos:must-message "address cannot be defined with unnumbered-address or location-pool-address simultaneously";
+
+                                    leaf name {
+                                        description "Interface address/destination prefix";
+                                        type ipv4prefix;
+                                    }
+                                }
+                            }
+
+                            container inet6 {
+                                presence "enable inet6";
+                                description "IPv6 protocol parameters";
+
+                                list address {
+                                    key name;
+                                    ordered-by user;
+                                    description "Interface address or destination prefix";
+                                    junos:must "(!(\".. unnumbered-address\"))";
+                                    junos:must-message "ipv6 unnumbered-address and ipv6 address must not be defined simultaneously";
+
+                                    leaf name {
+                                        description "Interface address or destination prefix";
+                                        type ipv6prefix;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+} // end of <module configuration>
