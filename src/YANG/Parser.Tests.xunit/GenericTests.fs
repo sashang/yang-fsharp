@@ -219,3 +219,13 @@ keyword argument {
         Assert.Equal("path", result.Keyword)
         Assert.Equal(Some expected, result.Argument)
         Assert.Equal(None, result.Body)
+
+    [<Theory>]
+    [<InlineData("statement 1; ; statement 2;")>]
+    [<InlineData("statement 1;; statement 2;")>]
+    [<InlineData("statement 1 {} statement 2;")>]
+    [<InlineData("statement 1 {} ;; statement 2;")>]
+    [<InlineData("statement 1 {;} statement 2;")>]
+    let ``parsing empty statements`` (input) =
+        let result = FParsecHelper.apply parse_many_statements input
+        Assert.Equal(2, result.Length)

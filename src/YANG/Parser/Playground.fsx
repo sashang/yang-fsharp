@@ -48,14 +48,9 @@ apply_parser BodyStatements.parse_body_statement configuration
 
 open Generic
 let multi_empty = "statement 1; ; statement 2;"
-apply_parser Generic.parse_many_statements multi_empty
 let multi_empty_2 = "statement 1;; statement 2;"
-apply_parser Generic.parse_many_statements multi_empty_2
 let multi_empty_3 = "statement 1 {} statement 2;"
-apply_parser Generic.parse_many_statements multi_empty_3
 let multi_empty_4 = "statement 1 {} ;; statement 2;"
-apply_parser Generic.parse_many_statements multi_empty_4
 let multi_empty_5 = "statement 1 {;} statement 2;"
-apply_parser Generic.parse_many_statements multi_empty_5
 
 #time
