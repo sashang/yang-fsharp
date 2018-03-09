@@ -1,0 +1,17 @@
+From 2ba3d6626999dba9acc2607013680ed9e390b5bc Mon Sep 17 00:00:00 2001
+From: Christos Gkantsidis <chrisgk@microsoft.com>
+Date: Thu, 8 Mar 2018 22:22:27 +0000
+Subject: [PATCH 4/6] Renaming file that is not a valid YANG module any more
+
+---
+ standard/ietf/DRAFT/{ietf-pim-base.yang => ietf-pim-base.yang-MOVED} | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename standard/ietf/DRAFT/{ietf-pim-base.yang => ietf-pim-base.yang-MOVED} (100%)
+
+diff --git a/standard/ietf/DRAFT/ietf-pim-base.yang b/standard/ietf/DRAFT/ietf-pim-base.yang-MOVED
+similarity index 100%
+rename from standard/ietf/DRAFT/ietf-pim-base.yang
+rename to standard/ietf/DRAFT/ietf-pim-base.yang-MOVED
+-- 
+2.16.1.windows.4
+

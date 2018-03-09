@@ -1,0 +1,19 @@
+From 0a585cfe37386ba1a7b9ddfb012af0293b309bc0 Mon Sep 17 00:00:00 2001
+From: Christos Gkantsidis <chrisgk@microsoft.com>
+Date: Thu, 8 Mar 2018 22:21:00 +0000
+Subject: [PATCH 3/6] Revert "Renaming file that is not a valid YANG module any
+ more"
+
+This reverts commit 77de236002612854746eadbcc54d26904de115ac.
+---
+ standard/ietf/DRAFT/{ietf-isis.yang.MOVED => ietf-isis.yang} | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename standard/ietf/DRAFT/{ietf-isis.yang.MOVED => ietf-isis.yang} (100%)
+
+diff --git a/standard/ietf/DRAFT/ietf-isis.yang.MOVED b/standard/ietf/DRAFT/ietf-isis.yang
+similarity index 100%
+rename from standard/ietf/DRAFT/ietf-isis.yang.MOVED
+rename to standard/ietf/DRAFT/ietf-isis.yang
+-- 
+2.16.1.windows.4
+

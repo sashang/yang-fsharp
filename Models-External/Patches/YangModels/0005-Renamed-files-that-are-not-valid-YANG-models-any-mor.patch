@@ -1,0 +1,42 @@
+From 064fd3b4b0e100208a5bbc2c22c075c7140c2b68 Mon Sep 17 00:00:00 2001
+From: Christos Gkantsidis <chrisgk@microsoft.com>
+Date: Thu, 8 Mar 2018 22:26:52 +0000
+Subject: [PATCH 5/6] Renamed files that are not valid YANG models any more;
+ they just mention the name of the file that replaced them
+
+---
+ standard/ietf/DRAFT/{ietf-pim-bidir.yang => ietf-pim-bidir.yang-MOVED}    | 0
+ standard/ietf/DRAFT/{ietf-pim-dm.yang => ietf-pim-dm.yang-MOVED}          | 0
+ standard/ietf/DRAFT/{ietf-pim-rp.yang => ietf-pim-rp.yang-MOVED}          | 0
+ standard/ietf/DRAFT/{ietf-pim-sm.yang => ietf-pim-sm.yang-MOVED}          | 0
+ .../ietf/DRAFT/{ietf-routing-types.yang => ietf-routing-types.yang-MOVED} | 0
+ 5 files changed, 0 insertions(+), 0 deletions(-)
+ rename standard/ietf/DRAFT/{ietf-pim-bidir.yang => ietf-pim-bidir.yang-MOVED} (100%)
+ rename standard/ietf/DRAFT/{ietf-pim-dm.yang => ietf-pim-dm.yang-MOVED} (100%)
+ rename standard/ietf/DRAFT/{ietf-pim-rp.yang => ietf-pim-rp.yang-MOVED} (100%)
+ rename standard/ietf/DRAFT/{ietf-pim-sm.yang => ietf-pim-sm.yang-MOVED} (100%)
+ rename standard/ietf/DRAFT/{ietf-routing-types.yang => ietf-routing-types.yang-MOVED} (100%)
+
+diff --git a/standard/ietf/DRAFT/ietf-pim-bidir.yang b/standard/ietf/DRAFT/ietf-pim-bidir.yang-MOVED
+similarity index 100%
+rename from standard/ietf/DRAFT/ietf-pim-bidir.yang
+rename to standard/ietf/DRAFT/ietf-pim-bidir.yang-MOVED
+diff --git a/standard/ietf/DRAFT/ietf-pim-dm.yang b/standard/ietf/DRAFT/ietf-pim-dm.yang-MOVED
+similarity index 100%
+rename from standard/ietf/DRAFT/ietf-pim-dm.yang
+rename to standard/ietf/DRAFT/ietf-pim-dm.yang-MOVED
+diff --git a/standard/ietf/DRAFT/ietf-pim-rp.yang b/standard/ietf/DRAFT/ietf-pim-rp.yang-MOVED
+similarity index 100%
+rename from standard/ietf/DRAFT/ietf-pim-rp.yang
+rename to standard/ietf/DRAFT/ietf-pim-rp.yang-MOVED
+diff --git a/standard/ietf/DRAFT/ietf-pim-sm.yang b/standard/ietf/DRAFT/ietf-pim-sm.yang-MOVED
+similarity index 100%
+rename from standard/ietf/DRAFT/ietf-pim-sm.yang
+rename to standard/ietf/DRAFT/ietf-pim-sm.yang-MOVED
+diff --git a/standard/ietf/DRAFT/ietf-routing-types.yang b/standard/ietf/DRAFT/ietf-routing-types.yang-MOVED
+similarity index 100%
+rename from standard/ietf/DRAFT/ietf-routing-types.yang
+rename to standard/ietf/DRAFT/ietf-routing-types.yang-MOVED
+-- 
+2.16.1.windows.4
+

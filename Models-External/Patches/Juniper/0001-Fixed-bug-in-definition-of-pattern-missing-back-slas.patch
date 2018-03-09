@@ -1,0 +1,568 @@
+From dc2afb60dab613a3186ef780085654826ed3f078 Mon Sep 17 00:00:00 2001
+From: Christos Gkantsidis <chrisgk@microsoft.com>
+Date: Thu, 8 Mar 2018 21:54:19 +0000
+Subject: [PATCH] Fixed bug in definition of pattern: missing back-slash
+
+---
+ 17.2/17.2R1/junos-es/configuration.yang                        |  2 +-
+ 17.2/17.2R1/junos-ex/configuration.yang                        |  2 +-
+ 17.2/17.2R1/junos-qfx/configuration.yang                       |  2 +-
+ 17.2/17.2R1/junos/configuration.yang                           | 10 +++++-----
+ 17.3/17.3R1/junos-es/configuration.yang                        |  2 +-
+ 17.3/17.3R1/junos-ex/configuration.yang                        |  2 +-
+ 17.3/17.3R1/junos-qfx/configuration.yang                       |  2 +-
+ 17.3/17.3R1/junos/configuration.yang                           | 10 +++++-----
+ .../junos-es-conf-class-of-service@2017-01-01.yang             |  2 +-
+ .../junos-es-conf-dynamic-profiles@2017-01-01.yang             |  3 ++-
+ .../conf/junos-es-conf-class-of-service@2017-01-01.yang        |  2 +-
+ .../conf/junos-es-conf-dynamic-profiles@2017-01-01.yang        |  2 +-
+ .../junos-ex-conf-class-of-service@2017-01-01.yang             |  2 +-
+ .../junos-ex-conf-dynamic-profiles@2017-01-01.yang             |  2 +-
+ .../conf/junos-ex-conf-class-of-service@2017-01-01.yang        |  2 +-
+ .../conf/junos-ex-conf-dynamic-profiles@2017-01-01.yang        |  2 +-
+ .../junos-qfx-conf-class-of-service@2017-01-01.yang            |  2 +-
+ .../junos-qfx-conf-dynamic-profiles@2017-01-01.yang            |  2 +-
+ .../conf/junos-qfx-conf-class-of-service@2017-01-01.yang       |  2 +-
+ .../conf/junos-qfx-conf-dynamic-profiles@2017-01-01.yang       |  2 +-
+ .../junos-conf-class-of-service@2017-01-01.yang                | 10 +++++-----
+ .../junos-conf-dynamic-profiles@2017-01-01.yang                | 10 +++++-----
+ .../junos/conf/junos-conf-class-of-service@2017-01-01.yang     | 10 +++++-----
+ .../junos/conf/junos-conf-dynamic-profiles@2017-01-01.yang     | 10 +++++-----
+ 24 files changed, 49 insertions(+), 48 deletions(-)
+
+diff --git a/17.2/17.2R1/junos-es/configuration.yang b/17.2/17.2R1/junos-es/configuration.yang
+index d0493e1..7eb05ef 100644
+--- a/17.2/17.2R1/junos-es/configuration.yang
++++ b/17.2/17.2R1/junos-es/configuration.yang
+@@ -61491,7 +61491,7 @@ revision 2017-01-01 {
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type uint32 {
+              range "0 .. 1073741823";
+diff --git a/17.2/17.2R1/junos-ex/configuration.yang b/17.2/17.2R1/junos-ex/configuration.yang
+index ebf50ef..a6e5165 100644
+--- a/17.2/17.2R1/junos-ex/configuration.yang
++++ b/17.2/17.2R1/junos-ex/configuration.yang
+@@ -44817,7 +44817,7 @@ revision 2017-01-01 {
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type uint32 {
+              range "0 .. 1073741823";
+diff --git a/17.2/17.2R1/junos-qfx/configuration.yang b/17.2/17.2R1/junos-qfx/configuration.yang
+index bcc4985..7062587 100644
+--- a/17.2/17.2R1/junos-qfx/configuration.yang
++++ b/17.2/17.2R1/junos-qfx/configuration.yang
+@@ -47893,7 +47893,7 @@ revision 2017-01-01 {
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type uint32 {
+              range "0 .. 1073741823";
+diff --git a/17.2/17.2R1/junos/configuration.yang b/17.2/17.2R1/junos/configuration.yang
+index 07dd476..aaa1653 100644
+--- a/17.2/17.2R1/junos/configuration.yang
++++ b/17.2/17.2R1/junos/configuration.yang
+@@ -86636,7 +86636,7 @@ revision 2017-01-01 {
+              description "INET PRECEDENCE code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -86669,7 +86669,7 @@ revision 2017-01-01 {
+              description "DSCP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -86702,7 +86702,7 @@ revision 2017-01-01 {
+              description "DSCP-IPV6 code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -86735,7 +86735,7 @@ revision 2017-01-01 {
+              description "EXP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -89190,7 +89190,7 @@ revision 2017-01-01 {
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type uint32 {
+              range "0 .. 1073741823";
+diff --git a/17.3/17.3R1/junos-es/configuration.yang b/17.3/17.3R1/junos-es/configuration.yang
+index 4e2a09b..9007eb2 100644
+--- a/17.3/17.3R1/junos-es/configuration.yang
++++ b/17.3/17.3R1/junos-es/configuration.yang
+@@ -68794,7 +68794,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.3/17.3R1/junos-ex/configuration.yang b/17.3/17.3R1/junos-ex/configuration.yang
+index b0ac089..fcd08f5 100644
+--- a/17.3/17.3R1/junos-ex/configuration.yang
++++ b/17.3/17.3R1/junos-ex/configuration.yang
+@@ -49426,7 +49426,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.3/17.3R1/junos-qfx/configuration.yang b/17.3/17.3R1/junos-qfx/configuration.yang
+index a19513f..ad553cb 100644
+--- a/17.3/17.3R1/junos-qfx/configuration.yang
++++ b/17.3/17.3R1/junos-qfx/configuration.yang
+@@ -53131,7 +53131,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.3/17.3R1/junos/configuration.yang b/17.3/17.3R1/junos/configuration.yang
+index 4d26c5e..0d00f40 100644
+--- a/17.3/17.3R1/junos/configuration.yang
++++ b/17.3/17.3R1/junos/configuration.yang
+@@ -98098,7 +98098,7 @@
+              description "INET PRECEDENCE code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -98131,7 +98131,7 @@
+              description "DSCP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -98164,7 +98164,7 @@
+              description "DSCP-IPV6 code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -98197,7 +98197,7 @@
+              description "EXP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -100876,7 +100876,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-es/conf-with-extensions/junos-es-conf-class-of-service@2017-01-01.yang b/17.4/17.4R1/junos-es/conf-with-extensions/junos-es-conf-class-of-service@2017-01-01.yang
+index 4b550a9..f498fe5 100644
+--- a/17.4/17.4R1/junos-es/conf-with-extensions/junos-es-conf-class-of-service@2017-01-01.yang
++++ b/17.4/17.4R1/junos-es/conf-with-extensions/junos-es-conf-class-of-service@2017-01-01.yang
+@@ -2973,7 +2973,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-es/conf-with-extensions/junos-es-conf-dynamic-profiles@2017-01-01.yang b/17.4/17.4R1/junos-es/conf-with-extensions/junos-es-conf-dynamic-profiles@2017-01-01.yang
+index 5f73b31..386bcfc 100644
+--- a/17.4/17.4R1/junos-es/conf-with-extensions/junos-es-conf-dynamic-profiles@2017-01-01.yang
++++ b/17.4/17.4R1/junos-es/conf-with-extensions/junos-es-conf-dynamic-profiles@2017-01-01.yang
+@@ -1,3 +1,4 @@
++
+ /*
+  * Copyright (c) 2017 Juniper Networks, Inc.
+  * All rights reserved.
+@@ -41700,7 +41701,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-es/conf/junos-es-conf-class-of-service@2017-01-01.yang b/17.4/17.4R1/junos-es/conf/junos-es-conf-class-of-service@2017-01-01.yang
+index c9a0ae6..aa97c32 100644
+--- a/17.4/17.4R1/junos-es/conf/junos-es-conf-class-of-service@2017-01-01.yang
++++ b/17.4/17.4R1/junos-es/conf/junos-es-conf-class-of-service@2017-01-01.yang
+@@ -2811,7 +2811,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-es/conf/junos-es-conf-dynamic-profiles@2017-01-01.yang b/17.4/17.4R1/junos-es/conf/junos-es-conf-dynamic-profiles@2017-01-01.yang
+index a647adf..9909429 100644
+--- a/17.4/17.4R1/junos-es/conf/junos-es-conf-dynamic-profiles@2017-01-01.yang
++++ b/17.4/17.4R1/junos-es/conf/junos-es-conf-dynamic-profiles@2017-01-01.yang
+@@ -39108,7 +39108,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-ex/conf-with-extensions/junos-ex-conf-class-of-service@2017-01-01.yang b/17.4/17.4R1/junos-ex/conf-with-extensions/junos-ex-conf-class-of-service@2017-01-01.yang
+index 602dfd2..5ac68d8 100644
+--- a/17.4/17.4R1/junos-ex/conf-with-extensions/junos-ex-conf-class-of-service@2017-01-01.yang
++++ b/17.4/17.4R1/junos-ex/conf-with-extensions/junos-ex-conf-class-of-service@2017-01-01.yang
+@@ -2801,7 +2801,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-ex/conf-with-extensions/junos-ex-conf-dynamic-profiles@2017-01-01.yang b/17.4/17.4R1/junos-ex/conf-with-extensions/junos-ex-conf-dynamic-profiles@2017-01-01.yang
+index 175cc5f..08a5edc 100644
+--- a/17.4/17.4R1/junos-ex/conf-with-extensions/junos-ex-conf-dynamic-profiles@2017-01-01.yang
++++ b/17.4/17.4R1/junos-ex/conf-with-extensions/junos-ex-conf-dynamic-profiles@2017-01-01.yang
+@@ -38153,7 +38153,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-ex/conf/junos-ex-conf-class-of-service@2017-01-01.yang b/17.4/17.4R1/junos-ex/conf/junos-ex-conf-class-of-service@2017-01-01.yang
+index 751af49..9ee27fa 100644
+--- a/17.4/17.4R1/junos-ex/conf/junos-ex-conf-class-of-service@2017-01-01.yang
++++ b/17.4/17.4R1/junos-ex/conf/junos-ex-conf-class-of-service@2017-01-01.yang
+@@ -2639,7 +2639,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-ex/conf/junos-ex-conf-dynamic-profiles@2017-01-01.yang b/17.4/17.4R1/junos-ex/conf/junos-ex-conf-dynamic-profiles@2017-01-01.yang
+index 3288edc..b13280c 100644
+--- a/17.4/17.4R1/junos-ex/conf/junos-ex-conf-dynamic-profiles@2017-01-01.yang
++++ b/17.4/17.4R1/junos-ex/conf/junos-ex-conf-dynamic-profiles@2017-01-01.yang
+@@ -35899,7 +35899,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-qfx/conf-with-extensions/junos-qfx-conf-class-of-service@2017-01-01.yang b/17.4/17.4R1/junos-qfx/conf-with-extensions/junos-qfx-conf-class-of-service@2017-01-01.yang
+index 3cd2f1c..2ba6d30 100644
+--- a/17.4/17.4R1/junos-qfx/conf-with-extensions/junos-qfx-conf-class-of-service@2017-01-01.yang
++++ b/17.4/17.4R1/junos-qfx/conf-with-extensions/junos-qfx-conf-class-of-service@2017-01-01.yang
+@@ -2997,7 +2997,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-qfx/conf-with-extensions/junos-qfx-conf-dynamic-profiles@2017-01-01.yang b/17.4/17.4R1/junos-qfx/conf-with-extensions/junos-qfx-conf-dynamic-profiles@2017-01-01.yang
+index c0422d8..aeab478 100644
+--- a/17.4/17.4R1/junos-qfx/conf-with-extensions/junos-qfx-conf-dynamic-profiles@2017-01-01.yang
++++ b/17.4/17.4R1/junos-qfx/conf-with-extensions/junos-qfx-conf-dynamic-profiles@2017-01-01.yang
+@@ -39400,7 +39400,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-qfx/conf/junos-qfx-conf-class-of-service@2017-01-01.yang b/17.4/17.4R1/junos-qfx/conf/junos-qfx-conf-class-of-service@2017-01-01.yang
+index 92727f9..4ce91d6 100644
+--- a/17.4/17.4R1/junos-qfx/conf/junos-qfx-conf-class-of-service@2017-01-01.yang
++++ b/17.4/17.4R1/junos-qfx/conf/junos-qfx-conf-class-of-service@2017-01-01.yang
+@@ -2819,7 +2819,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos-qfx/conf/junos-qfx-conf-dynamic-profiles@2017-01-01.yang b/17.4/17.4R1/junos-qfx/conf/junos-qfx-conf-dynamic-profiles@2017-01-01.yang
+index 92897d7..a7d3ca2 100644
+--- a/17.4/17.4R1/junos-qfx/conf/junos-qfx-conf-dynamic-profiles@2017-01-01.yang
++++ b/17.4/17.4R1/junos-qfx/conf/junos-qfx-conf-dynamic-profiles@2017-01-01.yang
+@@ -36978,7 +36978,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos/conf-with-extensions/junos-conf-class-of-service@2017-01-01.yang b/17.4/17.4R1/junos/conf-with-extensions/junos-conf-class-of-service@2017-01-01.yang
+index 66834ab..679b14e 100644
+--- a/17.4/17.4R1/junos/conf-with-extensions/junos-conf-class-of-service@2017-01-01.yang
++++ b/17.4/17.4R1/junos/conf-with-extensions/junos-conf-class-of-service@2017-01-01.yang
+@@ -1165,7 +1165,7 @@
+              description "INET PRECEDENCE code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -1198,7 +1198,7 @@
+              description "DSCP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -1231,7 +1231,7 @@
+              description "DSCP-IPV6 code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -1264,7 +1264,7 @@
+              description "EXP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -3925,7 +3925,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos/conf-with-extensions/junos-conf-dynamic-profiles@2017-01-01.yang b/17.4/17.4R1/junos/conf-with-extensions/junos-conf-dynamic-profiles@2017-01-01.yang
+index 8535915..f915307 100644
+--- a/17.4/17.4R1/junos/conf-with-extensions/junos-conf-dynamic-profiles@2017-01-01.yang
++++ b/17.4/17.4R1/junos/conf-with-extensions/junos-conf-dynamic-profiles@2017-01-01.yang
+@@ -61729,7 +61729,7 @@
+              description "INET PRECEDENCE code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -61762,7 +61762,7 @@
+              description "DSCP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -61795,7 +61795,7 @@
+              description "DSCP-IPV6 code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -61828,7 +61828,7 @@
+              description "EXP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -64461,7 +64461,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos/conf/junos-conf-class-of-service@2017-01-01.yang b/17.4/17.4R1/junos/conf/junos-conf-class-of-service@2017-01-01.yang
+index 727a9d5..ec7c848 100644
+--- a/17.4/17.4R1/junos/conf/junos-conf-class-of-service@2017-01-01.yang
++++ b/17.4/17.4R1/junos/conf/junos-conf-class-of-service@2017-01-01.yang
+@@ -1081,7 +1081,7 @@
+              description "INET PRECEDENCE code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -1112,7 +1112,7 @@
+              description "DSCP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -1143,7 +1143,7 @@
+              description "DSCP-IPV6 code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -1174,7 +1174,7 @@
+              description "EXP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -3713,7 +3713,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+diff --git a/17.4/17.4R1/junos/conf/junos-conf-dynamic-profiles@2017-01-01.yang b/17.4/17.4R1/junos/conf/junos-conf-dynamic-profiles@2017-01-01.yang
+index 9bf3a15..4ca41b7 100644
+--- a/17.4/17.4R1/junos/conf/junos-conf-dynamic-profiles@2017-01-01.yang
++++ b/17.4/17.4R1/junos/conf/junos-conf-dynamic-profiles@2017-01-01.yang
+@@ -57601,7 +57601,7 @@
+              description "INET PRECEDENCE code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -57632,7 +57632,7 @@
+              description "DSCP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -57663,7 +57663,7 @@
+              description "DSCP-IPV6 code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -57694,7 +57694,7 @@
+              description "EXP code point";
+              type union {
+                type string {
+-                 pattern "\*";
++                 pattern "\\*";
+                }
+                type string;
+              }
+@@ -60205,7 +60205,7 @@
+          description "Logical unit number";
+          type union {
+            type string {
+-             pattern "\*";
++             pattern "\\*";
+            }
+            type union {
+              type string {
+-- 
+2.16.1.windows.4
+
