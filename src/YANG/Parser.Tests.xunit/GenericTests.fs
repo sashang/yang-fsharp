@@ -165,3 +165,57 @@ keyword argument {
                 Assert.Equal(6, List.length body)
             | None -> failwith "Internal error: testing case should not have reached this point"
         | _ -> failwith "Internal error: testing case should not have reached this point"
+
+    [<Fact>]
+    let ``fail on parsing un-escaped regular expression`` () =
+        let input = """pattern "\*";"""
+        Assert.ThrowsAny<Exception>(
+            fun _ -> FParsecHelper.apply statement_parser input |> ignore
+        )
+
+    [<Fact>]
+    let ``recover regular expression from correctly encoded RE string`` () =
+        let input = """pattern "\\*";"""
+        let expected = @"\*"
+        let result = FParsecHelper.apply statement_parser input
+        Assert.Equal("pattern", result.Keyword)
+        Assert.Equal(Some expected, result.Argument)
+        Assert.Equal(None, result.Body)
+
+    [<Fact>]
+    let ``recover regular expression from correctly encoded single-quoted RE string; RFC 7950, p. 150, example 1`` () =
+        let input = """pattern '[a-zA-Z_][a-zA-Z0-9\-_.]*';"""
+        let expected = """[a-zA-Z_][a-zA-Z0-9\-_.]*"""
+        let result = FParsecHelper.apply statement_parser input
+        Assert.Equal("pattern", result.Keyword)
+        Assert.Equal(Some expected, result.Argument)
+        Assert.Equal(None, result.Body)
+
+    [<Fact>]
+    let ``recover regular expression from correctly encoded single-quoted RE string; RFC 7950, p. 150, example 2`` () =
+        let input = """pattern '[xX][mM][lL].*' {
+         modifier invert-match;
+       }"""
+
+        let expected = """[xX][mM][lL].*"""
+        let result = FParsecHelper.apply statement_parser input
+        Assert.Equal("pattern", result.Keyword)
+        Assert.Equal(Some expected, result.Argument)
+        Assert.True(result.Body.IsSome)
+        Assert.Equal(1, List.length (result.Body.Value))
+
+    [<Fact>]
+    let ``parse path statement with multiline string`` () =
+        let input = """path
+        '/dot1q:bridges'+
+        '/dot1q:bridge'+
+        '/dot1q:component'+
+        '/psfp:flow-meters'+
+        '/psfp:flow-meter-instance-table'+
+        '/psfp:flow-meter-instance-id';"""
+
+        let expected = @"/dot1q:bridges/dot1q:bridge/dot1q:component/psfp:flow-meters/psfp:flow-meter-instance-table/psfp:flow-meter-instance-id"
+        let result = FParsecHelper.apply statement_parser input
+        Assert.Equal("path", result.Keyword)
+        Assert.Equal(Some expected, result.Argument)
+        Assert.Equal(None, result.Body)

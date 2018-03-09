@@ -91,7 +91,7 @@ let statistics =
                 )
             with
             | :? System.Exception as ex ->
-                printfn "Error parsing: %s\n %A" filename ex
+                printfn "Error parsing: %s\n%A" filename ex
                 //printfn "%s" filename
 
             state

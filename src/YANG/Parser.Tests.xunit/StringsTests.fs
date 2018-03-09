@@ -87,3 +87,18 @@ and there"""
         let str = FParsecHelper.apply (spaces >>. parse_string) multiline_string
         // Observe that in YANG all line endings are with \n, and not \r\n.
         Assert.Equal(expected.Replace("\r\n", "\n"), str)
+
+    [<Fact>]
+    let ``parse concatenated multiline string with no spaces between '+' operator`` () =
+        let input = """
+        '/dot1q:bridges'+
+        '/dot1q:bridge'+
+        '/dot1q:component'+
+        '/psfp:flow-meters'+
+        '/psfp:flow-meter-instance-table'+
+        '/psfp:flow-meter-instance-id'
+"""
+        let expected = "/dot1q:bridges/dot1q:bridge/dot1q:component/psfp:flow-meters/psfp:flow-meter-instance-table/psfp:flow-meter-instance-id"
+        let result = FParsecHelper.apply (spaces >>. parse_string) input
+        Assert.Equal(expected, result)
+
