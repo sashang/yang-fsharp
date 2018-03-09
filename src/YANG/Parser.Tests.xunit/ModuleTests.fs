@@ -26,7 +26,7 @@ module example-system {
 }
 """
 
-        let m = FParsecHelper.apply parse_module model
+        let m = FParsecHelper.apply parse_module (model.Trim())
         Assert.Equal("example-system", m.Name.Value)
         Assert.NotNull(m.Header)
         Assert.NotNull(m.Meta)

@@ -44,37 +44,26 @@ module Linkage =
 #endif
 
     let parse_import_body_statement<'a> : Parser<ImportBodyStatement, 'a> =
-            ((parse_prefix_statement        .>> spaces) |>> ImportBodyStatement.Prefix)
-        <|> ((parse_revision_date_statement .>> spaces) |>> ImportBodyStatement.RevisionDate)
-        <|> ((parse_description_statement   .>> spaces) |>> ImportBodyStatement.Description)
-        <|> ((parse_reference_statement     .>> spaces) |>> ImportBodyStatement.Reference)
-        <|> ((parse_unknown_statement       .>> spaces) |>> ImportBodyStatement.Unknown)
+            (parse_prefix_statement         |>> ImportBodyStatement.Prefix)
+        <|> (parse_revision_date_statement  |>> ImportBodyStatement.RevisionDate)
+        <|> (parse_description_statement    |>> ImportBodyStatement.Description)
+        <|> (parse_reference_statement      |>> ImportBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> ImportBodyStatement.Unknown)
 
     let parse_import_statement<'a> : Parser<ImportStatement, 'a> =
-        skipString "import" >>. spaces >>.
-        Identifier.parse_identifier .>> spaces .>>
-        skipChar '{' .>> spaces .>>.
-        (many parse_import_body_statement) .>>
-        skipChar '}' .>> spaces
+        make_statement_parser_generic "import" Identifier.parse_identifier parse_import_body_statement
 
     let parse_include_body_statement<'a> : Parser<IncludeBodyStatement, 'a> =
-            ((parse_revision_date_statement .>> spaces) |>> IncludeBodyStatement.RevisionDate)
-        <|> ((parse_description_statement   .>> spaces) |>> IncludeBodyStatement.Description)
-        <|> ((parse_reference_statement     .>> spaces) |>> IncludeBodyStatement.Reference)
-        <|> ((parse_unknown_statement       .>> spaces) |>> IncludeBodyStatement.Unknown)
+            (parse_revision_date_statement  |>> IncludeBodyStatement.RevisionDate)
+        <|> (parse_description_statement    |>> IncludeBodyStatement.Description)
+        <|> (parse_reference_statement      |>> IncludeBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> IncludeBodyStatement.Unknown)
 
     let parse_include_statement<'a> : Parser<IncludeStatement, 'a> =
-        skipString "include" >>. spaces >>.
-        Identifier.parse_identifier .>> spaces .>>.
-        (       ( skipChar ';' .>> spaces |>> (fun _ -> Option.None) )
-         <|>    ( skipChar '{' .>> spaces >>.
-                  (many parse_include_body_statement) .>>
-                  skipChar '}' .>> spaces
-                  |>> Option.Some)
-        )
+        make_statement_parser_optional_generic "include" Identifier.parse_identifier parse_include_body_statement
 
     let parse_linkage_statement<'a> : Parser<LinkageBodyStatement, 'a> =
-            ((parse_import_statement .>> spaces)    |>> LinkageBodyStatement.Import)
-        <|> ((parse_include_statement .>> spaces)   |>> LinkageBodyStatement.Include)
+            (parse_import_statement     |>> LinkageBodyStatement.Import)
+        <|> (parse_include_statement    |>> LinkageBodyStatement.Include)
 
     let parse_linkage_section<'a> : Parser<LinkageStatements, 'a> = many parse_linkage_statement

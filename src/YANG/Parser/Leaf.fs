@@ -48,11 +48,7 @@ module Leaf =
         <|> (parse_unknown_statement        |>> LeafBodyStatement.Unknown)
 
     let parse_leaf_statement<'a> : Parser<LeafStatement, 'a> =
-        skipString "leaf" >>. spaces >>.
-        Identifier.parse_identifier .>> spaces .>>
-        skipChar '{' .>> spaces .>>.
-        (many parse_leaf_body_statement .>> spaces) .>>
-        skipChar '}' .>> spaces
+        make_statement_parser_generic "leaf" Identifier.parse_identifier parse_leaf_body_statement
 
 module LeafList =
     open FParsec
@@ -85,8 +81,4 @@ module LeafList =
         <|> (parse_unknown_statement        |>> LeafListBodyStatement.Unknown)
 
     let parse_leaf_list_statement<'a> : Parser<LeafListStatement, 'a> =
-        skipString "leaf-list" >>. spaces >>.
-        Identifier.parse_identifier .>> spaces .>>
-        skipChar '{' .>> spaces .>>.
-        (many parse_leaf_body_statement .>> spaces) .>>
-        skipChar '}' .>> spaces
+        make_statement_parser_generic "leaf-list" Identifier.parse_identifier parse_leaf_body_statement

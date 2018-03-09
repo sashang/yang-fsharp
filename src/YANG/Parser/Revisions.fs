@@ -18,7 +18,7 @@ module Revisions =
     /// Parses the entire body of a revision
     let private parse_revision_body<'a> : Parser<RevisionBodyStatement list, 'a> =
         /// Element parser
-        let elementParser = spaces >>. parse_revision_body_statement
+        let elementParser = parse_revision_body_statement
 
         /// Create the state from the first element
         let stateFromFirstElement = function
@@ -60,13 +60,15 @@ module Revisions =
         //                        "}") stmtsep
         //
         // revision-date       = date-arg-str
-
-        skipStringCI "revision" >>. spaces >>.
+        //
+        // In this case, we parse the entire body with the method above. We do that to
+        // also check the validity of the statements.
+        skipString "revision" >>. spaces >>.
         Arguments.parse_date .>> spaces .>>.
-        (     (skipChar ';' .>> spaces |>> (fun _ -> None))
-          <|> (skipChar '{' .>> spaces >>. (parse_revision_body |>> Some) .>> spaces .>> skipChar '}' .>> spaces)
+        (     (skipChar ';' .>> wse |>> (fun _ -> None))
+          <|> (skipChar '{' .>> wse >>. (parse_revision_body |>> Some) .>> wse .>> skipChar '}' .>> wse)
         )
 
     /// Parses all revision statements
     let parse_revision_list<'a> : Parser<RevisionStatement list, 'a> =
-        many (parse_revision .>> spaces)
+        many parse_revision

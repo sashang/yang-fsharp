@@ -22,7 +22,7 @@ module Arguments =
         //                       < date-arg >
         // date-arg            = 4DIGIT "-" 2DIGIT "-" 2DIGIT
 
-        regex "\d{4}\-\d{2}-\d{2}"
+        regex "\d{4}\-\d{2}-\d{2}" .>> spaces
         |>> (fun date_string ->
             let value index = int (date_string.Chars index) - int ('0')
             let year = (value 0) * 1000 + (value 1) * 100 + (value 2) * 10 + value 3
@@ -53,6 +53,15 @@ module Arguments =
         //positive-integer-value = (non-zero-digit *DIGIT)
             (skipString "unbounded" |>> (fun _ -> MaxValue.Unbounded))
         <|> (puint64                |>> (fun value -> MaxValue.Bounded value)) .>> spaces
+
+    let parse_ordered_by<'a> : Parser<OrderedBy, 'a> =
+        // [RFC 7950, p. 192]
+        //ordered-by-arg-str  = < a string that matches the rule >
+        //                        < ordered-by-arg >
+        //ordered-by-arg      = user-keyword / system-keyword
+                (skipString "user"      |>> (fun _ -> OrderedBy.User))
+            <|> (skipString "system"    |>> (fun _ -> OrderedBy.System))
+            .>> spaces
 
     let parse_status<'a> : Parser<Status, 'a> =
             (skipString "current"       >>. spaces  |>> (fun _ -> Status.Current))

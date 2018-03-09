@@ -103,31 +103,6 @@ module BodyStatements =
             createParserForwardedToRef<ChoiceStatement, 'a>()
 
         //
-        // Second, some helper methods
-        //
-
-        /// Creates a parser for a statement that has optional body
-        let make_parser_optional keyword identifier body_parser =
-            skipString keyword >>. spaces >>.
-            identifier .>> spaces .>>.
-            (
-                    (end_of_statement |>> (fun _ -> None))
-                <|> (begin_block >>.
-                     (many body_parser) .>> spaces .>>
-                     end_block
-                     |>> Some
-                    ) .>> spaces
-            )
-
-        /// Creates a parser for a statement with mandatory body
-        let make_parser keyword identifier body_parser =
-            skipString keyword >>. spaces >>.
-            identifier .>> spaces .>>
-            begin_block .>>.
-            (many body_parser) .>> spaces .>>
-            end_block
-
-        //
         // Next, create the parsers for the various statements
         //
         // Make sure that when parse_uses_statement appears, it is in the end,
@@ -161,7 +136,7 @@ module BodyStatements =
             //                           *action-stmt
             //                           *notification-stmt
             //                       "}") stmtsep
-            make_parser_optional "container" Identifier.parse_identifier parse_container_body_statement
+            make_statement_parser_optional_generic "container" Identifier.parse_identifier parse_container_body_statement
 
         let parse_typedef_body_statement : Parser<TypeDefBodyStatement, 'a> =
             // TODO: fill in missing parsing for TypeDefBodyStatement
@@ -183,7 +158,7 @@ module BodyStatements =
             //                            [description-stmt]
             //                            [reference-stmt]
             //                        "}" stmtsep
-            make_parser "typedef" Identifier.parse_identifier parse_typedef_body_statement
+            make_statement_parser_generic "typedef" Identifier.parse_identifier parse_typedef_body_statement
 
         let parse_grouping_body_statement : Parser<GroupingBodyStatement, 'a> =
             // TODO: fill in missing parsing for GroupingBodyStatement
@@ -209,7 +184,7 @@ module BodyStatements =
             //                            *action-stmt
             //                            *notification-stmt
             //                        "}") stmtsep
-            make_parser_optional "grouping" Identifier.parse_identifier parse_grouping_body_statement
+            make_statement_parser_optional_generic "grouping" Identifier.parse_identifier parse_grouping_body_statement
 
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
             // TODO: fill in missing parsing for ListBodyStatement
@@ -242,7 +217,7 @@ module BodyStatements =
             //                            *action-stmt
             //                            *notification-stmt
             //                        "}" stmtsep
-            make_parser "list" Identifier.parse_identifier parse_list_body_statement
+            make_statement_parser_generic "list" Identifier.parse_identifier parse_list_body_statement
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
             // TODO: fill in missing parsing for UsesBodyStatement
@@ -265,7 +240,7 @@ module BodyStatements =
             //                            *refine-stmt
             //                            *uses-augment-stmt
             //                        "}") stmtsep
-            make_parser_optional "uses" Identifier.parse_identifier_reference parse_uses_body_statement
+            make_statement_parser_optional_generic "uses" Identifier.parse_identifier_reference parse_uses_body_statement
 
         let parse_case_body_statement : Parser<CaseBodyStatement, 'a> =
             // TODO: fill in missing parsing for CaseBodyStatement
@@ -287,7 +262,7 @@ module BodyStatements =
             //                            [reference-stmt]
             //                            *data-def-stmt
             //                        "}") stmtsep
-            make_parser_optional "case" Identifier.parse_identifier parse_case_body_statement
+            make_statement_parser_optional_generic "case" Identifier.parse_identifier parse_case_body_statement
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
             // TODO: fill in missing parsing for ChoiceBodyStatement
@@ -327,7 +302,7 @@ module BodyStatements =
             //                        list-stmt /
             //                        anydata-stmt /
             //                        anyxml-stmt
-            make_parser_optional "choice" Identifier.parse_identifier parse_choice_body_statement
+            make_statement_parser_optional_generic "choice" Identifier.parse_identifier parse_choice_body_statement
 
         let parse_data_definition_implementation : Parser<BodyStatement, 'a> =
             // TODO: fill in missing parsing for data-def-stmt

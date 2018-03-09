@@ -40,7 +40,7 @@ module Header =
     /// Parses all header statements
     let parse_header<'a> : Parser<ModuleHeaderStatements, 'a> =
         /// Element parser
-        let elementParser = spaces >>. parse_header_body_statement
+        let elementParser = parse_header_body_statement
 
         /// Create the state from the first element
         let stateFromFirstElement = function

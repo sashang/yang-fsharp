@@ -22,7 +22,7 @@ module Meta =
     /// Parses all meta statements
     let parse_meta<'a> : Parser<MetaStatements, 'a> =
         /// Element parser
-        let elementParser = spaces >>. parse_meta_body_statement
+        let elementParser = parse_meta_body_statement
 
         /// Create the state from the first element
         let stateFromFirstElement = function

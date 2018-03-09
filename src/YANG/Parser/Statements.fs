@@ -34,6 +34,9 @@ module Statements =
 
     // TODO: Namespaces are hierarchical with colon as separator, e.g. urn:example:system
 
+    // Assumption: every parser starts at a point that is not white-space and
+    //             consumes all whitespace (including empty statements) that follow it.
+
     //
     //
     // Helper definitions that consume trailing whitespace
@@ -42,42 +45,78 @@ module Statements =
 
     let inline private read_keyword<'a> : Parser<string, 'a> = Strings.parse_string .>> spaces
 
+    /// Consume whitespace and empty statements.
+    let wse<'u> : Parser<unit, 'u> =
+        spaces .>> (many (skipChar ';' >>. spaces))
+
     /// Parses the end of regular statements that finish with a semicolon ';'.
     /// It also consumes empty statements that may follow (multiple semicolons).
-    let inline end_of_statement<'a> : Parser<unit, 'a> = many1 (skipChar ';' >>. spaces) |>> (fun _ -> () )
+    let inline end_of_statement<'a> : Parser<unit, 'a> = skipChar ';' >>. wse
 
     /// Parses the beginning of a block; it starts with '{'.
     /// It also consumes empty statements at the beginning of the block (multiple semicolons)
-    let inline begin_block<'a> : Parser<unit, 'a> = skipChar '{' .>> spaces .>> (many (skipChar ';' >>. spaces))
+    let inline begin_block<'a> : Parser<unit, 'a> = skipChar '{' >>. wse
 
     /// Parses the end of the block; it should end with '}'.
     /// It also consumes whitespace and empty statements after the end of the block.
-    let inline end_block<'a> : Parser<unit, 'a> = spaces .>> skipChar '}' .>> spaces .>> (many (skipChar ';' >>. spaces))
-
-    /// Whitespace expected at the end of the statement.
-    let ws<'u> : Parser<unit, 'u> =
-        spaces .>> (many (skipChar ';' >>. spaces))
+    let inline end_block<'a> : Parser<unit, 'a> = skipChar '}' .>> wse
 
     let inline block<'a> (parser : Parser<Statement, 'a>) : Parser<Statement list, 'a> =
         manyTill parser end_block
 
+    let inline block_generic<'a, 'b> (parser : Parser<'b, 'a>) : Parser<'b list, 'a> =
+        manyTill parser end_block
+
+    /// Parser for statements that do not specify a child block; if a block exists, it will be parsed
+    /// as a list of generic statements with a custom parser (typically a parser that accepts any valid statement).
     let inline end_of_statement_or_block<'a> (parser : Parser<Statement, 'a>) : Parser<ExtraStatements, 'a> =
-        (end_of_statement |>> (fun _ -> None))
+        (end_of_statement               |>> (fun _ -> None))
         <|>
         (begin_block >>. (block parser) |>> (fun statements -> Some statements))
 
-    let private make_keyword_parser_optional keyword argument body =
+    /// Parser for statements that do not specify a child block; if a block exists, it will be parsed
+    /// as a list of generic statements with a custom parser (typically a parser that accepts any valid statement).
+    let inline end_of_statement_or_block_generic<'a, 'b> (parser : Parser<'b, 'a>) : Parser<'b list option, 'a> =
+        (end_of_statement               |>> (fun _ -> None))
+        <|>
+        (begin_block >>. (block_generic parser) |>> (fun statements -> Some statements))
+
+    /// Parser for statements that define the structure of their child block, which is optional
+    /// (i.e. it may not exist).
+    let inline make_statement_parser_optional keyword argument body =
         skipString keyword >>. spaces >>.
         argument .>> spaces .>>.
         (
-                (end_of_statement       |>> (fun _ -> None))
-            <|> (begin_block >>.
-                 (many (body .>> ws)) .>> spaces .>>
-                 end_block
-                 |>> Some
-                )
+                (end_of_statement                   |>> (fun _ -> None))
+            <|> (begin_block >>. (block body)       |>> Some)
         )
 
+    /// Parser for statements that require a child block.
+    let inline make_statement_parser_generic<'a, 'T, 'b>
+        (keyword    : string)
+        (argument   : Parser<'T, 'a>)
+        (body       : Parser<'b, 'a>) : Parser<('T * ('b list)), 'a>
+        =
+            skipString keyword >>. spaces >>.
+            argument .>> spaces .>>
+            begin_block .>>.
+            (block_generic body)
+
+    /// Parser for statements that define the structure of their child block, which is optional
+    /// (i.e. it may not exist).
+    let inline make_statement_parser_optional_generic<'a, 'T, 'b>
+        (keyword    : string)
+        (argument   : Parser<'T, 'a>)
+        (body       : Parser<'b, 'a>) : Parser<('T * ('b list option)), 'a>
+        =
+            skipString keyword >>. spaces >>.
+            argument .>> spaces .>>.
+            (
+                    (end_of_statement                       |>> (fun _ -> None))
+                <|> (begin_block >>. (block_generic body)   |>> Some)
+            )
+
+    /// Parses an unknown statement; those have an identifier which includes a prefix
     let inline private unknown_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
             Identifier.parse_identifier_with_prefix
             .>> spaces
@@ -89,6 +128,8 @@ module Statements =
                  )
             |>> (fun (identifier, (argument, body)) -> Statement.Unknown (identifier, argument, body))
 
+    /// Parsing of unknown statements which have identifier which do NOT include prefix.
+    /// This is not a valid parser, and should not be used. It may be useful for other debugging purposes.
     let inline private unparsed_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
             Identifier.parse_identifier
             .>> spaces
@@ -101,14 +142,14 @@ module Statements =
             |>> (fun (identifier, (argument, body)) -> Unparsed (identifier, argument, body))
 
     let inline private yang_keyword_string_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
-        skipString keyword >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
+        skipString keyword      >>. spaces  >>.
+        Strings.parse_string   .>>  spaces .>>.
         end_of_statement_or_block parser
         |>> maker
 
     let inline private yang_keyword_uri_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
-        skipString keyword >>. spaces >>.
-        (Strings.parse_string |>> Uri) .>> spaces .>>.
+        skipString keyword              >>. spaces  >>.
+        (Strings.parse_string |>> Uri) .>>  spaces .>>.
         end_of_statement_or_block parser
         |>> maker
 
@@ -160,7 +201,7 @@ module Statements =
     /// Parses the rest of statements.
     /// It should be used inside blocks with no constraints, e.g. in unknown statement blocks.
     let parse_many_statements<'a> : Parser<Statement list, 'a> =
-        many (spaces >>. parse_statement .>> spaces)
+        many parse_statement
 
     /// Parses a config statement
     let parse_config_statement<'a> : Parser<ConfigStatement, 'a> =
@@ -170,41 +211,31 @@ module Statements =
         //config-arg-str      = < a string that matches the rule >
         //                        < config-arg >
         //config-arg          = true-keyword / false-keyword
-        skipString "config" >>. spaces >>.
-        Arguments.parse_boolean .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "config" Arguments.parse_boolean parse_statement
 
     /// Parses a contact statement
     let parse_contact_statement<'a> : Parser<ContactStatement, 'a> =
         // [RFC 7950, p. 186]
         // contact-stmt        = contact-keyword sep string stmtend
-        skipString "contact" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "contact" Strings.parse_string parse_statement
 
     /// Parses a description statement
     let parse_description_statement<'a> : Parser<DescriptionStatement, 'a> =
         // [RFC 7950, p. 186]
         // description-stmt    = description-keyword sep string stmtend
-        skipString "description" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "description" Strings.parse_string parse_statement
 
     /// Parses an error message statement
     let parse_error_app_tag_statement<'a> : Parser<ErrorAppTagStatement, 'a> =
         // [RFC 7950, p. 192]
         // error-app-tag-stmt  = error-app-tag-keyword sep string stmtend
-        skipString "error-app-tag" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "error-app-tag" Strings.parse_string parse_statement
 
     /// Parses an error message statement
     let parse_error_message_statement<'a> : Parser<ErrorMessageStatement, 'a> =
         // [RFC 7950, p. 192]
         // error-message-stmt  = error-message-keyword sep string stmtend
-        skipString "error-message" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "error-message" Strings.parse_string parse_statement
 
     /// Parses a key statement
     let parse_key_statement<'a> : Parser<KeyStatement, 'a> =
@@ -213,10 +244,7 @@ module Statements =
         //key-arg-str         = < a string that matches the rule >
         //                        < key-arg >
         //key-arg             = node-identifier *(sep node-identifier)
-
-        skipString "key" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>. 
-        (end_of_statement_or_block parse_statement) .>> spaces
+        make_statement_parser_optional "key" Strings.parse_string parse_statement
         |>> (fun (key, block) -> Arguments.Key.MakeFromString key, block)
 
     let parse_mandatory_statement<'a> : Parser<MandatoryStatement, 'a> =
@@ -226,17 +254,13 @@ module Statements =
         //mandatory-arg-str   = < a string that matches the rule >
         //                        < mandatory-arg >
         //mandatory-arg       = true-keyword / false-keyword
-        skipString "mandatory" >>. spaces >>.
-        Arguments.parse_boolean .>> spaces .>>.
-        (end_of_statement_or_block parse_statement) .>> spaces
+        make_statement_parser_optional "mandatory" Arguments.parse_boolean parse_statement
 
     let parse_max_elements_statement<'a> : Parser<MaxElementsStatement, 'a> =
         // [RFC 7950, p. 192]
         //max-elements-stmt   = max-elements-keyword sep
         //                        max-value-arg-str stmtend
-        skipString "max-elements" >>. spaces >>.
-        Arguments.parse_max_value .>> spaces .>>.
-        (end_of_statement_or_block parse_statement) .>> spaces
+        make_statement_parser_optional "max-elements" Arguments.parse_max_value parse_statement
 
     /// Parses a reference statement
     let parse_namespace_statement<'a> : Parser<NamespaceStatement, 'a> =
@@ -244,31 +268,19 @@ module Statements =
         //namespace-stmt      = namespace-keyword sep uri-str stmtend
         //uri-str             = < a string that matches the rule >
         //                      < URI in RFC 3986 >
-        skipString "namespace" >>. spaces >>.
-        (Strings.parse_string |>> Uri) .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "namespace" (Strings.parse_string |>> Uri) parse_statement
 
     let parse_ordered_by_statement<'a> : Parser<OrderedByStatement, 'a> =
         // [RFC 7950, p. 192]
         //ordered-by-stmt     = ordered-by-keyword sep
         //                        ordered-by-arg-str stmtend
-        //ordered-by-arg-str  = < a string that matches the rule >
-        //                        < ordered-by-arg >
-        //ordered-by-arg      = user-keyword / system-keyword
-        skipString "ordered-by" >>. spaces >>.
-        (
-                (skipString "user"      |>> (fun _ -> Arguments.OrderedBy.User))
-            <|> (skipString "system"    |>> (fun _ -> Arguments.OrderedBy.System))
-        ) .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "ordered-by" Arguments.parse_ordered_by parse_statement
 
     /// Parses an organization statement
     let parse_organization_statement<'a> : Parser<OrganizationStatement, 'a> =
         // [RFC 7950, p. 186]
         // organization-stmt   = organization-keyword sep string stmtend
-        skipString "organization" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "organization" Strings.parse_string parse_statement
 
     /// Parses a prefix statement
     let parse_prefix_statement<'a> : Parser<PrefixStatement, 'a> =
@@ -278,34 +290,26 @@ module Statements =
         //                      < prefix-arg >
         //prefix-arg          = prefix
         //prefix              = identifier
-        skipString "prefix" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "prefix" Strings.parse_string parse_statement
 
     /// Parses a presence statement
     let parse_presence_statement<'a> : Parser<PresenceStatement, 'a> =
         // [RFC 7950, p. 192]
         // presence-stmt       = presence-keyword sep string stmtend
-        skipString "presence" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "presence" Strings.parse_string parse_statement
 
     /// Parses a reference statement
     let parse_reference_statement<'a> : Parser<ReferenceStatement, 'a> =
         // [RFC 7950, p. 186]
         // reference-stmt      = reference-keyword sep string stmtend
-        skipString "reference" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "reference" Strings.parse_string parse_statement
 
     let parse_revision_date_statement<'a> : Parser<RevisionDateStatement, 'a> =
         // [RFC 7950, p. 186]
         // revision-date-stmt  = revision-date-keyword sep revision-date stmtend
         // [RFC 7950, p.207]
         // revision-date-keyword    = %s"revision-date"
-        skipString "revision-date" >>. spaces >>.
-        Arguments.parse_date .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "revision-date" Arguments.parse_date parse_statement
 
     let parse_status_statement<'a> : Parser<StatusStatement, 'a> =
         // [RFC 7950, p. 191]
@@ -315,9 +319,7 @@ module Statements =
         //status-arg          = current-keyword /
         //                        obsolete-keyword /
         //                        deprecated-keyword
-        skipString "status" >>. spaces >>.
-        Arguments.parse_status .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "status" Arguments.parse_status parse_statement
 
     /// Parses a YANG version information
     let parse_yang_version_statement<'a> : Parser<YangVersionStatement, 'a> =
@@ -327,12 +329,11 @@ module Statements =
         //yang-version-arg-str = < a string that matches the rule >
         //                          < yang-version-arg >
         //yang-version-arg    = "1.1"        skipString "reference" >>. spaces >>.
-        skipString "yang-version" >>. spaces >>.
-        (Strings.parse_string |>> Version.Parse) .>> spaces .>>.
-        end_of_statement_or_block parse_statement .>> spaces
+        make_statement_parser_optional "yang-version" (Strings.parse_string |>> Version.Parse) parse_statement
 
     /// Helper method to parse an unknown statement
     let parse_unknown_statement<'a> : Parser<UnknownStatement, 'a> =
+        // Unknown statement do not necessarily have an argument.
         Identifier.parse_identifier_with_prefix
         .>> spaces
         .>>. ((end_of_statement_or_block parse_statement
@@ -362,7 +363,7 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_keyword_parser_optional "length" Arguments.parse_length parse_length_body_statement
+        make_statement_parser_optional_generic "length" Arguments.parse_length parse_length_body_statement
 
     let parse_pattern_body_statement<'a> : Parser<PatternBodyStatement, 'a> =
             (parse_error_message_statement      |>> PatternBodyStatement.ErrorMessage)
@@ -383,4 +384,4 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_keyword_parser_optional "pattern" Strings.parse_string parse_pattern_body_statement
+        make_statement_parser_optional_generic "pattern" Strings.parse_string parse_pattern_body_statement

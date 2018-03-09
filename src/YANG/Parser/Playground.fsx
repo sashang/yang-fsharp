@@ -3,11 +3,8 @@
 
 #load "Initialize.fsx"
 
-open System.IO
-open System.Text
 open FParsec
 open Yang.Parser
-open System.Data
 open Yang.Model.Statements
 
 open Initialize
@@ -23,6 +20,7 @@ let big_model = get_external_model @"Juniper\16.1\configuration.yang"
 
 // This is what we want to parse eventually
 MyLog.myLog.AddTrace(Header._name)
+MyLog.myLog.AddTrace(Types._name)
 let juniper = apply_parser Module.parse_module big_model
 
 // File:Models-External\Juniper\17.2\17.2R1\junos\configuration.yang        Line:86639, 86672, 86705, 86738, 89183
@@ -46,4 +44,30 @@ apply_parser BodyStatements.parse_container_statement configuration
 apply_parser BodyStatements.parse_body_statement configuration
 
 
-#time
+let input = "'1 .. 128'"
+apply_parser Arguments.parse_length input
+
+let input = """length "1 .. 128";"""
+apply_parser parse_length_statement input
+
+let input = """type string;"""
+apply_parser Types.parse_type_statement input
+
+let input = """type string {}"""
+apply_parser Types.parse_type_statement input
+
+let input = """type string {
+             length "1 .. 128";
+           }"""
+apply_parser Types.parse_type_statement input
+
+let unknown1 = """junos:posix-pattern "^.{1,64}$";"""
+apply_parser parse_unknown_statement unknown1
+
+let input = """type string {
+             junos:posix-pattern "^.{1,64}$";
+             junos:pattern-message "Must be string of 64 characters or less";
+           }"""
+apply_parser Types.parse_type_statement input
+
+

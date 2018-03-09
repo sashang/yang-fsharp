@@ -61,11 +61,11 @@ module Module =
     /// Parser for the module statement
     let parse_module<'a> : Parser<ModuleStatement, 'a> =
         let parser =
-            spaces .>> skipStringCI "module" .>> spaces >>.
+            skipString "module" .>> spaces >>.
             Identifier.parse_identifier .>> spaces .>>
-            skipChar '{' .>> spaces .>>.
+            skipChar '{' .>> wse .>>.
             tuple5 parse_header Linkage.parse_linkage_section (opt parse_meta) (opt parse_revision_list) BodyStatements.parse_body_statements .>>
-            spaces .>> skipChar '}' .>> spaces
+            wse .>> skipChar '}' .>> wse
         parser |>> (
             fun (identifier, (header, linkage, meta, revision, body)) ->
                 // We need the two adjustments below, because the parsers
@@ -89,5 +89,5 @@ module Module =
         )
 
     let parse_module_as_statement<'a> : Parser<Statement, 'a> =
-        parse_module |>> Statement.Module
+        spaces >>. parse_module |>> Statement.Module
 

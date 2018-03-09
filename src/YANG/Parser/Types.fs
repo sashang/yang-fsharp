@@ -55,9 +55,10 @@ module Types =
         //string-restrictions = ;; these stmts can appear in any order
         //                        [length-stmt]
         //                        *pattern-stmt
+        _logger.Debug("Inside Type:parse_type_body_string_restrictions")
         let elementParser =
-                (parse_length_statement  .>> spaces |>> StringRestriction.Length)
-            <|> (parse_pattern_statement .>> spaces |>> StringRestriction.Pattern)
+                (parse_length_statement     |>> StringRestriction.Length)
+            <|> (parse_pattern_statement    |>> StringRestriction.Pattern)
 
         let stateFromFirstElement = function
         | StringRestriction.Length  length  -> Some length, []
@@ -81,20 +82,44 @@ module Types =
             resultForEmptySequence  = fun _ -> None, []
         )
 
-    let parse_type_body_statement<'a> : Parser<TypeBodyStatement, 'a> =
-            (parse_type_body_string_restrictions    |>> TypeBodyStatement.StringRestrictions)
+    type private TypeBodyStatementStep =
+    | Restriction   of TypeBodyStatement
+    | Unknown       of UnknownStatement
+
+    let private collect_type_body_statements (statements : TypeBodyStatementStep list) =
+        _logger.Debug("Inside Type:collect_type_body_statement")
+        statements
+        |> List.fold (
+            fun (unknowns, restriction) statement ->
+                match unknowns, restriction, statement with
+                | None, None, Unknown statement                     -> Some [ statement ], None
+                | Some unknowns', None, Unknown statement           -> Some ( unknowns' @ [statement] ), None
+                | _, None, Restriction restriction                  -> unknowns, Some restriction
+                | _, Some old, Restriction restriction              ->
+                    _logger.Error("Found second restriction; only one type restriction allowed.\nOld restriction: {0}\nNew restriction: {1}",
+                                  old, restriction)
+                    raise (YangParserException "Found multiple type restrictions; only one allowed")
+                | _, Some _, Unknown _                              ->
+                    _logger.Error("Found unknown statement after the first type restriction. Restriction: {0}; Statement: {1}", restriction, statement)
+                    raise (YangParserException "Found unknown statement after parsing one or more type restrictions")
+        ) (None, None)
+
+    let private parse_type_body_statement<'a> : Parser<TypeBodyStatementStep, 'a> =
+            _logger.Debug("Inside Type:parse_type_body_statement")
+
+            (parse_type_body_string_restrictions    |>> (fun v -> _logger.Debug("Inside Type:parse_type_body_statement restriction"); Restriction (TypeBodyStatement.StringRestrictions v)))
+        <|> (parse_unknown_statement                |>> (fun v -> _logger.Debug("here??"); Unknown v))
 
     let parse_type_statement<'a> : Parser<TypeStatement, 'a> =
         // TODO: check the type parsing below for the case of a body with no unknown statements.
-
-        skipString "type" >>. spaces >>.
-        Identifier.parse_identifier_reference .>> spaces .>>.
-        (       skipChar ';'                    |>> (fun _ -> None, None)
-            <|> (skipChar '{' >>. spaces >>.
-                 (opt (many parse_unknown_statement)) .>> spaces .>>.
-                 (opt parse_type_body_statement) .>> spaces .>>
-                 skipChar '}'
-                 |>> (fun (unknowns, restrictions) -> restrictions, unknowns)
-                )
-        ) .>> spaces
-        |>> (fun (id, (restrictions, unknown)) -> id, restrictions, unknown)
+        make_statement_parser_optional_generic "type" Identifier.parse_identifier_reference parse_type_body_statement
+        |>> (fun (id, statements) ->
+                match statements with
+                | None              ->
+                    _logger.Debug("Finished parsing type statement: {0}", id)
+                    id, None, None
+                | Some statements'  ->
+                    let unknowns, restriction = collect_type_body_statements statements'
+                    _logger.Debug("Finished parsing type statement: {0} with '{1}' and '{2}'", id, restriction, unknowns)
+                    id, restriction, unknowns
+            )
