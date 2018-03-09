@@ -171,7 +171,7 @@ module Strings =
         // Next parser for separator.
         // Even though we do not need the string of the separator, we need to consume it,
         // otherwise we cannot parse multi-line text (I think)
-        let separator : Parser<string, 'a> = regex "\s+\+\s+"
+        let separator : Parser<string, 'a> = regex "\s*\+\s*"
 
         // The following three accumulate the parsed strings
         let start (str : string) =
