@@ -55,32 +55,8 @@ module Types =
         //string-restrictions = ;; these stmts can appear in any order
         //                        [length-stmt]
         //                        *pattern-stmt
-        _logger.Debug("Inside Type:parse_type_body_string_restrictions")
-        let elementParser =
-                (parse_length_statement     |>> StringRestriction.Length)
-            <|> (parse_pattern_statement    |>> StringRestriction.Pattern)
-
-        let stateFromFirstElement = function
-        | StringRestriction.Length  length  -> Some length, []
-        | StringRestriction.Pattern pattern -> None, [pattern]
-
-        let foldState state element =
-            match state, element with
-            | (None, patterns), StringRestriction.Length length -> Some length, patterns
-            | (Some length, _), StringRestriction.Length _      ->
-                let msg = sprintf "Error in parsing string restrictions: found duplicate definition of length"
-                _logger.Error msg
-                raise (YangParserException msg)
-
-            | (length, patterns), StringRestriction.Pattern pattern  -> length, patterns @ [pattern]
-
-        ParserHelper.ConsumeMany(
-            elementParser           = elementParser,
-            stateFromFirstElement   = stateFromFirstElement,
-            foldState               = foldState,
-            resultFromState         = id,
-            resultForEmptySequence  = fun _ -> None, []
-        )
+            (parse_length_statement     |>> fun v -> Some v, [])
+        <|> (parse_pattern_statement    |>> fun v -> None,   [v])
 
     type private TypeBodyStatementStep =
     | Restriction   of TypeBodyStatement
@@ -105,10 +81,8 @@ module Types =
         ) (None, None)
 
     let private parse_type_body_statement<'a> : Parser<TypeBodyStatementStep, 'a> =
-            _logger.Debug("Inside Type:parse_type_body_statement")
-
-            (parse_type_body_string_restrictions    |>> (fun v -> _logger.Debug("Inside Type:parse_type_body_statement restriction"); Restriction (TypeBodyStatement.StringRestrictions v)))
-        <|> (parse_unknown_statement                |>> (fun v -> _logger.Debug("here??"); Unknown v))
+            (parse_type_body_string_restrictions    |>> (fun v -> Restriction (TypeBodyStatement.StringRestrictions v)))
+        <|> (parse_unknown_statement                |>> (fun v -> Unknown v))
 
     let parse_type_statement<'a> : Parser<TypeStatement, 'a> =
         // TODO: check the type parsing below for the case of a body with no unknown statements.

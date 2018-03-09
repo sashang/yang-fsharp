@@ -31,6 +31,33 @@ module Utilities =
             printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
             reply
 
+    /// try_parse_sequence parser1 parser2: Apply parser1 then parser2. If either fails backtrack the stream.
+    /// Both of the parsers will be tried, and the combined parser will succeed if either of parser1 or parser2
+    /// succeeds.
+    let try_parse_sequence<'a, 'T1, 'T2> (parser1 : Parser<'T1, 'a>) (parser2 : Parser<'T2, 'a>) : Parser<('T1 option) * ('T2 option), 'a> =
+        fun stream ->
+            let state = stream.State
+            let reply1 = parser1 stream
+            if reply1.Status = Ok then
+                let state' = stream.State
+                let reply2 = parser2 stream
+                if reply2.Status = Ok then
+                    let result = Some reply1.Result, Some reply2.Result
+                    Reply result
+                else
+                    stream.BacktrackTo(state')
+                    let result = Some reply1.Result, None
+                    Reply result
+            else
+                stream.BacktrackTo(state)
+                let reply2 = parser2 stream
+                if reply2.Status = Ok then
+                    let result = None, Some reply2.Result
+                    Reply result
+                else
+                    stream.BacktrackTo(state)
+                    Reply(Error, messageError "Neither parser managed to make progress")
+
     /// Helper methods on top of FParsec
     type ParserHelper =
         /// <summary>
