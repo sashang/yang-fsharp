@@ -4,12 +4,8 @@
 #load "Initialize.fsx"
 
 open System
-open System.IO
-open System.Text
-open FParsec
+open System.Collections.Generic
 open Yang.Parser
-open System.Data
-open Yang.Model.Statements
 
 open Initialize
 open Logging
@@ -63,27 +59,277 @@ junos:posix-pattern 	      1042
 // Keyword usage across all external models
 //
 #time
-let statistics =
-    get_all_external_models.Value
-    |> Seq.toList
-    |> List.collect (
-        fun filename ->
-            printfn "%A\t\tParsing: %s" (DateTime.Now) (filename.Substring(external_modules_dir.Length))
-            let model = apply_parser Generic.parse_many_statements big_model |> List.head
-            Yang.Model.Generic.KeywordUsage model
-    )
-    |> List.groupBy (fun (keyword, _) -> keyword)
-    |> List.map (
-        fun (keyword, statistics) ->
-            let total = statistics |> List.sumBy (fun (_, v) -> v)
-            keyword, total
-    )
 
-statistics
-|> List.iter (
-    fun (keyword, popularity) ->
-        printfn "%-20s\t%10d" keyword popularity
+let statistics =
+    // It would be good to avoid parsing identical files many times,
+    get_all_external_models.Value
+    |> Seq.filter (
+        fun filename ->
+            // the following is an invalid file
+            //if filename.Contains(@"YangModels\vendor\cisco\nx\7.0-3-I6-1\cisco-nx-openconfig-if-ip-deviations.yang") then false
+            //else
+            //    true
+            true
+    )
+    |> Seq.toList
+    |> List.fold (
+        fun (state : Dictionary<string, int>) filename ->
+            printfn "%A\t\tParsing: %s" (DateTime.Now) (filename.Substring(external_modules_dir.Length))
+
+            let model = get_external_model filename
+
+            try
+                let root = apply_parser Generic.parse_many_statements model |> List.head
+
+                Yang.Model.Generic.KeywordUsage root
+                |> List.iter (
+                    fun (keyword, popularity) ->
+                        if state.ContainsKey(keyword) then
+                            state.[keyword] <- state.[keyword] + popularity
+                        else
+                            state.Add(keyword, popularity)
+                )
+            with
+            | :? System.Exception as ex ->
+                printfn "Error parsing: %s\n %A" filename ex
+                //printfn "%s" filename
+
+            state
+    ) (System.Collections.Generic.Dictionary<string, int>())
+
+
+statistics.Keys
+|> Seq.sortWith (
+    fun keyword1 keyword2 ->
+        if keyword1.IndexOf(':') >= 0   && keyword2.IndexOf(':') >= 0   then
+            keyword1.CompareTo(keyword2)
+        elif keyword1.IndexOf(':') >= 0 && (keyword2.IndexOf(':') < 0)  then
+            1
+        elif keyword1.IndexOf(':') < 0  && keyword2.IndexOf(':') > 0    then
+            -1
+        else
+            keyword1.CompareTo(keyword2)
 )
+|> Seq.iter (
+    fun keyword ->
+        let popularity = statistics.[keyword]
+        printfn "%-40s\t%10d" keyword popularity
+)
+
+// Based on 12329 input files (1.68 GBytes total size), on a reasonable spec'ed, but old in 2018, Intel Xeon E5-1620 @ 3.60GHz,
+// the (single-threaded, 32-bit, VS 15.6.0 Preview 7.0, last-commit: 92cc00c) computation above took roughly 4.5min.
+// FSI reported the following statistics:
+// Real: 00:04:15.654, CPU: 00:04:30.578, GC gen0: 6921, gen1: 6119, gen2: 130
+// The results are as follows:
+(*
+action                                  	        26
+anydata                                 	        25
+anyxml                                  	     49506
+argument                                	      1123
+augment                                 	      6916
+base                                    	     13479
+belongs-to                              	      2753
+bit                                     	      3964
+case                                    	    207658
+choice                                  	     90754
+config                                  	     84741
+contact                                 	     10545
+container                               	   1814333
+default                                 	     71102
+description                             	   8928685
+deviate                                 	      8328
+deviation                               	      8328
+enum                                    	    609956
+error-message                           	       397
+extension                               	      2020
+feature                                 	      1994
+fraction-digits                         	       726
+grouping                                	     93388
+identity                                	     13185
+if-feature                              	      3030
+import                                  	     23450
+include                                 	      3574
+input                                   	     40555
+key                                     	    104448
+leaf                                    	   8171781
+leaf-list                               	     55771
+length                                  	     56081
+list                                    	    139986
+mandatory                               	     39380
+max-elements                            	      9195
+min-elements                            	       357
+module                                  	      9602
+must                                    	      3721
+namespace                               	      9602
+notification                            	      2296
+ordered-by                              	     47848
+organization                            	     12133
+output                                  	     50860
+path                                    	     19169
+pattern                                 	    138793
+position                                	      4710
+prefix                                  	     35805
+presence                                	     50884
+range                                   	    200851
+reference                               	     20638
+refine                                  	       242
+require-instance                        	       130
+revision                                	     18929
+revision-date                           	      2777
+rpc                                     	     66856
+status                                  	     22315
+submodule                               	      2753
+type                                    	   8640709
+typedef                                 	    136929
+unique                                  	        31
+units                                   	    101642
+uses                                    	    337705
+value                                   	    145090
+when                                    	     12853
+yang-version                            	      1158
+yin-element                             	       210
+config:inner-state-bean                 	         1
+config:java-class                       	        15
+config:java-name-prefix                 	        17
+config:provided-service                 	        16
+config:required-identity                	        14
+csc:cli-command                         	      1566
+csc:xr-task                             	      1566
+ext:allowDelete                         	      2511
+ext:augment-identifier                  	        22
+ext:bit                                 	      1091
+ext:context-instance                    	         5
+ext:context-reference                   	        10
+ext:item                                	        31
+ext:masklen                             	        38
+ext:meaning                             	        31
+ext:support-filter                      	       556
+ext:value-replace                       	         8
+govern:proposed                         	        14
+junos:must                              	     91472
+junos:must-message                      	     91472
+junos:pattern-message                   	     29408
+junos:posix-pattern                     	     29458
+md:annotation                           	         6
+nacm:default-deny-all                   	        35
+nacm:default-deny-write                 	        10
+nc:get-filter-element-attributes        	        14
+ncs:servicepoint                        	         2
+notif-bis:control-plane-notif           	        21
+oc-ext:openconfig-version               	       344
+rc:yang-data                            	        18
+rpcx:rpc-context-instance               	         8
+smi:display-hint                        	         4
+smiv2:alias                             	     69152
+smiv2:defval                            	      8374
+smiv2:display-hint                      	       716
+smiv2:implied                           	       110
+smiv2:max-access                        	     54675
+smiv2:oid                               	    137995
+sn:subscription-state-notification      	         7
+tailf:action                            	         5
+tailf:actionpoint                       	        45
+tailf:alt-name                          	       481
+tailf:annotate                          	        36
+tailf:args                              	         1
+tailf:arg-type                          	       881
+tailf:callpoint                         	        24
+tailf:cli-add-mode                      	       269
+tailf:cli-allow-join-with-key           	       110
+tailf:cli-allow-join-with-value         	       140
+tailf:cli-allow-key-abbreviation        	         3
+tailf:cli-allow-range                   	         1
+tailf:cli-before-key                    	        42
+tailf:cli-boolean-no                    	       347
+tailf:cli-break-sequence-commands       	       217
+tailf:cli-case-insensitive              	         3
+tailf:cli-compact-syntax                	      2496
+tailf:cli-delete-container-on-delete    	        15
+tailf:cli-delete-when-empty             	       738
+tailf:cli-diff-dependency               	       334
+tailf:cli-disallow-value                	       122
+tailf:cli-display-joined                	       250
+tailf:cli-display-separated             	        65
+tailf:cli-drop-node-name                	      5367
+tailf:cli-exit-command                  	        99
+tailf:cli-explicit-exit                 	        34
+tailf:cli-expose-key-name               	       110
+tailf:cli-flat-list-syntax              	       179
+tailf:cli-flatten-container             	       794
+tailf:cli-full-command                  	      3769
+tailf:cli-full-no                       	        27
+tailf:cli-hide-in-submode               	       463
+tailf:cli-incomplete-command            	       787
+tailf:cli-incomplete-no                 	        65
+tailf:cli-list-syntax                   	       102
+tailf:cli-mode-name                     	       805
+tailf:cli-multi-value                   	       367
+tailf:cli-multi-word-key                	        12
+tailf:cli-no-key-completion             	        24
+tailf:cli-no-keyword                    	       304
+tailf:cli-no-match-completion           	         6
+tailf:cli-no-name-on-delete             	        12
+tailf:cli-no-value-on-delete            	        70
+tailf:cli-optional-in-sequence          	      1029
+tailf:cli-prefix-key                    	       219
+tailf:cli-range-list-syntax             	        69
+tailf:cli-remove-before-change          	         9
+tailf:cli-replace-all                   	         6
+tailf:cli-reset-all-siblings            	        73
+tailf:cli-reset-container               	       164
+tailf:cli-reset-siblings                	       250
+tailf:cli-sequence-commands             	      1650
+tailf:cli-show-long-obu-diffs           	        23
+tailf:cli-show-no                       	        52
+tailf:cli-show-with-default             	        15
+tailf:cli-suppress-key-abbreviation     	        45
+tailf:cli-suppress-list-no              	        39
+tailf:cli-suppress-mode                 	      1441
+tailf:cli-suppress-no                   	        12
+tailf:cli-suppress-range                	        60
+tailf:cli-suppress-show-path            	         8
+tailf:cli-trim-default                  	       167
+tailf:code-name                         	       274
+tailf:dependency                        	       415
+tailf:display-when                      	       102
+tailf:error-info                        	         4
+tailf:exec                              	         4
+tailf:export                            	        14
+tailf:hidden                            	        20
+tailf:id                                	        36
+tailf:id-value                          	         7
+tailf:info                              	      2527
+tailf:internal                          	        27
+tailf:invocation-mode                   	         1
+tailf:java-class-name                   	         2
+tailf:key-default                       	        33
+tailf:link                              	         1
+tailf:no-leafref-check                  	         4
+tailf:non-strict-leafref                	       198
+tailf:occurence                         	       550
+tailf:raw-xml                           	         1
+tailf:set-hook                          	         3
+tailf:snmp-mib-module-name              	        31
+tailf:snmp-name                         	         4
+tailf:snmp-oid                          	       252
+tailf:sort-order                        	        27
+tailf:step                              	         3
+tailf:structure                         	        28
+tailf:substatement                      	      1921
+tailf:suppress-echo                     	         3
+tailf:transaction-hook                  	         1
+tailf:use-in                            	      5523
+tailf:validate                          	         4
+tailf:value-length                      	        45
+tailf:wd                                	         4
+xr:event-telemetry                      	       100
+xr:xr-cli-map                           	      4070
+xr:xr-xml-map                           	    132657
+yangmnt:mount-point                     	         8
+ymt:text-media-type                     	         1
+ *)
+// The popularity statistics are not particularly relevant, as many models are evaluated many times, since they appear in
+// different versions of the same software. In addition, there is plenty of repetition even for models of the same software and version.
 
 
 // Some tracing of position of particular elements in the Juniper configuration
