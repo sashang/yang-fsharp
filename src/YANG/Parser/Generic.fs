@@ -7,6 +7,14 @@ module Generic =
     open FParsec
     open Yang.Model.Generic
 
+    /// Consumes whitespace, and one or multiple semicolons (empty statements)
+    let semicolon<'u> : Parser<unit,'u> =
+        many1 (skipChar ';' >>. spaces) |>> (fun _ -> () )
+
+    /// Whitespace expected at the end of the statement.
+    let ws<'u> : Parser<unit, 'u> =
+        spaces .>> (many (skipChar ';' >>. spaces))
+
     /// Tracks the state of a generic parser
     type private TextState =
     /// The parser is in normal state, i.e. not in a string
@@ -78,10 +86,10 @@ module Generic =
             createParserForwardedToRef<Statement, 'a>()
 
         // Some helper methods; it is convenient to consume whitespace here
-        let end_of_statement = skipChar ';' >>. spaces
+        let end_of_statement = semicolon
         let read_keyword = Strings.parse_string .>> spaces
-        let begin_block = skipChar '{' .>> spaces
-        let end_block = spaces .>> skipChar '}' .>> spaces
+        let begin_block = skipChar '{' .>> ws
+        let end_block = spaces .>> skipChar '}' .>> ws
         let read_block = manyTill parse_statement end_block
 
         // The following combines the case of either reaching the end of the
@@ -103,11 +111,10 @@ module Generic =
                 identifier (IdentifierOptions(isAsciiIdStart     = isAsciiIdStart,
                                                 isAsciiIdContinue = isAsciiIdContinue))
                 .>> spaces
-                .>>. ((end_of_statement_or_block
-                       |>> (fun body                  -> None, body))
-                      <|>
-                      (read_keyword .>>. end_of_statement_or_block
-                       |>> (fun (argument, body)   -> Some argument, body))
+                .>>. (      (end_of_statement_or_block
+                             |>> (fun body                  -> None, body))
+                      <|>   (read_keyword .>>. end_of_statement_or_block
+                             |>> (fun (argument, body)   -> Some argument, body))
                      )
                 |>> ( fun (keyword, (argument, body))   ->
                     {
@@ -125,4 +132,4 @@ module Generic =
     /// Parses the rest of statements without associating any semantics to them.
     /// This also consumes whitespace before and after the statements.
     let parse_many_statements<'a> : Parser<Statement list, 'a> =
-        many (spaces >>. statement_parser .>> spaces)
+        many (ws >>. statement_parser .>> ws)
