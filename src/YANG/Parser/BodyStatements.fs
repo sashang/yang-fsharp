@@ -111,10 +111,10 @@ module BodyStatements =
             skipString keyword >>. spaces >>.
             identifier .>> spaces .>>.
             (
-                    (skipChar ';' |>> (fun _ -> None))
-                <|> (skipChar '{' >>. spaces >>.
+                    (end_of_statement |>> (fun _ -> None))
+                <|> (begin_block >>.
                      (many body_parser) .>> spaces .>>
-                     skipChar '}'
+                     end_block
                      |>> Some
                     ) .>> spaces
             )
@@ -123,9 +123,9 @@ module BodyStatements =
         let make_parser keyword identifier body_parser =
             skipString keyword >>. spaces >>.
             identifier .>> spaces .>>
-            skipChar '{' .>> spaces .>>.
+            begin_block .>>.
             (many body_parser) .>> spaces .>>
-            skipChar '}' .>> spaces
+            end_block
 
         //
         // Next, create the parsers for the various statements

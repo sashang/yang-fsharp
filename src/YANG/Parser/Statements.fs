@@ -34,11 +34,29 @@ module Statements =
 
     // TODO: Namespaces are hierarchical with colon as separator, e.g. urn:example:system
 
+    //
+    //
     // Helper definitions that consume trailing whitespace
+    //
+    //
+
     let inline private read_keyword<'a> : Parser<string, 'a> = Strings.parse_string .>> spaces
-    let inline private end_of_statement<'a> : Parser<unit, 'a> = skipChar ';' >>. spaces
-    let inline private begin_block<'a> : Parser<unit, 'a> = skipChar '{' .>> spaces
-    let inline private end_block<'a> : Parser<unit, 'a> = spaces .>> skipChar '}' .>> spaces
+
+    /// Parses the end of regular statements that finish with a semicolon ';'.
+    /// It also consumes empty statements that may follow (multiple semicolons).
+    let inline end_of_statement<'a> : Parser<unit, 'a> = many1 (skipChar ';' >>. spaces) |>> (fun _ -> () )
+
+    /// Parses the beginning of a block; it starts with '{'.
+    /// It also consumes empty statements at the beginning of the block (multiple semicolons)
+    let inline begin_block<'a> : Parser<unit, 'a> = skipChar '{' .>> spaces .>> (many (skipChar ';' >>. spaces))
+
+    /// Parses the end of the block; it should end with '}'.
+    /// It also consumes whitespace and empty statements after the end of the block.
+    let inline end_block<'a> : Parser<unit, 'a> = spaces .>> skipChar '}' .>> spaces .>> (many (skipChar ';' >>. spaces))
+
+    /// Whitespace expected at the end of the statement.
+    let ws<'u> : Parser<unit, 'u> =
+        spaces .>> (many (skipChar ';' >>. spaces))
 
     let inline block<'a> (parser : Parser<Statement, 'a>) : Parser<Statement list, 'a> =
         manyTill parser end_block
@@ -47,6 +65,18 @@ module Statements =
         (end_of_statement |>> (fun _ -> None))
         <|>
         (begin_block >>. (block parser) |>> (fun statements -> Some statements))
+
+    let private make_keyword_parser_optional keyword argument body =
+        skipString keyword >>. spaces >>.
+        argument .>> spaces .>>.
+        (
+                (end_of_statement       |>> (fun _ -> None))
+            <|> (begin_block >>.
+                 (many (body .>> ws)) .>> spaces .>>
+                 end_block
+                 |>> Some
+                )
+        )
 
     let inline private unknown_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
             Identifier.parse_identifier_with_prefix
@@ -82,6 +112,12 @@ module Statements =
         end_of_statement_or_block parser
         |>> maker
 
+    //
+    //
+    // End of helper definitions
+    //
+    //
+
     /// Parses a yang-stmt [RFC 7950, p. 202].
     /// It should be used for parsing rules with no constraints, e.g.
     // inside unknown-statement rules.
@@ -89,6 +125,9 @@ module Statements =
         // This parser accepts any type of statement. Typically, it should be used for statements
         // in unknown statements that have no constraints. Because, of their generality they can
         // be applied recursively.
+
+        // TODO: parse_statement implementation needs to move after all statement parsers.
+        //       It should be after almost all project files.
 
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
@@ -323,15 +362,7 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        skipString "length" >>. spaces >>.
-        Arguments.parse_length .>> spaces .>>.
-        (
-                (skipChar ';' |>> (fun _ -> None))
-            <|> (skipChar '{' >>. spaces >>.
-                 (many (parse_length_body_statement .>> spaces)) .>> spaces .>>
-                 skipChar '}' |>> Some
-                )
-        ) .>> spaces
+        make_keyword_parser_optional "length" Arguments.parse_length parse_length_body_statement
 
     let parse_pattern_body_statement<'a> : Parser<PatternBodyStatement, 'a> =
             (parse_error_message_statement      |>> PatternBodyStatement.ErrorMessage)
@@ -352,13 +383,4 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        skipString "pattern" >>. spaces >>.
-        Strings.parse_string .>> spaces .>>.
-        (
-                (skipChar ';'       |>> (fun _ -> None))
-            <|> (skipChar '{' >>. spaces >>.
-                 (many parse_pattern_body_statement) .>> spaces .>>
-                 skipChar '}'
-                 |>> Some
-                )
-        ) .>> spaces
+        make_keyword_parser_optional "pattern" Strings.parse_string parse_pattern_body_statement
