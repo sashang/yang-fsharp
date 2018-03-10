@@ -60,8 +60,8 @@ module Identifier =
         skipChar ':' .>>.
         yang_identifier_element |>> IdentifierWithPrefix.MakeUnchecked
 
-    /// Parses a reference to an identifier. The identifier can be either a
-    /// common one
+    /// Parses a reference to an identifier. The identifier can be either
+    /// common or with prefix
     let parse_identifier_reference<'a> : Parser<IdentifierReference, 'a> =
         yang_identifier_element .>>. (opt (skipChar ':' >>. yang_identifier_element))
         |>> (fun (name1, name2) ->

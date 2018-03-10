@@ -109,7 +109,10 @@ module Arguments =
 
     /// Definition of Range ([RFC 7950, p. 204])
     // TODO: Expand definition of Range
-    type Range = NA
+    type Range = | Range of string
+    with
+        static member Make (s : string) =
+            Range s
 
     /// Captures the 'refine-arg' definition ([RFC 7950, p. 198])
     // TODO: Expand definition of Refine

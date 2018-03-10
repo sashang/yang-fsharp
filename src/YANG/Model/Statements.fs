@@ -613,6 +613,7 @@ module Statements =
     and TypeDefStatement        = Identifier        * (TypeDefBodyStatement list)
     /// Captures the type-stmt [RFC 7950, p.188]. If there are unknown statements, then they precede the TypeBodyStatement
     and UniqueStatement         = Unique            * ExtraStatements
+    // TODO: Expand the Units type to map to standard units provided by F#
     and UnitsStatement          = string            * ExtraStatements
     and UsesBodyStatement       =
     | When          of WhenStatement

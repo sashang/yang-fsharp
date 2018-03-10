@@ -219,6 +219,12 @@ module Statements =
         // contact-stmt        = contact-keyword sep string stmtend
         make_statement_parser_optional "contact" Strings.parse_string parse_statement
 
+    /// Parses the default statement
+    let parse_default_statement<'a> : Parser<DefaultStatement, 'a> =
+        // [RFC 7950, p. 186]
+        // default-stmt        = default-keyword sep string stmtend
+        make_statement_parser_optional "default" Strings.parse_string parse_statement
+
     /// Parses a description statement
     let parse_description_statement<'a> : Parser<DescriptionStatement, 'a> =
         // [RFC 7950, p. 186]
@@ -321,6 +327,11 @@ module Statements =
         //                        deprecated-keyword
         make_statement_parser_optional "status" Arguments.parse_status parse_statement
 
+    let parse_units_statement<'a> : Parser<UnitsStatement, 'a> =
+        // [RFC 7950, p. 186]
+        // units-stmt          = units-keyword sep string stmtend
+        make_statement_parser_optional "units" Strings.parse_string parse_statement
+
     /// Parses a YANG version information
     let parse_yang_version_statement<'a> : Parser<YangVersionStatement, 'a> =
         // [RFC 7950, p. 185]
@@ -343,6 +354,27 @@ module Statements =
                 |>> (fun (argument, body)    -> Some argument, body))
                 )
         |>> (fun (identifier, (argument, body)) -> identifier, argument, body)
+
+    let parse_enum_body_statement<'a> : Parser<EnumBodyStatement, 'a> =
+        // TODO: Fill in the rest cases for EnumBodyStatement
+            (parse_status_statement         |>> EnumBodyStatement.Status)
+        <|> (parse_description_statement    |>> EnumBodyStatement.Description)
+        <|> (parse_reference_statement      |>> EnumBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> EnumBodyStatement.Unknown)
+
+    let parse_enum_statement<'a> : Parser<EnumStatement, 'a> =
+        // [RFC 7950, p. 190]
+        //enum-stmt           = enum-keyword sep string optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            *if-feature-stmt
+        //                            [value-stmt]
+        //                            [status-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "enum" Strings.parse_string parse_enum_body_statement
 
     let parse_length_body_statement<'a> : Parser<LengthBodyStatement, 'a> =
             (parse_error_message_statement  |>> LengthBodyStatement.ErrorMessage)
@@ -385,3 +417,26 @@ module Statements =
         //                            [reference-stmt]
         //                        "}") stmtsep
         make_statement_parser_optional_generic "pattern" Strings.parse_string parse_pattern_body_statement
+
+    let parse_range_body_statement<'a> : Parser<RangeBodyStatement, 'a> =
+            (parse_error_message_statement   |>> RangeBodyStatement.ErrorMessage)
+        <|> (parse_error_app_tag_statement   |>> RangeBodyStatement.ErrorAppTag)
+        <|> (parse_description_statement     |>> RangeBodyStatement.Description)
+        <|> (parse_reference_statement       |>> RangeBodyStatement.Reference)
+        <|> (parse_unknown_statement         |>> RangeBodyStatement.Unknown)
+
+    /// Parses a range stateement
+    let parse_range_statement<'a> : Parser<RangeStatement, 'a> =
+        // [RFC 7950, p. 189]
+        //range-stmt          = range-keyword sep range-arg-str optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [error-message-stmt]
+        //                            [error-app-tag-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+
+        // TODO: Unit tests for range statement
+        make_statement_parser_optional_generic "range" Arguments.parse_range parse_range_body_statement

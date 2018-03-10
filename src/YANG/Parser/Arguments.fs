@@ -63,6 +63,17 @@ module Arguments =
             <|> (skipString "system"    |>> (fun _ -> OrderedBy.System))
             .>> spaces
 
+    let parse_range<'a> : Parser<Range, 'a> =
+        // [RFC 7950, p. 204]
+        //range-arg-str       = < a string that matches the rule >
+        //                        < range-arg >
+        //range-arg           = range-part *(optsep "|" optsep range-part)
+        //range-part          = range-boundary
+        //                        [optsep ".." optsep range-boundary]
+        //range-boundary      = min-keyword / max-keyword /
+        //                        integer-value / decimal-value
+        Strings.parse_string .>> spaces |>> (fun s -> Range.Make s)
+
     let parse_status<'a> : Parser<Status, 'a> =
             (skipString "current"       >>. spaces  |>> (fun _ -> Status.Current))
         <|> (skipString "obsolete"      >>. spaces  |>> (fun _ -> Status.Obsolete))

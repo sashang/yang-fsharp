@@ -72,6 +72,7 @@
     <Compile Include="LinkageTests.fs" />
     <Compile Include="MetaTests.fs" />
     <Compile Include="RevisionsTests.fs" />
+    <Compile Include="TypesTests.fs" />
     <Compile Include="LeafTests.fs" />
     <Compile Include="BodyStatementsTests.fs" />
     <Compile Include="ModuleBodyTests.fs" />

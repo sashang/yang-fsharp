@@ -141,6 +141,8 @@ module BodyStatements =
         let parse_typedef_body_statement : Parser<TypeDefBodyStatement, 'a> =
             // TODO: fill in missing parsing for TypeDefBodyStatement
                 (Types.parse_type_statement     |>> TypeDefBodyStatement.Type)
+            <|> (parse_units_statement          |>> TypeDefBodyStatement.Units)
+            <|> (parse_default_statement        |>> TypeDefBodyStatement.Default)
             <|> (parse_status_statement         |>> TypeDefBodyStatement.Status)
             <|> (parse_description_statement    |>> TypeDefBodyStatement.Description)
             <|> (parse_reference_statement      |>> TypeDefBodyStatement.Reference)
@@ -266,7 +268,8 @@ module BodyStatements =
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
             // TODO: fill in missing parsing for ChoiceBodyStatement
-                (parse_config_statement         |>> ChoiceBodyStatement.Config)
+                (parse_default_statement        |>> ChoiceBodyStatement.Default)
+            <|> (parse_config_statement         |>> ChoiceBodyStatement.Config)
             <|> (parse_mandatory_statement      |>> ChoiceBodyStatement.Mandatory)
             <|> (parse_status_statement         |>> ChoiceBodyStatement.Status)
             <|> (parse_description_statement    |>> ChoiceBodyStatement.Description)

@@ -39,7 +39,10 @@ module Leaf =
 
     let parse_leaf_body_statement<'a> : Parser<LeafBodyStatement, 'a> =
         // TODO: fill in the rest of the statements for LeafBodyStatement
+        // TODO: Enforce the cardinality constraints for LeafBodyStatement
             (Types.parse_type_statement     |>> LeafBodyStatement.Type)
+        <|> (parse_units_statement          |>> LeafBodyStatement.Units)
+        <|> (parse_default_statement        |>> LeafBodyStatement.Default)
         <|> (parse_config_statement         |>> LeafBodyStatement.Config)
         <|> (parse_mandatory_statement      |>> LeafBodyStatement.Mandatory)
         <|> (parse_status_statement         |>> LeafBodyStatement.Status)
@@ -76,7 +79,10 @@ module LeafList =
 
     let private parse_leaf_body_statement<'a> : Parser<LeafListBodyStatement, 'a> =
         // TODO: fill in the missing statements for LeafListBodyStatement
+        // TODO: Enforce the cardinality constraints for LeafListBodyStatement
             (Types.parse_type_statement     |>> LeafListBodyStatement.Type)
+        <|> (parse_units_statement          |>> LeafListBodyStatement.Units)
+        <|> (parse_default_statement        |>> LeafListBodyStatement.Default)
         <|> (parse_description_statement    |>> LeafListBodyStatement.Description)
         <|> (parse_unknown_statement        |>> LeafListBodyStatement.Unknown)
 
