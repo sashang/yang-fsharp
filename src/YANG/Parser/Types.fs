@@ -97,7 +97,17 @@ module Types =
         many1 parse_enum_statement
 
     let private parse_type_body_numerical_restrictions<'a> : Parser<NumericalRestrictions, 'a> =
+        // [RFC 7950, p. 189]
+        // numerical-restrictions = [range-stmt]
         parse_range_statement
+
+    let private parse_type_decimal64_restrictions<'a> : Parser<Decimal64Specification, 'a> =
+        // [RFC 7950, p. 189]
+        //decimal64-specification = ;; these stmts can appear in any order
+        //                            fraction-digits-stmt
+        //                            [range-stmt]
+            (parse_fraction_digits_statement    |>> (fun v -> v, None))
+        <|> (parse_range_statement              |>> (fun r -> (System.Byte.MaxValue, None), Some r))
 
     /// Resolve the parser for the type specific restriction statements
     let private parse_type_body_restriction_statement<'a> (``type`` : string) : Parser<TypeBodyStatement, 'a> =
@@ -116,6 +126,7 @@ module Types =
                 ("uint16",      parse_type_body_numerical_restrictions  |>> TypeBodyStatement.NumericalRestrictions)
                 ("uint32",      parse_type_body_numerical_restrictions  |>> TypeBodyStatement.NumericalRestrictions)
                 ("uint64",      parse_type_body_numerical_restrictions  |>> TypeBodyStatement.NumericalRestrictions)
+                ("decimal64",   parse_type_decimal64_restrictions       |>> TypeBodyStatement.Decimal64Specification)
             ]
 
         if (restrictions.ContainsKey ``type``) = false then
@@ -130,6 +141,8 @@ module Types =
 
     /// Transforms a list of type restrictions into a single type restriction
     let translate_type_restrictions (``type`` : string) (restrictions : TypeBodyStatement list) : TypeBodyStatement option =
+        // REFACTOR: The type restrictions should be broken to separate functions per type.
+
         if ``type``.Equals("string") then
             let result =
                 restrictions
@@ -174,57 +187,70 @@ module Types =
             else
                 let restriction = List.head restrictions
                 match restriction with
+                // TODO: Do we need to make the following check; it should be guaranteed tha the value could be of NumericalRestrictions type
                 | TypeBodyStatement.NumericalRestrictions range ->
                     // TODO: Check that the range limits are compatible with the specified type
                     Some restriction
                 | _ -> raise (YangParserException (sprintf "Only a single range restriction allowed for numerics; got: %A" restriction))
 
+        elif ``type``.Equals("decimal64") then
+            match restrictions with
+            | []    ->
+                raise (YangParserException (sprintf "Decimal64 type requires at least the specification of the number of fraction digits"))
+
+            | (TypeBodyStatement.Decimal64Specification ((fraction, _), _) as r) :: []   ->
+                if fraction = System.Byte.MaxValue then 
+                    raise (YangParserException (sprintf "Missing specification of the number of fractional digits"))
+                else Some r
+
+            | (TypeBodyStatement.Decimal64Specification r1) :: (TypeBodyStatement.Decimal64Specification r2) :: [] ->
+                match r1, r2 with
+                | ((System.Byte.MaxValue, _), _), ((System.Byte.MaxValue, _), _) ->
+                    raise (YangParserException (sprintf "Missing specification of the number of fractional digits"))
+
+                | ((System.Byte.MaxValue, _), range), (length, None)
+                | (length, None), ((System.Byte.MaxValue, _), range)
+                    ->
+                        let result = Decimal64Specification (length, range)
+                        Some result
+
+                | _ -> raise (YangParserException (sprintf "Invalid specification parameters for Decimal64"))
+
+            | _ -> raise (YangParserException (sprintf "Decimal64 type requires one or two specification statements"))
+
         else
             // TODO: Write type restriction accumulators for all basic types
             failwith (sprintf "Support for type %s not implemented" ``type``)
 
+    type BodyParserState<'T> =
+    | InternalUnknown       of UnknownStatement
+    | InternalRestriction   of 'T
+
     /// Parser for the child block that contains the type-specific restrictions
     let private try_parse_type_restrictions<'a, 'T> (restrictions : Parser<'T, 'a>) : Parser<(UnknownStatement list option) * ('T list option), 'a> =
-        // The mechanism for parsing here differs to most other statements. The difference is due to the fact that
-        // unknown statements can only appear before the type-specific restriction statements. Moreover, the unknown
-        // statements and the type restriction statements cannot mix and are both optional.
-        //  So below is a custom parser that first attempts to read all unknown statements, and then the custom specific ones.
-        // It returns a pair of optional statement lists for each sub-block.
+        let element_parser =
+                (restrictions               |>> fun restriction -> InternalRestriction restriction)
+            <|> (parse_unknown_statement    |>> fun statement   -> InternalUnknown statement)
 
-        /// This parser consumes all unknown statements
-        let rec parse_unknowns (stream : CharStream<'a>) (success : bool, result : UnknownStatement list) =
-            let state = stream.State
-            let reply = parse_unknown_statement stream
-            if reply.Status = Ok then
-                parse_unknowns stream (true, reply.Result :: result)
-            else
-                stream.BacktrackTo state
-                success, result |> List.rev
+        let initial = function
+        | InternalRestriction   restriction -> None, Some [ restriction ]
+        | InternalUnknown       unknown     -> Some [ unknown ], None
 
-        fun stream ->
-            let success, unknowns = parse_unknowns stream (false, [])
-            let state = stream.State
-            let reply = (many restrictions) stream
+        let fold state element =
+            match state, element with
+            | (unknowns, None),                 InternalRestriction restriction -> unknowns, Some [ restriction ]
+            | (unknowns, Some restrictions),    InternalRestriction restriction -> unknowns, Some (restrictions @ [restriction])
+            | (None, restrictions),             InternalUnknown unknown         -> Some [ unknown ], restrictions
+            | (Some unknowns, restrictions),    InternalUnknown unknown         -> Some (unknowns @ [ unknown ]), restrictions
 
-            match success, reply.Status with
-            | true, Ok  ->
-                // Observe that below we assume that unknowns is a non-empty list
-                let result = Some unknowns, Some reply.Result
-                Reply result
+        ParserHelper.ConsumeMany(
+            elementParser           = element_parser,
+            stateFromFirstElement   = initial,
+            foldState               = fold,
+            resultFromState         = id,
+            resultForEmptySequence  = fun _ -> None, None
+        )
 
-            | false, Ok ->
-                let result = None, Some reply.Result
-                Reply result
-
-            | true, _   ->
-                stream.BacktrackTo state
-                // Observe that below we assume that unknowns is a non-empty list
-                let result = Some unknowns, None
-                Reply result
-
-            | false, _  ->
-                stream.BacktrackTo state
-                Reply(Error, messageError "Neither parser managed to make progress")
 
     /// Type-specific parser that implements the logic of parsing the specified parser and the appropriate parser restrictions.
     let private parse_type_implementation_statement<'a> (``type`` : string) : Parser<(TypeBodyStatement option) * (UnknownStatement list option), 'a> =
@@ -268,6 +294,7 @@ module Types =
             <|> do_parse "uint16"
             <|> do_parse "uint32"
             <|> do_parse "uint64"
+            <|> do_parse "decimal64"
             <|> (Identifier.parse_identifier_reference .>>. parse_end_of_unknown_type)
         )
         |>> fun (id, (restriction, unknowns)) -> id, restriction, unknowns

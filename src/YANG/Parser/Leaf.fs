@@ -83,6 +83,10 @@ module LeafList =
             (Types.parse_type_statement     |>> LeafListBodyStatement.Type)
         <|> (parse_units_statement          |>> LeafListBodyStatement.Units)
         <|> (parse_default_statement        |>> LeafListBodyStatement.Default)
+        <|> (parse_min_elemenets_statement  |>> LeafListBodyStatement.MinElements)
+        <|> (parse_max_elements_statement   |>> LeafListBodyStatement.MaxElements)
+        <|> (parse_ordered_by_statement     |>> LeafListBodyStatement.OrderedBy)
+        <|> (parse_status_statement         |>> LeafListBodyStatement.Status)
         <|> (parse_description_statement    |>> LeafListBodyStatement.Description)
         <|> (parse_unknown_statement        |>> LeafListBodyStatement.Unknown)
 

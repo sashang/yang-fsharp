@@ -45,16 +45,18 @@ module TypesTests =
         Assert.Equal(2, unknowns.Value.Length)
 
     [<Fact>]
-    let ``fail when the type restrictions appear before custom extensions`` () =
+    let ``type string with type restrictions appear before custom extensions`` () =
         let input = """type string {
              length "1 .. 128";
              junos:posix-pattern "^.{1,64}$";
              junos:pattern-message "Must be string of 64 characters or less";
            }"""
 
-        Assert.ThrowsAny<Exception>(
-            fun _ -> FParsecHelper.apply parse_type_statement input |> ignore
-        )
+        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        Assert.Equal(Identifier.IdentifierReference.Make "string", id)
+        Assert.NotEqual(None, restriction)
+        Assert.NotEqual(None, unknowns)
+        Assert.Equal(2, unknowns.Value.Length)
 
     [<Fact>]
     let ``parse string type with custom extensions and restrictions`` () =

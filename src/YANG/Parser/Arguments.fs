@@ -31,6 +31,16 @@ module Arguments =
             Date.Make (year, month, day)
         )
 
+    let parse_fraction_digits<'a> : Parser<byte, 'a> =
+        // [RFC 7950, 189]
+        //fraction-digits-arg-str = < a string that matches the rule >
+        //                            < fraction-digits-arg >
+        //fraction-digits-arg = ("1" ["0" / "1" / "2" / "3" / "4" /
+        //                            "5" / "6" / "7" / "8"])
+        //                        / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+        // TODO: Proper parsing of fraction-digts; it could be a string in general
+        puint8 .>> spaces
+
     let parse_length<'a> : Parser<Length, 'a> =
         // [RFC 7950, page 204]
         //length-arg-str      = < a string that matches the rule >
@@ -53,6 +63,13 @@ module Arguments =
         //positive-integer-value = (non-zero-digit *DIGIT)
             (skipString "unbounded" |>> (fun _ -> MaxValue.Unbounded))
         <|> (puint64                |>> (fun value -> MaxValue.Bounded value)) .>> spaces
+
+    let parse_min_value<'a> : Parser<uint32, 'a> =
+        // [RFC 7050, p.192]
+        //min-value-arg-str   = < a string that matches the rule >
+        //                        < min-value-arg >
+        //min-value-arg       = non-negative-integer-value
+            puint32
 
     let parse_ordered_by<'a> : Parser<OrderedBy, 'a> =
         // [RFC 7950, p. 192]

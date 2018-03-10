@@ -243,6 +243,12 @@ module Statements =
         // error-message-stmt  = error-message-keyword sep string stmtend
         make_statement_parser_optional "error-message" Strings.parse_string parse_statement
 
+    let parse_fraction_digits_statement<'a> : Parser<FractionDigitsStatement, 'a> =
+        // [RFC 7950, 189]
+        //fraction-digits-stmt = fraction-digits-keyword sep
+        //                        fraction-digits-arg-str stmtend
+        make_statement_parser_optional "fraction-digits" Arguments.parse_fraction_digits parse_statement
+
     /// Parses a key statement
     let parse_key_statement<'a> : Parser<KeyStatement, 'a> =
         // [RFC 7950, p. 195]
@@ -267,6 +273,12 @@ module Statements =
         //max-elements-stmt   = max-elements-keyword sep
         //                        max-value-arg-str stmtend
         make_statement_parser_optional "max-elements" Arguments.parse_max_value parse_statement
+
+    let parse_min_elemenets_statement<'a> : Parser<MinElementsStatement, 'a> =
+        // [RFC 7950, p. 192]
+        //min-elements-stmt   = min-elements-keyword sep
+        //                        min-value-arg-str stmtend
+        make_statement_parser_optional "min-elements" Arguments.parse_min_value parse_statement
 
     /// Parses a reference statement
     let parse_namespace_statement<'a> : Parser<NamespaceStatement, 'a> =
