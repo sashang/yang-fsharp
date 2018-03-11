@@ -62,40 +62,22 @@ junos:posix-pattern 	      1042
 
 let statistics =
     // It would be good to avoid parsing identical files many times,
-    get_all_external_models.Value
-    |> Seq.filter (
-        fun filename ->
-            // the following is an invalid file
-            //if filename.Contains(@"YangModels\vendor\cisco\nx\7.0-3-I6-1\cisco-nx-openconfig-if-ip-deviations.yang") then false
-            //else
-            //    true
-            true
-    )
-    |> Seq.toList
-    |> List.fold (
+    fold_on_all_models ignore_known_incorrect_models (fun _ -> System.Collections.Generic.Dictionary<string, int>()) (
         fun (state : Dictionary<string, int>) filename ->
-            printfn "%A\t\tParsing: %s" (DateTime.Now) (filename.Substring(external_modules_dir.Length))
-
             let model = get_external_model filename
+            let root = apply_parser Generic.parse_many_statements model |> List.head
 
-            try
-                let root = apply_parser Generic.parse_many_statements model |> List.head
-
-                Yang.Model.Generic.KeywordUsage root
-                |> List.iter (
-                    fun (keyword, popularity) ->
-                        if state.ContainsKey(keyword) then
-                            state.[keyword] <- state.[keyword] + popularity
-                        else
-                            state.Add(keyword, popularity)
-                )
-            with
-            | :? System.Exception as ex ->
-                printfn "Error parsing: %s\n%A" filename ex
-                //printfn "%s" filename
+            Yang.Model.Generic.KeywordUsage root
+            |> List.iter (
+                fun (keyword, popularity) ->
+                    if state.ContainsKey(keyword) then
+                        state.[keyword] <- state.[keyword] + popularity
+                    else
+                        state.Add(keyword, popularity)
+            )
 
             state
-    ) (System.Collections.Generic.Dictionary<string, int>())
+    )
 
 
 statistics.Keys
