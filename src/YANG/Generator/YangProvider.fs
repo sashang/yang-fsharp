@@ -103,7 +103,8 @@ type public YangFromStringProvider (config: TypeProviderConfig) as this =
                     |> addIncludedType asm
                 with
                 | :? YangParserException as  ex ->
-                    raise (GenericYangProviderError ("Error in parsing model", ex))
+                    let msg = sprintf "%A" ex
+                    raise (GenericYangProviderError (msg, ex))
 
             | _ -> raise (GenericYangProviderError "Unexpected parameter values when using Yang provider")
 

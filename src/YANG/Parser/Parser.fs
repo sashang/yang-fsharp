@@ -5,6 +5,7 @@ module Parser =
     open System.IO
     open System.Text
     open FParsec
+    open Yang.Model.Statements
 
     /// <summary>
     /// Reads a YANG model from a file and removes all comments.
@@ -19,8 +20,8 @@ module Parser =
         Comments.Remove(reader, writer)
         sb.ToString()
 
-    let MakeFromString (model : string) =
-        let model' = Comments.Remove model
+    let MakeFromString (model : string) : ModuleStatement =
+        let model' = (Comments.Remove model).Trim()
         if System.String.IsNullOrWhiteSpace(model') then
             raise (YangParserException "Input model cannot be empty")
 
