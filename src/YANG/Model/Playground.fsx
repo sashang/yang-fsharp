@@ -169,13 +169,12 @@ type YangPrinter (?sb : StringBuilder, ?indentation : int, ?indent : string) as 
     let indent = defaultArg indent "\t"
     let mutable indentation = defaultArg indentation 0
 
-    let indent () = Printf.bprintf sb "%s" (String.replicate indentation "\t")
-    let nl ()     = Printf.bprintf sb "\n"; indent()
+    let indent ()   = Printf.bprintf sb "%s" (String.replicate indentation "\t")
 
     member __.Append (statement : ModuleStatement) =
-        Printf.bprintf sb "module %s {" statement.Name.Value
+        indent ()
+        Printf.bprintf sb "module %s {\n" statement.Name.Value
         indentation <- indentation + 1
-        nl()
 
         let version, ns, prefix, unknowns = statement.Header
         this.Append version
@@ -183,46 +182,55 @@ type YangPrinter (?sb : StringBuilder, ?indentation : int, ?indent : string) as 
         this.Append prefix
         this.Append unknowns
 
+        let linkage = statement.Linkage
+        if linkage.IsEmpty = false then
+            // leave an empty line
+            Printf.bprintf sb "\n"
+
         indentation <- indentation - 1
-        Printf.bprintf sb "}"
-        nl ()
+        indent ()
+        Printf.bprintf sb "}\n"
 
     member __.Append (statement : NamespaceStatement) =
         let uri, extra = statement
-        Printf.bprintf sb "\"%s\"" (uri.ToString())
+        indent ()
+        Printf.bprintf sb "namespace \"%s\"" (uri.ToString())
         this.Append extra
 
     member __.Append (statement : PrefixStatement) =
         let prefix, extra = statement
+        indent ()
         Printf.bprintf sb "prefix %s" prefix
         this.Append extra
 
     member __.Append (statement : YangVersionStatement) =
         let version, extra = statement
+        indent ()
         Printf.bprintf sb "yang-version %d.%d" version.Major version.Minor
         this.Append extra
 
     member __.Append (statement : Statement) =
         match statement with
-        | Module st             -> this.Append st; nl ()
-        | Namespace st          -> this.Append st; nl ()
-        | Statement.Prefix st   -> this.Append st; nl ()
-        | YangVersion st        -> this.Append st; nl ()
-        | _                     -> Printf.bprintf sb "%A" statement; nl ()
+        | Module st             -> this.Append st
+        | Namespace st          -> this.Append st
+        | Statement.Prefix st   -> this.Append st
+        | YangVersion st        -> this.Append st
+        | _                     ->
+            indent ()
+            Printf.bprintf sb "%A" statement
 
     member __.Append (statement : ExtraStatements) =
         match statement with
-        | None              -> Printf.bprintf sb ";"; nl ()
+        | None              -> Printf.bprintf sb ";\n"
         | Some statements   ->
-            Printf.bprintf sb " {"
+            Printf.bprintf sb " {\n"
             indentation <- indentation + 1
-            nl ()
 
             statements |> List.iter (this.Append)
 
             indentation <- indentation - 1
-            Printf.bprintf sb "}"
-            nl ()
+            indent ()
+            Printf.bprintf sb "}\n"
 
     member __.Append (statement : UnknownStatement) =
         let id, arg, extra = statement
@@ -245,3 +253,4 @@ type YangPrinter (?sb : StringBuilder, ?indentation : int, ?indent : string) as 
 let yp = YangPrinter ()
 yp.Append(configuration)
 let m = yp.ToString()
+printfn "\n%s\n" m
