@@ -9,11 +9,11 @@ module Printer =
 
     type YangPrinter (?sb : StringBuilder, ?indentation : int, ?indent : string) as this =
         let sb = defaultArg sb (System.Text.StringBuilder ())
-        let indent = defaultArg indent "\t"
+        let indent = defaultArg indent "    "
         let compact = false
         let mutable indentation = defaultArg indentation 0
 
-        let indent ()   = Printf.bprintf sb "%s" (String.replicate indentation "    ")
+        let indent ()   = Printf.bprintf sb "%s" (String.replicate indentation indent)
 
         let push () = indentation <- indentation + 1
         let pop  () = indentation <- indentation - 1
