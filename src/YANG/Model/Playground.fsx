@@ -10,6 +10,7 @@
 #load "Expressions.fs"
 #load "Statements.fs"
 #load "Printer.fs"
+#load "Generator.fs"
 
 open System
 open Yang.Model
@@ -71,38 +72,7 @@ module NameResolution =
         else None
 
 
-let mkId id = Identifier.Make id
-let mkIdRef id = IdentifierReference.Make id
-
-let mkModule name body : ModuleStatement =
-    let version : YangVersionStatement = Version(1, 1), None
-    let ns : NamespaceStatement = Uri("yang://unknown"), None
-    let prefix : PrefixStatement = "this", None
-    let header : ModuleHeaderStatements = version, ns, prefix, None
-    {
-        Name        = mkId name
-        Header      = header
-        Linkage     = []
-        Meta        = []
-        Revision    = []
-        Body        = body
-    }
-
-let mkContainer name body = ((mkId name), body)
-let mkContainerInternal name body = ((mkId name), body) |> ContainerBodyStatement.Container
-let mkType name body : TypeStatement = (mkIdRef name), body, None
-
-let mkTypeDefFromString name : BodyStatement =
-    let body : TypeDefBodyStatement = mkType "string" None |> TypeDefBodyStatement.Type
-    (mkId "name", [ body ]) |> BodyStatement.TypeDef
-
-let mkLeaf name ``type`` : LeafStatement =
-    let t = LeafBodyStatement.Type (mkIdRef ``type``, None, None)
-    let leaf : LeafStatement = mkId ``type``, [ t ]
-    leaf
-
-let mkList name body : ListStatement = mkId name, body
-let mkPresence label = ContainerBodyStatement.Presence (label, None)
+open Generator
 
 let family =
     mkContainer "family" (
@@ -159,11 +129,6 @@ let configuration =
                         ])
                 ])  |> BodyStatement.Container
         ]
-
-let sb = System.Text.StringBuilder()
-Statement.print (sb, 0) (configuration |> Statement.Module)
-sb.ToString()
-
 
 let m = Printer.ModuleToString configuration
 printfn "\n%s\n" m

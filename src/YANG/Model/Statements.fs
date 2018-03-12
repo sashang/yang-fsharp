@@ -37,6 +37,8 @@ module Statements =
      * that the YANG model requirements are met.
      *)
 
+     // TODO: Remove/fix pretty printing functionality from this file; use other version.
+
     /// Available Yang statement definitions
     [<StructuredFormatDisplay("{PrettyPrint}")>]
     type Statement =
