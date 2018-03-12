@@ -30,11 +30,11 @@ module Generator =
 
     let mkTypeDefFromString name : BodyStatement =
         let body : TypeDefBodyStatement = mkType "string" None |> TypeDefBodyStatement.Type
-        (mkId "name", [ body ]) |> BodyStatement.TypeDef
+        (mkId name, [ body ]) |> BodyStatement.TypeDef
 
     let mkLeaf name ``type`` : LeafStatement =
         let t = LeafBodyStatement.Type (mkIdRef ``type``, None, None)
-        let leaf : LeafStatement = mkId ``type``, [ t ]
+        let leaf : LeafStatement = mkId name, [ t ]
         leaf
 
     let mkList name body : ListStatement = mkId name, body
