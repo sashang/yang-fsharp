@@ -289,14 +289,14 @@ module Statements =
     /// Captures the 'deviate-add-stmt' statement from [RFC 7950, p. 201].
     and DeviateAddStatement             = DeviateAddBodyStatement list option
     /// Captures the 'deviate-not-supported-stmt' statement from [RFC 7950, p. 201]; this statement does not take proper arguments.
-    and DeviateDeleteBobyStatement      =
+    and DeviateDeleteBodyStatement      =
     | Units         of UnitsStatement
     | Must          of MustStatement
     | Unique        of UniqueStatement
     | Default       of DefaultStatement
     | Unknown       of UnknownStatement
     /// Captures the 'deviate-delete-stmt' statement from [RFC 7950, p. 201].
-    and DeviateDeleteStatement          = DeviateDeleteBobyStatement list option
+    and DeviateDeleteStatement          = DeviateDeleteBodyStatement list option
     and DeviateReplaceBodyStatement     =
     | Type          of TypeStatement
     | Units         of UnitsStatement
@@ -481,7 +481,7 @@ module Statements =
     and ListStatement           = Identifier    * (ListBodyStatement list)
     and MandatoryStatement      = bool          * ExtraStatements
     and MaxElementsStatement    = MaxValue      * ExtraStatements
-    and MinElementsStatement    = uint32        * ExtraStatements
+    and MinElementsStatement    = MinValue      * ExtraStatements
     and ModifierStatement       = Modifier      * ExtraStatements
     and MustBodyStatement       =
     | ErrorMessage  of ErrorMessageStatement
@@ -1044,16 +1044,16 @@ module Statements =
         | DeviateAddBodyStatement.MaxElements   st -> Statement.MaxElements st
         | DeviateAddBodyStatement.Unknown       st -> Statement.Unknown     st
 
-    /// Helper methods for the DeviateDeleteBobyStatement type
+    /// Helper methods for the DeviateDeleteBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-    module DeviateDeleteBobyStatement =
+    module DeviateDeleteBodyStatement =
 
         let Translate = function
-        | DeviateDeleteBobyStatement.Units         st -> Statement.Units    st
-        | DeviateDeleteBobyStatement.Must          st -> Statement.Must     st
-        | DeviateDeleteBobyStatement.Unique        st -> Statement.Unique   st
-        | DeviateDeleteBobyStatement.Default       st -> Statement.Default  st
-        | DeviateDeleteBobyStatement.Unknown       st -> Statement.Unknown  st
+        | DeviateDeleteBodyStatement.Units         st -> Statement.Units    st
+        | DeviateDeleteBodyStatement.Must          st -> Statement.Must     st
+        | DeviateDeleteBodyStatement.Unique        st -> Statement.Unique   st
+        | DeviateDeleteBodyStatement.Default       st -> Statement.Default  st
+        | DeviateDeleteBodyStatement.Unknown       st -> Statement.Unknown  st
 
     /// Helper methods for the DeviateReplaceBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -2040,7 +2040,7 @@ module Statements =
             | Statement.Config                          (config, block) -> ps (BoolAsString config); pb                 block
             | Statement.Container                           (id, block) -> psi id; pbo ContainerBodyStatement.Translate block
             | Statement.DeviateAdd                               block  -> pbo DeviateAddBodyStatement.Translate        block
-            | Statement.DeviateDelete                            block  -> pbo DeviateDeleteBobyStatement.Translate     block
+            | Statement.DeviateDelete                            block  -> pbo DeviateDeleteBodyStatement.Translate     block
             | Statement.DeviateReplace                           block  -> pbo DeviateReplaceBodyStatement.Translate    block
             | Statement.Deviation                           (dv, block) -> ps (dv.ToString()); pbo DeviationBodyStatement.Translate block
             | Statement.Enum                                (id, block) -> ps id; pbo EnumBodyStatement.Translate       block

@@ -58,6 +58,7 @@
     <Compile Include="Arguments.fs" />
     <Compile Include="Expressions.fs" />
     <Compile Include="Statements.fs" />
+    <Compile Include="Printer.fs" />
     <None Include="Playground.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>
