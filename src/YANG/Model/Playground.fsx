@@ -132,3 +132,5 @@ let configuration =
 
 let m = Printer.ModuleToString configuration
 printfn "\n%s\n" m
+
+let type_def = mkTypeDefFromString "interface-unit"
