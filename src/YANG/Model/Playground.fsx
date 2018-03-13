@@ -16,6 +16,36 @@
 open System
 open Yang.Model
 
+
+
+
+
+let path = PathKey (2us, [IdentifierReference.Make "test"])
+PathKey (0us, [IdentifierReference.Make "test"])
+PathKey (2us, [IdentifierReference.Make "test"; IdentifierReference.Make "test2"])
+PathKey (0us, [IdentifierReference.Make "test"; IdentifierReference.Make "test2"])
+PathKey (0us, [])
+
+
+
+
+PathPredicate (IdentifierReference.Make "id", path)
+
+
+
+
+
+
+AbsolutePath.Make(["id"; "in"])
+
+
+
+
+
+
+
+
+
 open Generator
 
 let address4 =

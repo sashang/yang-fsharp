@@ -131,12 +131,112 @@ module Arguments =
             | User      -> "user"
             | System    -> "system"
 
-    // TODO: Fill definition for Path
-    type Path = | NA
-    with
-        member this.Value = "NA"
+    [<AutoOpen>]
+    module Path =
+        [<StructuredFormatDisplay("{Value}")>]
+        type PathKey = | PathKey of Up:uint16 * Node:(IdentifierReference list)
+        with
+            member this.IsValid =
+                let (PathKey (up, nodes)) = this
+                up > 0us && (List.length nodes > 0) && (nodes |> List.forall (fun node -> node.IsValid))
 
-    let PathListValue (path : Path list) = path |> List.map (fun p -> p.Value) |> String.concat " "
+            member this.Value = 
+                let (PathKey (up, nodes)) = this
+                let up_string = if up > 0us then String.replicate (int up) "../" else "/"
+                let nodes_string =
+                    if nodes.Length = 0 then ""
+                    else nodes |> List.map (fun n -> n.Value) |> String.concat "/"
+                sprintf "%s%s" up_string nodes_string 
+
+            override this.ToString() = this.Value
+
+        [<StructuredFormatDisplay("{Value}")>]
+        type PathPredicate = | PathPredicate of Node:IdentifierReference * PathKey:PathKey
+        with
+            member this.Value =
+                let (PathPredicate (node, key)) = this
+                sprintf "%s = current()/%s" node.Value key.Value
+
+            override this.ToString() = this.Value
+
+        [<StructuredFormatDisplay("{Value}")>]
+        type PathItem = | PathItem of Node:IdentifierReference * Predicate:(PathPredicate option)
+        with
+            static member Make (identifier : string) =
+                PathItem (IdentifierReference.Make identifier, None)
+
+            member this.Value =
+                let (PathItem (node, predicate)) = this
+                match predicate with
+                | None              -> sprintf "%s" node.Value
+                | Some predicate    -> sprintf "%s[%s]" node.Value predicate.Value
+
+            override this.ToString() = this.Value
+
+        [<StructuredFormatDisplay("{Value}")>]
+        type AbsolutePath = | AbsolutePath of PathItem list
+        with
+            static member Make (identifier : string) =
+                AbsolutePath [ PathItem (IdentifierReference.Make identifier, None) ]
+            static member Make (identifier : string list) =
+                let ids = identifier |> List.map IdentifierReference.Make
+                let nodes = ids |> List.map (fun n -> PathItem (n, None))
+                AbsolutePath nodes
+
+            member private this.Raw = let (AbsolutePath path) = this in path
+            member this.IsValid = this.Raw.Length > 0
+            member this.Value = sprintf "/%s" (this.Raw |> List.map (fun node -> node.Value) |> String.concat "/")
+            override this.ToString() = this.Value
+
+            member this.Append (identifier : string, ?predicate : PathPredicate) =
+                let item = PathItem (IdentifierReference.Make identifier, predicate)
+                AbsolutePath (this.Raw @ [item])
+
+            member this.Append (identifier : IdentifierReference, ?predicate : PathPredicate) =
+                let item = PathItem (identifier, predicate)
+                AbsolutePath (this.Raw @ [item])
+
+        type RelativePath = | RelativePath of Up:uint16 * PathItem list
+        with
+            static member Make (identifier : string, ?up : uint16) =
+                let up = defaultArg up 1us
+                let path = [ PathItem (IdentifierReference.Make identifier, None) ]
+                RelativePath (up, path)
+
+            static member Make (identifier : string list, ?up : uint16) =
+                let up = defaultArg up 1us
+                let ids = identifier |> List.map IdentifierReference.Make
+                let nodes = ids |> List.map (fun n -> PathItem (n, None))
+                RelativePath (up, nodes)
+
+            member this.Path = let (RelativePath (_, path)) = this in path
+            member this.UpSteps   = let (RelativePath (up, _))   = this in up
+
+            member this.IsValid = this.Path.Length > 0 && this.UpSteps > 0us
+            member this.Value =
+                sprintf "%s%s"
+                    (String.replicate (int this.UpSteps) "../")
+                    (this.Path |> List.map (fun node -> node.Value) |> String.concat "/")
+
+            override this.ToString() = this.Value
+
+            member this.Append (identifier : string, ?predicate : PathPredicate) =
+                let item = PathItem (IdentifierReference.Make identifier, predicate)
+                RelativePath (this.UpSteps, (this.Path @ [item]))
+
+            member this.Append (identifier : IdentifierReference, ?predicate : PathPredicate) =
+                let item = PathItem (identifier, predicate)
+                RelativePath (this.UpSteps, this.Path @ [item])
+
+        type Path =
+        | Absolute of AbsolutePath
+        | Relative of RelativePath
+        with
+            member this.Value =
+                match this with
+                | Absolute path -> path.Value
+                | Relative path -> path.Value
+
 
     /// Definition of Range ([RFC 7950, p. 204])
     // TODO: Expand definition of Range

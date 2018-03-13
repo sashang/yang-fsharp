@@ -531,7 +531,7 @@ module Statements =
     | Unknown       of UnknownStatement
     /// Captures the 'output-stmt' statement from [RFC 7950, p. 200]
     and OutputStatement         = OutputBodyStatement list
-    and PathStatement           = (Path list)   * ExtraStatements
+    and PathStatement           = Path          * ExtraStatements
     and PatternBodyStatement    =
     | Modifier      of ModifierStatement
     | ErrorMessage  of ErrorMessageStatement
