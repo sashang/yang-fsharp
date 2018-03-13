@@ -58,6 +58,7 @@
     <Compile Include="Arguments.fs" />
     <Compile Include="Expressions.fs" />
     <Compile Include="Statements.fs" />
+    <Compile Include="StatementHelper.fs" />
     <Compile Include="Printer.fs" />
     <Compile Include="Generator.fs" />
     <None Include="Playground.fsx" />

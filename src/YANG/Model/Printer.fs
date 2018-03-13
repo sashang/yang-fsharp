@@ -12,33 +12,38 @@ module Printer =
         let indent = defaultArg indent "    "
         let compact = false
         let mutable indentation = defaultArg indentation 0
+        let mutable suspend_new_line = 0
 
         let indent ()   = Printf.bprintf sb "%s" (String.replicate indentation indent)
 
         let push () = indentation <- indentation + 1
         let pop  () = indentation <- indentation - 1
+        let nl   () =
+            if suspend_new_line = 0 then
+                Printf.bprintf sb "\n"
 
-        let bb () = Printf.bprintf sb " {\n"; push ()
-        let eb () = pop(); indent(); Printf.bprintf sb "}\n"
+        let bb () = Printf.bprintf sb " {"; nl(); push ()
+        let eb () = pop(); indent(); Printf.bprintf sb "}"; nl()
 
         let oblock (body : 'T list option) (f : 'T -> unit) =
-            if body.IsNone then Printf.bprintf sb ";\n"
-            elif body.Value.Length = 0 then Printf.bprintf sb " {}\n"
+            if body.IsNone then Printf.bprintf sb ";"; nl()
+            elif body.Value.Length = 0 then Printf.bprintf sb " {}"; nl()
             elif body.Value.Length = 1 && compact then
                 Printf.bprintf sb " { "
                 f (body.Value.Head)
-                Printf.bprintf sb " }\n"
+                Printf.bprintf sb " }"
+                nl()
             else
                 bb ()
                 body.Value |> List.iter f
                 eb ()
 
         let block (body : 'T list) (f : 'T -> unit) =
-            if body.Length = 0 then Printf.bprintf sb " {}\n"
+            if body.Length = 0 then Printf.bprintf sb " {}"; nl()
             elif body.Length = 1 && compact then
                 Printf.bprintf sb " { "
                 f (body.Head)
-                Printf.bprintf sb " }\n"
+                Printf.bprintf sb " }"; nl()
             else
                 bb ()
                 body |> List.iter f
@@ -256,7 +261,8 @@ module Printer =
 
         member __.Append (statement : ModuleStatement) =
             indent ()
-            Printf.bprintf sb "module %s {\n" statement.Name.Value
+            Printf.bprintf sb "module %s {" statement.Name.Value
+            nl()
             indentation <- indentation + 1
 
             let version, ns, prefix, unknowns = statement.Header
@@ -268,27 +274,28 @@ module Printer =
             let linkage = statement.Linkage
             if linkage.IsEmpty = false then
                 // leave an empty line
-                Printf.bprintf sb "\n"
+                nl()
                 linkage |> List.iter (this.Append)
 
             let meta = statement.Meta
             if meta.Length > 0 then
-                Printf.bprintf sb "\n"
+                nl()
                 meta |> List.iter (this.Append)
 
             let revision = statement.Revision
             if revision.IsEmpty = false then
-                Printf.bprintf sb "\n"
+                nl()
                 revision |> List.iter (this.Append)
 
             let body = statement.Body
             if body.IsEmpty = false then
-                Printf.bprintf sb "\n"
+                nl()
                 body |> List.iter (this.Append)
 
             indentation <- indentation - 1
             indent ()
-            Printf.bprintf sb "}\n"
+            Printf.bprintf sb "}"
+            nl()
 
         member __.Append (statement : ModifierStatement) =
             let modifier, extra = statement
@@ -381,7 +388,8 @@ module Printer =
 
         member __.Append (statement : SubmoduleStatement) =
             indent ()
-            Printf.bprintf sb "submodule %s {\n" statement.Name.Value
+            Printf.bprintf sb "submodule %s {" statement.Name.Value
+            nl()
             indentation <- indentation + 1
 
             let version, belongsTo, unknowns = statement.Header
@@ -392,42 +400,45 @@ module Printer =
             let linkage = statement.Linkage
             if linkage.IsEmpty = false then
                 // leave an empty line
-                Printf.bprintf sb "\n"
+                nl()
                 linkage |> List.iter (this.Append)
 
             let meta = statement.Meta
             if meta.Length > 0 then
-                Printf.bprintf sb "\n"
+                nl()
                 meta |> List.iter (this.Append)
 
             let revision = statement.Revision
             if revision.IsEmpty = false then
-                Printf.bprintf sb "\n"
+                nl()
                 revision |> List.iter (this.Append)
 
             let body = statement.Body
             if body.IsEmpty = false then
-                Printf.bprintf sb "\n"
+                nl()
                 body |> List.iter (this.Append)
 
             indentation <- indentation - 1
             indent ()
-            Printf.bprintf sb "}\n"
+            Printf.bprintf sb "}"
+            nl()
 
 
         member __.Append (statement : TypeStatement) =
             let id, arg, body = statement
             indent(); Printf.bprintf sb "type %s" id.Value
 
-            if arg.IsNone && body.IsNone then Printf.bprintf sb ";\n"
-            elif arg.IsNone && body.Value.Length = 0 then Printf.bprintf sb " {}\n"
+            if arg.IsNone && body.IsNone then Printf.bprintf sb ";"; nl()
+            elif arg.IsNone && body.Value.Length = 0 then Printf.bprintf sb " {}"; nl()
             else
-                Printf.bprintf sb "{\n"
+                Printf.bprintf sb "{"
+                nl()
                 indent ()
 
                 if arg.IsSome then
                     // TODO: Pretty print TypeBodyStatement
-                    Printf.bprintf sb " %A\n" arg.Value
+                    Printf.bprintf sb " %A" arg.Value
+                    nl()
                     indent()
 
                 if body.IsSome then
@@ -554,16 +565,18 @@ module Printer =
 
         member __.Append (statement : ExtraStatements) =
             match statement with
-            | None              -> Printf.bprintf sb ";\n"
+            | None              -> Printf.bprintf sb ";"; nl()
             | Some statements   ->
-                Printf.bprintf sb " {\n"
+                Printf.bprintf sb " {"
+                nl()
                 indentation <- indentation + 1
 
                 statements |> List.iter (this.Append)
 
                 indentation <- indentation - 1
                 indent ()
-                Printf.bprintf sb "}\n"
+                Printf.bprintf sb "}"
+                nl()
 
         member __.Append (statement : UnknownStatement) =
             let id, arg, extra = statement
@@ -573,7 +586,7 @@ module Printer =
 
         member __.Append (unknowns : UnknownStatement list option) =
             match unknowns with
-            | None          -> Printf.bprintf sb ";\n"
+            | None          -> Printf.bprintf sb ";"; nl()
             | Some unknowns ->
                 unknowns |> List.iter (this.Append)
 

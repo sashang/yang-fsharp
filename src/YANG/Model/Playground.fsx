@@ -9,6 +9,7 @@
 #load "Arguments.fs"
 #load "Expressions.fs"
 #load "Statements.fs"
+#load "StatementHelper.fs"
 #load "Printer.fs"
 #load "Generator.fs"
 
