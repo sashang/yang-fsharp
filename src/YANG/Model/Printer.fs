@@ -5,7 +5,7 @@ namespace Yang.Model
 module Printer =
     open System.Text
 
-    // TODO: Implement a compact pretty printer
+    // TODO: Proper printing of strings with spaces and other escape characters
 
     type private PrinterState =
     | Normal
