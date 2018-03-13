@@ -16,64 +16,16 @@
 open System
 open Yang.Model
 
-module ResolveType =
-
-    open System.Collections.Specialized
-    open System
-
-    // [RFC 7950, p. 24]
-    // Name                 Description                         
-    //==========================================================
-    // binary               Any binary data                     
-    // bits                 A set of bits or flags              
-    // boolean              "true" or "false"                   
-    // decimal64            64=bit signed decimal number        
-    // empty                A leaf that does not have any value 
-    // enumeration          One of an enumerated set of strings 
-    // identityref          A reference to an abstract identity 
-    // instance=identifier  A reference to a data tree node     
-    // int8                 8=bit signed integer                
-    // int16                16=bit signed integer               
-    // int32                32=bit signed integer               
-    // int64                64=bit signed integer               
-    // leafref              A reference to a leaf instance      
-    // string               A character string                  
-    // uint8                8=bit unsigned integer              
-    // uint16               16=bit unsigned integer             
-    // uint32               32=bit unsigned integer             
-    // uint64               64=bit unsigned integer             
-    // union                Choice of member types              
-    //
-    // Example of 'bits' ([RFC 7950, p. 176]):
-    //type bits {
-    //    bit UP;
-    //    bit PROMISCUOUS
-    //    bit DISABLED;
-    //}
-
-module NameResolution =
-    open FSharp.Collections
-
-    type ResolvedTypeDef = TypeDefStatement
-
-    type Node = | Node of Label:Identifier * Path:(Identifier list)
-
-    type Resolver = {
-        TypeDefs    : Map<Identifier, Type>
-        Containers  : Map<Identifier, ContainerStatement>
-        Parent      : Resolver option
-        Children    : Map<Identifier, Resolver>
-    }
-
-    let rec resolve (db : Resolver) (id : Identifier) : Type option =
-        if Map.containsKey id db.Definitions then
-            Map.find id db.Definitions |> Some
-        elif db.Parent.IsSome then
-            resolve db.Parent.Value id
-        else None
-
-
 open Generator
+
+let address4 =
+    mkList "address" (
+        [
+            mkLeaf "name" "ipv4prefix" |> ListBodyStatement.Leaf
+        ]
+    ) |> ContainerBodyStatement.List
+
+Printer.StatementToStringCompact (ContainerBodyStatement.Translate address4)
 
 let family =
     mkContainer "family" (
@@ -131,7 +83,74 @@ let configuration =
                 ])  |> BodyStatement.Container
         ]
 
-let m = Printer.ModuleToString configuration
+let m = Printer.ModuleToStringCompact configuration
 printfn "\n%s\n" m
 
-let type_def = mkTypeDefFromString "interface-unit"
+StatementHelper.CountDescendants (Statement.Container family)
+StatementHelper.Children (Statement.Module configuration)
+StatementHelper.CountDescendants (Statement.Module configuration)
+
+Printer.StatementToStringCompact (Statement.Container family)
+
+
+
+
+
+
+
+
+module ResolveType =
+
+    open System.Collections.Specialized
+    open System
+
+    // [RFC 7950, p. 24]
+    // Name                 Description                         
+    //==========================================================
+    // binary               Any binary data                     
+    // bits                 A set of bits or flags              
+    // boolean              "true" or "false"                   
+    // decimal64            64=bit signed decimal number        
+    // empty                A leaf that does not have any value 
+    // enumeration          One of an enumerated set of strings 
+    // identityref          A reference to an abstract identity 
+    // instance=identifier  A reference to a data tree node     
+    // int8                 8=bit signed integer                
+    // int16                16=bit signed integer               
+    // int32                32=bit signed integer               
+    // int64                64=bit signed integer               
+    // leafref              A reference to a leaf instance      
+    // string               A character string                  
+    // uint8                8=bit unsigned integer              
+    // uint16               16=bit unsigned integer             
+    // uint32               32=bit unsigned integer             
+    // uint64               64=bit unsigned integer             
+    // union                Choice of member types              
+    //
+    // Example of 'bits' ([RFC 7950, p. 176]):
+    //type bits {
+    //    bit UP;
+    //    bit PROMISCUOUS
+    //    bit DISABLED;
+    //}
+
+//module NameResolution =
+//    open FSharp.Collections
+
+//    type ResolvedTypeDef = TypeDefStatement
+
+//    type Node = | Node of Label:Identifier * Path:(Identifier list)
+
+//    type Resolver = {
+//        TypeDefs    : Map<Identifier, Type>
+//        Containers  : Map<Identifier, ContainerStatement>
+//        Parent      : Resolver option
+//        Children    : Map<Identifier, Resolver>
+//    }
+
+//    let rec resolve (db : Resolver) (id : Identifier) : Type option =
+//        if Map.containsKey id db.Definitions then
+//            Map.find id db.Definitions |> Some
+//        elif db.Parent.IsSome then
+//            resolve db.Parent.Value id
+//        else None

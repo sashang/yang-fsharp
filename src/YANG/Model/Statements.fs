@@ -115,10 +115,8 @@ module Statements =
     | YangVersion   of YangVersionStatement
     | YinElement    of YinElementStatement
     | Unknown       of UnknownStatement
-    // TODO: Rename unparsed statement; where do we need it?
-    | Unparsed      of Identifier:Identifier * Argument:(string option) * Body:(Statement list option)
     with
-        member this.PrettyPrint     = Printer.Print this
+        member this.PrettyPrint     = StatementPrinter.Print this
         override this.ToString()    = this.PrettyPrint
 
     /// Short name for the extra statements that may appear
@@ -754,12 +752,12 @@ module Statements =
         Revision    : RevisionStatement list
         Body        : BodyStatement list
     }
-    and Printer ()                  =
+    and StatementPrinter ()         =
         class
-            static let mutable StatementPrinter : (Statement -> string) option = None
-            static member Set (printer : Statement -> string) = StatementPrinter <- Some printer
+            static let mutable StatementPrinterImplementation : (Statement -> string) option = None
+            static member Set (printer : Statement -> string) = StatementPrinterImplementation <- Some printer
             static member Print (st : Statement) =
-                match StatementPrinter with
+                match StatementPrinterImplementation with
                 | None          -> sprintf "%A" st
                 | Some printer  -> printer st
         end
@@ -1781,9 +1779,7 @@ module Statements =
             | Statement.When                (_, _)
                 -> None
 
-            | Statement.Unknown _
-            | Statement.Unparsed _
-                -> None
+            | Statement.Unknown _   -> None
 
         /// Get the YANG keyword used to define the statement
         let Keyword (this : Statement) =
@@ -1862,258 +1858,3 @@ module Statements =
             | Statement.YangVersion _           -> "yang-version"
             | Statement.YinElement _            -> "yin-element"
             | Statement.Unknown (id, _, _)      -> id.ToString()
-            | Statement.Unparsed (id, _, _)     -> id.ToString()
-
-        let rec internal print (sb : StringBuilder, tabs : int) (this : Statement) =
-            let escape = [| ' '; '\t'; '\r'; '\n'; ';'; '{'; '}'; '@'; ':' |]
-
-            /// Print string
-            let ps (input : string) =
-                if input.IndexOfAny(escape) > 0 then Printf.bprintf sb "\"%s\"" input
-                else Printf.bprintf sb "%s" input
-
-            /// Print string and end line
-            let pse (input : string) = ps input; Printf.bprintf sb ";"
-
-            /// Print identifier
-            let psi (id : Identifier) = ps (id.ToString())
-
-            /// Print reference identifier
-            let psr (id : IdentifierReference) =
-                match id with
-                | Simple id'    -> psi id'
-                | Custom id'    -> ps (id'.ToString())
-
-            /// Print space
-            let sp () = ps " "
-
-            /// Print new line
-            let nl () = Printf.bprintf sb "\n%s" (String.replicate tabs "\t")
-
-            /// Print string in new line
-            let psnl (input : string) =
-                Printf.bprintf sb "\n"
-                Printf.bprintf sb "%s%s" (String.replicate tabs "\t") input
-
-            /// Print optional string
-            let pso (input : string option) =
-                match input with
-                | Some str  -> ps str
-                | None      -> ps ""
-
-            /// Print generic argument
-            let psa (argument : 'a) = Printf. bprintf sb "%A" argument
-
-            /// Print end of statement (';') or block
-            let pb (options : ExtraStatements) =
-                match options with
-                | None          -> pse ""
-                | Some block    ->
-                    ps " {"
-                    block |> List.iter (fun s -> print (sb, tabs+1) s; nl ())
-                    psnl "}\n"
-
-            /// Print optional block of statements
-            let pbo (translate : 'T -> Statement) (block : 'T list option) =
-                match block with
-                | None -> pse ""
-                | Some block ->
-                    if block.Length = 0 then pse " {}"
-                    else
-                        pse " {"
-                        block |> List.map translate |> List.iter (fun st -> print (sb, tabs + 1) st; nl ())
-                        pse "}"
-
-            /// Print generic block of statement
-            let pbt (translate : 'T -> Statement) (block : 'T list) =
-                pse " {"
-                block |> List.map translate |> List.iter (fun st -> print (sb, tabs + 1) st; nl ())
-                pse "}"
-
-            let keyword = Keyword this
-            ps keyword; sp ()
-
-            match this with
-            // TODO: Call the printer for IdentifierReference
-            | Statement.Type                             (id, t, block) ->
-                psr id
-                ps " "
-                match t, block with
-                | None,     None        -> pse ";"
-                | Some t',  None        ->
-                    pse "{ "
-                    TypeBodyStatement.Print (sb, tabs) t'
-                    psnl "}"
-                | None,     Some block  ->
-                    pbt UnknownStatement.Translate block
-                | Some t',  Some block  ->
-                    pse "{ "
-                    TypeBodyStatement.Print (sb, tabs+1) t'; ps ";"
-                    block
-                    |> List.map UnknownStatement.Translate
-                    |> List.iter (print (sb, tabs + 1))
-                    psnl "}"
-
-            | Statement.Module                              m           ->
-                psi m.Name
-                ps "{"
-
-                let (yv, ns, pr, un) = m.Header
-                let un' = if un.IsNone then [] else un.Value
-                [ Statement.YangVersion yv;
-                  Statement.Namespace   ns;
-                  Statement.Prefix      pr
-                ] @ (un' |> List.map (Statement.Unknown))
-                |> List.iter (fun st -> print (sb, tabs + 1) st; nl())
-
-                m.Linkage
-                |> List.map (LinkageBodyStatement.Translate)
-                |> List.iter (print (sb, tabs+1))
-                nl()
-
-                m.Meta
-                |> List.map (MetaBodyStatement.Translate)
-                |> List.iter (print (sb, tabs+1))
-                nl()
-
-                m.Revision
-                |> List.map (Statement.Revision)
-                |> List.iter (print (sb, tabs+1))
-                nl()
-
-                m.Body
-                |> List.map (BodyStatement.Translate)
-                |> List.iter (print (sb, tabs+1))
-                nl()
-
-                ps "}"
-
-            | Statement.Submodule                           sm          ->
-                let (yv, bt, un) = sm.Header
-                let un' = if un.IsNone then [] else un.Value
-                [ Statement.YangVersion yv;
-                  Statement.BelongsTo   bt
-                ] @ (un' |> List.map (Statement.Unknown))
-                |> List.iter (fun st -> print (sb, tabs + 1) st; nl())
-
-                sm.Linkage
-                |> List.map (LinkageBodyStatement.Translate)
-                |> List.iter (print (sb, tabs+1))
-                nl()
-
-                sm.Meta
-                |> List.map (MetaBodyStatement.Translate)
-                |> List.iter (print (sb, tabs+1))
-                nl()
-
-                sm.Revision
-                |> List.map (Statement.Revision)
-                |> List.iter (print (sb, tabs+1))
-                nl()
-
-                sm.Body
-                |> List.map (BodyStatement.Translate)
-                |> List.iter (print (sb, tabs+1))
-                nl()
-
-                ps "}"
-
-            | Statement.Contact             (s, block)
-            | Statement.Default             (s, block)
-            | Statement.Description         (s, block)
-            | Statement.ErrorAppTag         (s, block)
-            | Statement.ErrorMessage        (s, block)
-            | Statement.Organization        (s, block)
-            | Statement.Prefix              (s, block)
-            | Statement.Presence            (s, block)
-            | Statement.Reference           (s, block)
-            | Statement.Units               (s, block)
-                                                                        -> ps s; pb block
-
-            | Statement.Action                              (id, block) -> psi id; pbo ActionBodyStatement.Translate    block
-            | Statement.AnyData                             (id, block) -> psi id; pbo AnyDataBodyStatement.Translate   block
-            | Statement.AnyXml                              (id, block) -> psi id; pbo AnyXmlBodyStatement.Translate    block
-            | Statement.Argument                            (id, block) -> psi id; pbo ArgumentBodyStatement.Translate  block
-            | Statement.Augment                             (au, block) -> psa au; pbt AugmentBodyStatement.Translate   block
-            | Statement.BelongsTo                           (bt, block) -> psa bt; pbt BelongsToBodyStatement.Translate block
-            | Statement.Bit                                 (id, block) -> psi id; pbo BitBodyStatement.Translate       block
-            | Statement.Case                                (id, block) -> psi id; pbo CaseBodyStatement.Translate      block
-            | Statement.Choice                              (id, block) -> psi id; pbo ChoiceBodyStatement.Translate    block
-            | Statement.Config                          (config, block) -> ps (BoolAsString config); pb                 block
-            | Statement.Container                           (id, block) -> psi id; pbo ContainerBodyStatement.Translate block
-            | Statement.DeviateAdd                               block  -> pbo DeviateAddBodyStatement.Translate        block
-            | Statement.DeviateDelete                            block  -> pbo DeviateDeleteBodyStatement.Translate     block
-            | Statement.DeviateReplace                           block  -> pbo DeviateReplaceBodyStatement.Translate    block
-            | Statement.Deviation                           (dv, block) -> ps (dv.ToString()); pbo DeviationBodyStatement.Translate block
-            | Statement.Enum                                (id, block) -> ps id; pbo EnumBodyStatement.Translate       block
-            | Statement.Extension                           (id, block) -> psi id; pbo ExtensionBodyStatement.Translate block
-            | Statement.Feature                             (id, block) -> psi id; pbo FeatureBodyStatement.Translate   block
-            | Statement.FractionDigits                   (value, block) -> Printf.bprintf sb "%d" value; pb             block
-            | Statement.Grouping                            (id, block) -> psi id; pbo GroupingBodyStatement.Translate  block
-            | Statement.Identity                            (id, block) -> psi id; pbo IdentityBodyStatement.Translate  block
-            // TODO: Call the printer for IfFeatureExpression
-            | Statement.IfFeature                           (ex, block) -> Printf.bprintf sb "%A" ex; pb                block
-            | Statement.Import                              (id, block) -> psi id; pbt ImportBodyStatement.Translate    block
-            | Statement.Include                             (id, block) -> psi id; pbo IncludeBodyStatement.Translate   block
-            | Statement.Input                                    block  -> pbt InputBodyStatement.Translate             block
-            // TODO: Call the printer on Key
-            | Statement.Key                                (key, block) -> ps (key.ToString()); pb                      block
-            | Statement.Leaf                                (id, block) -> psi id; pbt LeafBodyStatement.Translate      block
-            | Statement.LeafList                            (id, block) -> psi id; pbt LeafListBodyStatement.Translate  block
-            // TODO: Call the printer for Length
-            | Statement.Length                          (length, block) -> Printf.bprintf sb "%A" length; pbo LengthBodyStatement.Translate block
-            | Statement.List                                (id, block) -> psi id; pbt ListBodyStatement.Translate      block
-            | Statement.Mandatory                           (ma, block) -> ps (BoolAsString ma); pb                     block
-            // TODO: Call the printer for MaxValue
-            | Statement.MaxElements                         (v,  block) -> ps (v.ToString()); pb                        block
-            // TODO: Call the printer for MinValue
-            | Statement.MinElements                         (v,  block) -> ps (v.ToString()); pb                        block
-            // TODO: Call the printer for Modifier
-            | Statement.Modifier                            (v,  block) -> ps (v.ToString()); pb                        block
-            | Statement.Must                                (st, block) -> ps st; pbo MustBodyStatement.Translate       block
-            | Statement.Notification                        (id, block) -> psi id; pbo NotificationBodyStatement.Translate  block
-            // TODO: Call the printer for OrderedBy
-            | Statement.OrderedBy                           (ob, block) -> ps (ob.ToString()); pb                       block
-            | Statement.Output                                   block  -> pbt OutputBodyStatement.Translate            block
-            // TODO: Call the printer for path list
-            | Statement.Path                              (path, block) -> ps (path.ToString()); pb                     block
-            | Statement.Pattern                        (pattern, block) -> ps pattern; pbo PatternBodyStatement.Translate   block
-            | Statement.Position                      (position, block) -> Printf.bprintf sb "%d" position; pb          block
-            // TODO: Call the printer for Range
-            | Statement.Range                            (range, block) -> ps (range.ToString()); pbo RangeBodyStatement.Translate      block
-            // TODO: Call the printer for Refine
-            | Statement.Refine                          (refine, block) -> ps (refine.ToString()); pbo RefineBodyStatement.Translate    block
-            | Statement.RequireInstance                    (req, block) -> ps (BoolAsString req); pb                    block
-            // TODO: Call the printer for Revision
-            | Statement.Revision                           (rev, block) -> ps (rev.ToString()); pbo RevisionBodyStatement.Translate     block
-            // TODO: Call the printer for Revision
-            | Statement.RevisionDate                       (rev, block) -> ps (rev.ToString()); pb                      block
-            | Statement.Rpc                                 (id, block) -> psi id; pbo RpcBodyStatement.Translate       block
-            | Statement.TypeDef                             (id, block) -> psi id; pbt TypeDefBodyStatement.Translate   block
-            // TODO: Call the printer for Unique
-            | Statement.Unique                              (un, block) -> ps (un.ToString()); pb block
-            | Statement.Uses                                (id, block) -> psr id; pbo UsesBodyStatement.Translate      block
-            // TODO: Call parser for UsesAugment
-            | Statement.UsesAugment                         (ua, block) -> ps (ua.ToString()); pbt UsesAugmentBodyStatement.Translate   block
-            | Statement.Value                               (v,  block) -> Printf.bprintf sb "%d" v; pb                 block
-            | Statement.When                                (p,  block) -> ps p; pbo WhenBodyStatement.Translate        block
-            | Statement.YinElement                          (y,  block) -> ps (BoolAsString y); pb                      block
-
-            | Statement.Status                          (status, block) -> psa status;  pb block
-            | Statement.Namespace                          (uri, block) -> psa uri;     pb block
-            | Statement.YangVersion                    (version, block) -> psa version; pb block
-
-            | Statement.Base                                (_, block)
-            | Statement.DeviateNotSupported                     block   -> pb block
-
-            | Statement.Unknown                         (_, arg, body)
-            | Statement.Unparsed                        (_, arg, body)  -> pso arg; pb body
-
-        /// <summary>
-        /// Get a string version of the statement (in YANG format)
-        /// </summary>
-        /// <param name="statement">The statement to print</param>
-        let ToString statement = let sb = StringBuilder () in print (sb, 0) statement ; sb.ToString()
-
-    do
-        Printer.Set Statement.ToString

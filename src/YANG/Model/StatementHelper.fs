@@ -4,24 +4,14 @@ namespace Yang.Model
 
 module StatementHelper =
 
-    let private counter (update : 'T -> int) : 'T list -> int =
-        List.fold (fun s v -> s + (update v)) 0
+    let private get_inner_optional (statements : 'T list option) (map : 'T -> Statement) : Statement list =
+        if statements.IsSome then statements.Value |> List.map map
+        else []
 
-    let private counter_o (update : 'T -> int) (input : 'T list option) =
-        if input.IsNone then 0
-        else counter (fun v -> 1 + (update v)) (input.Value)
+    let private get_inner (statements : 'T list) (map : 'T -> Statement) : Statement list =
+        statements |> List.map map
 
-    let private counter_ot (transform : 'T -> Statement) (update : Statement -> int) (input : 'T list option) =
-        if input.IsNone then 0
-        else counter (fun v -> 1 + (update (transform v))) (input.Value)
-
-    let private counter_t (transform : 'T -> Statement) (update : Statement -> int) (input : 'T list) =
-        counter (fun v -> 1 + (update (transform v))) input
-
-    /// <summary>
-    /// Computes the number of descendant nodes from 
-    /// </summary>
-    let rec Descendants = function
+    let Children : Statement -> Statement list = function
     | Statement.Base                (_, options)
     | Statement.Config              (_, options)
     | Statement.Contact             (_, options)
@@ -53,109 +43,120 @@ module StatementHelper =
     | Statement.Value               (_, options)
     | Statement.YangVersion         (_, options)
     | Statement.YinElement          (_, options)
-        -> counter_o Descendants options
+        -> if options.IsSome then options.Value else []
 
-    // The following have custom options; the caller need to treat them specially
-    | Statement.Action              (_, body) ->
-        counter_ot ActionBodyStatement.Translate Descendants body
-    | Statement.AnyData             (_, body) ->
-        counter_ot AnyDataBodyStatement.Translate Descendants body
-    | Statement.AnyXml              (_, body) ->
-        counter_ot AnyXmlBodyStatement.Translate Descendants body
-    | Statement.Augment             (_, body) ->
-        counter_t AugmentBodyStatement.Translate Descendants body
-    | Statement.Argument            (_, body) ->
-        counter_ot ArgumentBodyStatement.Translate Descendants body
-    | Statement.BelongsTo           (_, body) ->
-        counter_t BelongsToBodyStatement.Translate Descendants body
-    | Statement.Bit                 (_, body) ->
-        counter_ot BitBodyStatement.Translate Descendants body
-    | Statement.Case                (_, body) ->
-        counter_ot CaseBodyStatement.Translate Descendants body
-    | Statement.Choice              (_, body) ->
-        counter_ot ChoiceBodyStatement.Translate Descendants body
-    | Statement.Container           (_, body) ->
-        counter_ot ContainerBodyStatement.Translate Descendants body
-    | Statement.DeviateAdd          body ->
-        counter_ot DeviateAddBodyStatement.Translate Descendants body
-    | Statement.DeviateDelete       body ->
-        counter_ot DeviateDeleteBodyStatement.Translate Descendants body
-    | Statement.DeviateReplace      body ->
-        counter_ot DeviateReplaceBodyStatement.Translate Descendants body
-    | Statement.Deviation           (_, body) ->
-        counter_ot DeviationBodyStatement.Translate Descendants body
-    | Statement.Enum                (_, body) ->
-        counter_ot EnumBodyStatement.Translate Descendants body
-    | Statement.Extension           (_, body) ->
-        counter_ot ExtensionBodyStatement.Translate Descendants body
-    | Statement.Feature             (_, body) ->
-        counter_ot FeatureBodyStatement.Translate Descendants body
-    | Statement.Grouping            (_, body) ->
-        counter_ot GroupingBodyStatement.Translate Descendants body
-    | Statement.Identity            (_, body) ->
-        counter_ot IdentityBodyStatement.Translate Descendants body
-    | Statement.Import              (_, body) ->
-        counter_t ImportBodyStatement.Translate Descendants body
-    | Statement.Include             (_, body) ->
-        counter_ot IncludeBodyStatement.Translate Descendants body
-    | Statement.Input               body ->
-        counter_t InputBodyStatement.Translate Descendants body
-    | Statement.Leaf                (_, body) ->
-        counter_t LeafBodyStatement.Translate Descendants body
-    | Statement.LeafList            (_, body) ->
-        counter_t LeafListBodyStatement.Translate Descendants body
-    | Statement.Length              (_, body) ->
-        counter_ot LengthBodyStatement.Translate Descendants body
-    | Statement.List                (_, body) ->
-        counter_t ListBodyStatement.Translate Descendants body
+    | Statement.Action              (_, body)   -> get_inner_optional body ActionBodyStatement.Translate
+    | Statement.AnyData             (_, body)   -> get_inner_optional body AnyDataBodyStatement.Translate
+    | Statement.AnyXml              (_, body)   -> get_inner_optional body AnyXmlBodyStatement.Translate
+    | Statement.Augment             (_, body)   -> get_inner          body AugmentBodyStatement.Translate
+    | Statement.Argument            (_, body)   -> get_inner_optional body ArgumentBodyStatement.Translate
+    | Statement.BelongsTo           (_, body)   -> get_inner          body BelongsToBodyStatement.Translate
+    | Statement.Bit                 (_, body)   -> get_inner_optional body BitBodyStatement.Translate
+    | Statement.Case                (_, body)   -> get_inner_optional body CaseBodyStatement.Translate
+    | Statement.Choice              (_, body)   -> get_inner_optional body ChoiceBodyStatement.Translate
+    | Statement.Container           (_, body)   -> get_inner_optional body ContainerBodyStatement.Translate
+    | Statement.DeviateAdd          body        -> get_inner_optional body DeviateAddBodyStatement.Translate
+    | Statement.DeviateDelete       body        -> get_inner_optional body DeviateDeleteBodyStatement.Translate
+    | Statement.DeviateReplace      body        -> get_inner_optional body DeviateReplaceBodyStatement.Translate
+    | Statement.Deviation           (_, body)   -> get_inner_optional body DeviationBodyStatement.Translate
+    | Statement.Enum                (_, body)   -> get_inner_optional body EnumBodyStatement.Translate
+    | Statement.Extension           (_, body)   -> get_inner_optional body ExtensionBodyStatement.Translate
+    | Statement.Feature             (_, body)   -> get_inner_optional body FeatureBodyStatement.Translate
+    | Statement.Grouping            (_, body)   -> get_inner_optional body GroupingBodyStatement.Translate
+    | Statement.Identity            (_, body)   -> get_inner_optional body IdentityBodyStatement.Translate
+    | Statement.Import              (_, body)   -> get_inner          body ImportBodyStatement.Translate
+    | Statement.Include             (_, body)   -> get_inner_optional body IncludeBodyStatement.Translate
+    | Statement.Input               body        -> get_inner          body InputBodyStatement.Translate
+    | Statement.Leaf                (_, body)   -> get_inner          body LeafBodyStatement.Translate
+    | Statement.LeafList            (_, body)   -> get_inner          body LeafListBodyStatement.Translate
+    | Statement.Length              (_, body)   -> get_inner_optional body LengthBodyStatement.Translate
+    | Statement.List                (_, body)   -> get_inner          body ListBodyStatement.Translate
+    | Statement.Must                (_, body)   -> get_inner_optional body MustBodyStatement.Translate
+    | Statement.Notification        (_, body)   -> get_inner_optional body NotificationBodyStatement.Translate
+    | Statement.Output              body        -> get_inner          body OutputBodyStatement.Translate
+    | Statement.Pattern             (_, body)   -> get_inner_optional body PatternBodyStatement.Translate
+    | Statement.Range               (_, body)   -> get_inner_optional body RangeBodyStatement.Translate
+    | Statement.Rpc                 (_, body)   -> get_inner_optional body RpcBodyStatement.Translate
+    | Statement.Refine              (_, body)   -> get_inner_optional body RefineBodyStatement.Translate
+    | Statement.Revision            (_, body)   -> get_inner_optional body RevisionBodyStatement.Translate
+    | Statement.TypeDef             (_, body)   -> get_inner          body TypeDefBodyStatement.Translate
+    | Statement.Uses                (_, body)   -> get_inner_optional body UsesBodyStatement.Translate
+    | Statement.UsesAugment         (_, body)   -> get_inner          body UsesAugmentBodyStatement.Translate
+    | Statement.When                (_, body)   -> get_inner_optional body WhenBodyStatement.Translate
+    | Statement.Unknown          (_, _, body)   -> if body.IsSome then body.Value else []
+
     | Statement.Module              body ->
-        // TODO: counter number of statements in module
-        10
-    | Statement.Must                (_, body) ->
-        counter_ot MustBodyStatement.Translate Descendants body
-    | Statement.Notification        (_, body) ->
-        counter_ot NotificationBodyStatement.Translate Descendants body
-    | Statement.Output              body ->
-        counter_t OutputBodyStatement.Translate Descendants body
-    | Statement.Pattern             (_, body) ->
-        counter_ot PatternBodyStatement.Translate Descendants body
-    | Statement.Range               (_, body) ->
-        counter_ot RangeBodyStatement.Translate Descendants body
-    | Statement.Rpc                 (_, body) ->
-        counter_ot RpcBodyStatement.Translate Descendants body
-    | Statement.Refine              (_, body) ->
-        counter_ot RefineBodyStatement.Translate Descendants body
-    | Statement.Revision            (_, body) ->
-        counter_ot RevisionBodyStatement.Translate Descendants body
+        let version, ns, prefix, unknown   = body.Header
+        let linkage                        = body.Linkage   |> List.map LinkageBodyStatement.Translate
+        let meta                           = body.Meta      |> List.map MetaBodyStatement.Translate
+        let revision                       = body.Revision  |> List.map Statement.Revision
+        let body'                          = body.Body      |> List.map BodyStatement.Translate
+
+        let unknown' = if unknown.IsSome then unknown.Value |> List.map Statement.Unknown else []
+
+        (Statement.YangVersion version) :: (Statement.Namespace ns) :: (Statement.Prefix prefix) :: unknown' @ linkage @ meta @ revision @ body'
+
+    | Statement.Type                (_, _, extra) ->
+        // TODO: Do we need to surface the type restrictions in the list of children of a node?
+        if extra.IsSome then extra.Value |> List.map Statement.Unknown else []
+
     | Statement.Submodule           body ->
-        // TODO: counter number of statements in sub-module
-        10
-    | Statement.Type                (_, restrictions, extra) ->
-        let e =
-            if extra.IsNone then 0
-            else
-                extra.Value
-                |> List.map UnknownStatement.Translate
-                |> List.fold (fun total v -> total + (Descendants v) + 1) 0
-        // TODO: count number of statements in restrictions
-        let r = 0
-        e + r
-    | Statement.TypeDef             (_, body) ->
-        counter_t TypeDefBodyStatement.Translate Descendants body
-    | Statement.Uses                (_, body) ->
-        counter_ot UsesBodyStatement.Translate Descendants body
-    | Statement.UsesAugment         (_, body) ->
-        counter_t UsesAugmentBodyStatement.Translate Descendants body
-    | Statement.When                (_, body) ->
-        counter_ot WhenBodyStatement.Translate Descendants body
+        let version, belongs_to, unknown    = body.Header
+        let linkage                         = body.Linkage   |> List.map LinkageBodyStatement.Translate
+        let meta                            = body.Meta      |> List.map MetaBodyStatement.Translate
+        let revision                        = body.Revision  |> List.map Statement.Revision
+        let body'                           = body.Body      |> List.map BodyStatement.Translate
 
-    | Statement.Unknown body ->
-        let _, _, _extra = body
-        // TODO: fix counting descendand notes from unknown
-        10
+        let unknown' = if unknown.IsSome then unknown.Value |> List.map Statement.Unknown else []
 
-    | Statement.Unparsed _ ->
-        // TODO: Remove this statement that handles unparsed statements
-        failwith "Should not have reached here"
+        (Statement.YangVersion version) :: (Statement.BelongsTo belongs_to) :: unknown' @ linkage @ meta @ revision @ body'
 
+    module Patterns =
+        let (|Container|_|) = function
+        | Statements.Container v    -> Some v
+        | _                         -> None
+
+        let (|Grouping|_|) = function
+        | Statements.Grouping v     -> Some v
+        | _                         -> None
+
+        let (|Leaf|_|) = function
+        | Statements.Leaf v         -> Some v
+        | _                         -> None
+
+        let (|LeafList|_|) = function
+        | Statements.LeafList v     -> Some v
+        | _                         -> None
+
+        let (|List|_|) = function
+        | Statements.List v         -> Some v
+        | _                         -> None
+
+        let (|Type|_|) = function
+        | Statements.Type v         -> Some v
+        | _                         -> None
+
+        let (|TypeDef|_|) = function
+        | Statements.TypeDef v      -> Some v
+        | _                         -> None
+
+        let (|Uses|_|) = function
+        | Statements.Uses v         -> Some v
+        | _                         -> None
+
+
+    let rec CountDescendants (statement : Statement) =
+        let children = Children statement
+        let starting =
+            match statement with
+            | Patterns.Type (_, restriction, extra) ->
+                if restriction.IsSome then 1 else 0
+            | _ -> 0
+
+        // TODO: Rewrite as a proper tail recursive function, assuming that it still works on big models
+        children
+        |> List.fold (
+            fun state child ->
+                state + (CountDescendants child)
+        ) (starting + List.length children)
 
