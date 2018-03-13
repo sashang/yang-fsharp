@@ -128,19 +128,6 @@ module Statements =
                  )
             |>> (fun (identifier, (argument, body)) -> Statement.Unknown (identifier, argument, body))
 
-    /// Parsing of unknown statements which have identifier which do NOT include prefix.
-    /// This is not a valid parser, and should not be used. It may be useful for other debugging purposes.
-    let inline private unparsed_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
-            Identifier.parse_identifier
-            .>> spaces
-            .>>. ((end_of_statement_or_block parser
-                   |>> (fun body            -> None, body))
-                  <|>
-                  (read_keyword .>>. end_of_statement_or_block parser
-                   |>> (fun (argument, body)    -> Some argument, body))
-                 )
-            |>> (fun (identifier, (argument, body)) -> Unparsed (identifier, argument, body))
-
     let inline private yang_keyword_string_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
         skipString keyword      >>. spaces  >>.
         Strings.parse_string   .>>  spaces .>>.
@@ -191,7 +178,6 @@ module Statements =
                 <|> yang_keyword_string_statement ("presence", Statement.Presence)          parse_statement
                 <|> yang_keyword_string_statement ("reference", Statement.Reference)        parse_statement
                 <|> unknown_statement parse_statement
-                <|> unparsed_statement parse_statement
 
             parser input
 

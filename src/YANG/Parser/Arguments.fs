@@ -64,12 +64,12 @@ module Arguments =
             (skipString "unbounded" |>> (fun _ -> MaxValue.Unbounded))
         <|> (puint64                |>> (fun value -> MaxValue.Bounded value)) .>> spaces
 
-    let parse_min_value<'a> : Parser<uint32, 'a> =
+    let parse_min_value<'a> : Parser<MinValue, 'a> =
         // [RFC 7050, p.192]
         //min-value-arg-str   = < a string that matches the rule >
         //                        < min-value-arg >
         //min-value-arg       = non-negative-integer-value
-            puint32
+            puint32 |>> MinValue
 
     let parse_ordered_by<'a> : Parser<OrderedBy, 'a> =
         // [RFC 7950, p. 192]
