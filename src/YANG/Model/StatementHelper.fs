@@ -11,6 +11,106 @@ module StatementHelper =
     let private get_inner (statements : 'T list) (map : 'T -> Statement) : Statement list =
         statements |> List.map map
 
+    let Children : Statement -> Statement list = function
+    | Statement.Base                (_, options)
+    | Statement.Config              (_, options)
+    | Statement.Contact             (_, options)
+    | Statement.Default             (_, options)
+    | Statement.Description         (_, options)
+    | Statement.DeviateNotSupported options
+    | Statement.ErrorAppTag         (_, options)
+    | Statement.ErrorMessage        (_, options)
+    | Statement.FractionDigits      (_, options)
+    | Statement.IfFeature           (_, options)
+    | Statement.Key                 (_, options)
+    | Statement.Mandatory           (_, options)
+    | Statement.MaxElements         (_, options)
+    | Statement.MinElements         (_, options)
+    | Statement.Modifier            (_, options)
+    | Statement.Namespace           (_, options)
+    | Statement.OrderedBy           (_, options)
+    | Statement.Organization        (_, options)
+    | Statement.Path                (_, options)
+    | Statement.Position            (_, options)
+    | Statement.Prefix              (_, options)
+    | Statement.Presence            (_, options)
+    | Statement.Reference           (_, options)
+    | Statement.RevisionDate        (_, options)
+    | Statement.RequireInstance     (_, options)
+    | Statement.Status              (_, options)
+    | Statement.Units               (_, options)
+    | Statement.Unique              (_, options)
+    | Statement.Value               (_, options)
+    | Statement.YangVersion         (_, options)
+    | Statement.YinElement          (_, options)
+        -> if options.IsSome then options.Value else []
+
+    | Statement.Action              (_, body)   -> get_inner_optional body ActionBodyStatement.Translate
+    | Statement.AnyData             (_, body)   -> get_inner_optional body AnyDataBodyStatement.Translate
+    | Statement.AnyXml              (_, body)   -> get_inner_optional body AnyXmlBodyStatement.Translate
+    | Statement.Augment             (_, body)   -> get_inner          body AugmentBodyStatement.Translate
+    | Statement.Argument            (_, body)   -> get_inner_optional body ArgumentBodyStatement.Translate
+    | Statement.BelongsTo           (_, body)   -> get_inner          body BelongsToBodyStatement.Translate
+    | Statement.Bit                 (_, body)   -> get_inner_optional body BitBodyStatement.Translate
+    | Statement.Case                (_, body)   -> get_inner_optional body CaseBodyStatement.Translate
+    | Statement.Choice              (_, body)   -> get_inner_optional body ChoiceBodyStatement.Translate
+    | Statement.Container           (_, body)   -> get_inner_optional body ContainerBodyStatement.Translate
+    | Statement.DeviateAdd          body        -> get_inner_optional body DeviateAddBodyStatement.Translate
+    | Statement.DeviateDelete       body        -> get_inner_optional body DeviateDeleteBodyStatement.Translate
+    | Statement.DeviateReplace      body        -> get_inner_optional body DeviateReplaceBodyStatement.Translate
+    | Statement.Deviation           (_, body)   -> get_inner_optional body DeviationBodyStatement.Translate
+    | Statement.Enum                (_, body)   -> get_inner_optional body EnumBodyStatement.Translate
+    | Statement.Extension           (_, body)   -> get_inner_optional body ExtensionBodyStatement.Translate
+    | Statement.Feature             (_, body)   -> get_inner_optional body FeatureBodyStatement.Translate
+    | Statement.Grouping            (_, body)   -> get_inner_optional body GroupingBodyStatement.Translate
+    | Statement.Identity            (_, body)   -> get_inner_optional body IdentityBodyStatement.Translate
+    | Statement.Import              (_, body)   -> get_inner          body ImportBodyStatement.Translate
+    | Statement.Include             (_, body)   -> get_inner_optional body IncludeBodyStatement.Translate
+    | Statement.Input               body        -> get_inner          body InputBodyStatement.Translate
+    | Statement.Leaf                (_, body)   -> get_inner          body LeafBodyStatement.Translate
+    | Statement.LeafList            (_, body)   -> get_inner          body LeafListBodyStatement.Translate
+    | Statement.Length              (_, body)   -> get_inner_optional body LengthBodyStatement.Translate
+    | Statement.List                (_, body)   -> get_inner          body ListBodyStatement.Translate
+    | Statement.Must                (_, body)   -> get_inner_optional body MustBodyStatement.Translate
+    | Statement.Notification        (_, body)   -> get_inner_optional body NotificationBodyStatement.Translate
+    | Statement.Output              body        -> get_inner          body OutputBodyStatement.Translate
+    | Statement.Pattern             (_, body)   -> get_inner_optional body PatternBodyStatement.Translate
+    | Statement.Range               (_, body)   -> get_inner_optional body RangeBodyStatement.Translate
+    | Statement.Rpc                 (_, body)   -> get_inner_optional body RpcBodyStatement.Translate
+    | Statement.Refine              (_, body)   -> get_inner_optional body RefineBodyStatement.Translate
+    | Statement.Revision            (_, body)   -> get_inner_optional body RevisionBodyStatement.Translate
+    | Statement.TypeDef             (_, body)   -> get_inner          body TypeDefBodyStatement.Translate
+    | Statement.Uses                (_, body)   -> get_inner_optional body UsesBodyStatement.Translate
+    | Statement.UsesAugment         (_, body)   -> get_inner          body UsesAugmentBodyStatement.Translate
+    | Statement.When                (_, body)   -> get_inner_optional body WhenBodyStatement.Translate
+    | Statement.Unknown          (_, _, body)   -> if body.IsSome then body.Value else []
+
+    | Statement.Module              body ->
+        let version, ns, prefix, unknown   = body.Header
+        let linkage                        = body.Linkage   |> List.map LinkageBodyStatement.Translate
+        let meta                           = body.Meta      |> List.map MetaBodyStatement.Translate
+        let revision                       = body.Revision  |> List.map Statement.Revision
+        let body'                          = body.Body      |> List.map BodyStatement.Translate
+
+        let unknown' = if unknown.IsSome then unknown.Value |> List.map Statement.Unknown else []
+
+        (Statement.YangVersion version) :: (Statement.Namespace ns) :: (Statement.Prefix prefix) :: unknown' @ linkage @ meta @ revision @ body'
+
+    | Statement.Type                (_, _, extra) ->
+        // TODO: Do we need to surface the type restrictions in the list of children of a node?
+        if extra.IsSome then extra.Value |> List.map Statement.Unknown else []
+
+    | Statement.Submodule           body ->
+        let version, belongs_to, unknown    = body.Header
+        let linkage                         = body.Linkage   |> List.map LinkageBodyStatement.Translate
+        let meta                            = body.Meta      |> List.map MetaBodyStatement.Translate
+        let revision                        = body.Revision  |> List.map Statement.Revision
+        let body'                           = body.Body      |> List.map BodyStatement.Translate
+
+        let unknown' = if unknown.IsSome then unknown.Value |> List.map Statement.Unknown else []
+
+        (Statement.YangVersion version) :: (Statement.BelongsTo belongs_to) :: unknown' @ linkage @ meta @ revision @ body'
+
     let GetIdentifier : Statement -> Identifier option = function
     | Statement.Action              (id, _)
     | Statement.AnyData             (id, _)
@@ -179,109 +279,14 @@ module StatementHelper =
     | Statement.YinElement          _
         -> None
 
-    let Children : Statement -> Statement list = function
-    | Statement.Base                (_, options)
-    | Statement.Config              (_, options)
-    | Statement.Contact             (_, options)
-    | Statement.Default             (_, options)
-    | Statement.Description         (_, options)
-    | Statement.DeviateNotSupported options
-    | Statement.ErrorAppTag         (_, options)
-    | Statement.ErrorMessage        (_, options)
-    | Statement.FractionDigits      (_, options)
-    | Statement.IfFeature           (_, options)
-    | Statement.Key                 (_, options)
-    | Statement.Mandatory           (_, options)
-    | Statement.MaxElements         (_, options)
-    | Statement.MinElements         (_, options)
-    | Statement.Modifier            (_, options)
-    | Statement.Namespace           (_, options)
-    | Statement.OrderedBy           (_, options)
-    | Statement.Organization        (_, options)
-    | Statement.Path                (_, options)
-    | Statement.Position            (_, options)
-    | Statement.Prefix              (_, options)
-    | Statement.Presence            (_, options)
-    | Statement.Reference           (_, options)
-    | Statement.RevisionDate        (_, options)
-    | Statement.RequireInstance     (_, options)
-    | Statement.Status              (_, options)
-    | Statement.Units               (_, options)
-    | Statement.Unique              (_, options)
-    | Statement.Value               (_, options)
-    | Statement.YangVersion         (_, options)
-    | Statement.YinElement          (_, options)
-        -> if options.IsSome then options.Value else []
-
-    | Statement.Action              (_, body)   -> get_inner_optional body ActionBodyStatement.Translate
-    | Statement.AnyData             (_, body)   -> get_inner_optional body AnyDataBodyStatement.Translate
-    | Statement.AnyXml              (_, body)   -> get_inner_optional body AnyXmlBodyStatement.Translate
-    | Statement.Augment             (_, body)   -> get_inner          body AugmentBodyStatement.Translate
-    | Statement.Argument            (_, body)   -> get_inner_optional body ArgumentBodyStatement.Translate
-    | Statement.BelongsTo           (_, body)   -> get_inner          body BelongsToBodyStatement.Translate
-    | Statement.Bit                 (_, body)   -> get_inner_optional body BitBodyStatement.Translate
-    | Statement.Case                (_, body)   -> get_inner_optional body CaseBodyStatement.Translate
-    | Statement.Choice              (_, body)   -> get_inner_optional body ChoiceBodyStatement.Translate
-    | Statement.Container           (_, body)   -> get_inner_optional body ContainerBodyStatement.Translate
-    | Statement.DeviateAdd          body        -> get_inner_optional body DeviateAddBodyStatement.Translate
-    | Statement.DeviateDelete       body        -> get_inner_optional body DeviateDeleteBodyStatement.Translate
-    | Statement.DeviateReplace      body        -> get_inner_optional body DeviateReplaceBodyStatement.Translate
-    | Statement.Deviation           (_, body)   -> get_inner_optional body DeviationBodyStatement.Translate
-    | Statement.Enum                (_, body)   -> get_inner_optional body EnumBodyStatement.Translate
-    | Statement.Extension           (_, body)   -> get_inner_optional body ExtensionBodyStatement.Translate
-    | Statement.Feature             (_, body)   -> get_inner_optional body FeatureBodyStatement.Translate
-    | Statement.Grouping            (_, body)   -> get_inner_optional body GroupingBodyStatement.Translate
-    | Statement.Identity            (_, body)   -> get_inner_optional body IdentityBodyStatement.Translate
-    | Statement.Import              (_, body)   -> get_inner          body ImportBodyStatement.Translate
-    | Statement.Include             (_, body)   -> get_inner_optional body IncludeBodyStatement.Translate
-    | Statement.Input               body        -> get_inner          body InputBodyStatement.Translate
-    | Statement.Leaf                (_, body)   -> get_inner          body LeafBodyStatement.Translate
-    | Statement.LeafList            (_, body)   -> get_inner          body LeafListBodyStatement.Translate
-    | Statement.Length              (_, body)   -> get_inner_optional body LengthBodyStatement.Translate
-    | Statement.List                (_, body)   -> get_inner          body ListBodyStatement.Translate
-    | Statement.Must                (_, body)   -> get_inner_optional body MustBodyStatement.Translate
-    | Statement.Notification        (_, body)   -> get_inner_optional body NotificationBodyStatement.Translate
-    | Statement.Output              body        -> get_inner          body OutputBodyStatement.Translate
-    | Statement.Pattern             (_, body)   -> get_inner_optional body PatternBodyStatement.Translate
-    | Statement.Range               (_, body)   -> get_inner_optional body RangeBodyStatement.Translate
-    | Statement.Rpc                 (_, body)   -> get_inner_optional body RpcBodyStatement.Translate
-    | Statement.Refine              (_, body)   -> get_inner_optional body RefineBodyStatement.Translate
-    | Statement.Revision            (_, body)   -> get_inner_optional body RevisionBodyStatement.Translate
-    | Statement.TypeDef             (_, body)   -> get_inner          body TypeDefBodyStatement.Translate
-    | Statement.Uses                (_, body)   -> get_inner_optional body UsesBodyStatement.Translate
-    | Statement.UsesAugment         (_, body)   -> get_inner          body UsesAugmentBodyStatement.Translate
-    | Statement.When                (_, body)   -> get_inner_optional body WhenBodyStatement.Translate
-    | Statement.Unknown          (_, _, body)   -> if body.IsSome then body.Value else []
-
-    | Statement.Module              body ->
-        let version, ns, prefix, unknown   = body.Header
-        let linkage                        = body.Linkage   |> List.map LinkageBodyStatement.Translate
-        let meta                           = body.Meta      |> List.map MetaBodyStatement.Translate
-        let revision                       = body.Revision  |> List.map Statement.Revision
-        let body'                          = body.Body      |> List.map BodyStatement.Translate
-
-        let unknown' = if unknown.IsSome then unknown.Value |> List.map Statement.Unknown else []
-
-        (Statement.YangVersion version) :: (Statement.Namespace ns) :: (Statement.Prefix prefix) :: unknown' @ linkage @ meta @ revision @ body'
-
-    | Statement.Type                (_, _, extra) ->
-        // TODO: Do we need to surface the type restrictions in the list of children of a node?
-        if extra.IsSome then extra.Value |> List.map Statement.Unknown else []
-
-    | Statement.Submodule           body ->
-        let version, belongs_to, unknown    = body.Header
-        let linkage                         = body.Linkage   |> List.map LinkageBodyStatement.Translate
-        let meta                            = body.Meta      |> List.map MetaBodyStatement.Translate
-        let revision                        = body.Revision  |> List.map Statement.Revision
-        let body'                           = body.Body      |> List.map BodyStatement.Translate
-
-        let unknown' = if unknown.IsSome then unknown.Value |> List.map Statement.Unknown else []
-
-        (Statement.YangVersion version) :: (Statement.BelongsTo belongs_to) :: unknown' @ linkage @ meta @ revision @ body'
-
+    /// Patterns for the various YANG commands and statement groups
     module Patterns =
         let (|Container|_|) = function
         | Statements.Container v    -> Some v
+        | _                         -> None
+
+        let (|Description|_|) = function
+        | Statements.Description v  -> Some v
         | _                         -> None
 
         let (|Grouping|_|) = function
@@ -300,6 +305,10 @@ module StatementHelper =
         | Statements.List v         -> Some v
         | _                         -> None
 
+        let (|Prefix|_|) = function
+        | Statements.Prefix v       -> Some v
+        | _                         -> None
+
         let (|Type|_|) = function
         | Statements.Type v         -> Some v
         | _                         -> None
@@ -312,7 +321,15 @@ module StatementHelper =
         | Statements.Uses v         -> Some v
         | _                         -> None
 
+        let (|YangVersion|_|) = function
+        | Statements.YangVersion v  -> Some v
+        | _                         -> None
 
+    /// <summary>
+    /// Counts the number of statements that can be
+    /// reached from a root statement
+    /// </summary>
+    /// <param name="statement">The root statement</param>
     let rec CountDescendants (statement : Statement) =
         let children = Children statement
         let starting =
@@ -328,3 +345,13 @@ module StatementHelper =
                 state + (CountDescendants child)
         ) (starting + List.length children)
 
+    let GetDescription (body : Statement list) : string option =
+        // Find all description statements.
+        // Does the standard disallow multiple description statements
+        let descriptions = body |> List.choose Patterns.``|Description|_|``
+        if descriptions.Length = 0 then None
+        else
+            descriptions
+            |> Seq.map (fun (description, _) -> description)
+            |> String.concat "\n"
+            |> Some

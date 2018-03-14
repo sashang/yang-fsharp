@@ -180,17 +180,47 @@ type CSharpGenerator (``namespace`` : string, root : ModuleStatement) =
     let bb ()       = Printf.bprintf sb " {"; nl(); push ()
     let eb ()       = pop (); indent(); Printf.bprintf sb "}"; nl()
 
+    member this.AppendLines(input : string) =
+        input.Split('\n')
+        |> Array.iter (
+            fun line ->
+                Printf.bprintf sb "line"
+                nl()
+                indent()
+        )
+
     member this.Append (statement : ContainerStatement) =
         let identifier, body = statement
         nl ()
         indent ()
-        Printf.bprintf sb "class %s" identifier.Value
+        Printf.bprintf sb "public class %s" identifier.Value
         bb ()
         let definitions' = definitions.Push()
         definitions <- definitions'
+
+        indent ()
+        Printf.bprintf sb "public %s () {}" identifier.Value
+        nl ()
+
         if body.IsSome then
             body.Value |> List.map ContainerBodyStatement.Translate |> List.iter this.Append
         eb ()
+        nl ()
+        indent ()
+        Printf.bprintf sb "public %s %s;" identifier.Value identifier.Value
+        nl ()
+
+    member this.Append (statement : LeafStatement) =
+        let (id, body) = statement
+        let ty = body |> List.map LeafBodyStatement.Translate |> List.choose ``|Type|_|``
+        match ty with
+        | [] -> failwithf"Cannot find type for leaf %A" statement
+        | [ (td, _, _ ) ] ->
+            indent ()
+            // TODO: search for proper type name here
+            Printf.bprintf sb "public %s %s;" td.Value id.Value
+            nl()
+        | _ -> failwithf "too many type definitions for type %A" statement
 
     member this.Append (statement : ModuleStatement) =
         let children = StatementHelper.Children (Module statement)
@@ -200,18 +230,19 @@ type CSharpGenerator (``namespace`` : string, root : ModuleStatement) =
         let identifier, body = statement
         let ty = body |> List.map TypeDefBodyStatement.Translate |> List.choose ``|Type|_|``
         match ty with
-        | []        -> failwith (sprintf "Cannot find type for typedef %s" identifier.Value)
+        | []        -> failwithf "Cannot find type for typedef %s" identifier.Value
         | [ ty ]    ->
             let (using_type, _, _) = ty
             match using_type with
             | BuildInType resolution -> definitions.Add(identifier, resolution)
-            | _     -> failwith (sprintf "Don't know how to handle type %s" using_type.Value)
-        | _         -> failwith (sprintf "Found multiple types for typedef %s" identifier.Value)
+            | _     -> failwithf "Don't know how to handle type %s" using_type.Value
+        | _         -> failwithf "Found multiple types for typedef %s" identifier.Value
         ()
 
     member this.Append (statement : Statement) =
         match statement with
         | Statement.Container     st    -> this.Append st
+        | Statement.Leaf          st    -> this.Append st
         | Statement.TypeDef       st    -> this.Append st
         | _ ->
             printfn "Not parsing %s" (Statement.Keyword statement)
