@@ -11,24 +11,12 @@
 #load "Statements.fs"
 #load "StatementHelper.fs"
 #load "Printer.fs"
+#load "DefUseResolver.fs"
 #load "Generator.fs"
 
 open System
 open Yang.Model
-
-
-
-
 open Generator
-
-let address4 =
-    mkList "address" (
-        [
-            mkLeaf "name" "ipv4prefix" |> ListBodyStatement.Leaf
-        ]
-    ) |> ContainerBodyStatement.List
-
-Printer.StatementToStringCompact (ContainerBodyStatement.Translate address4)
 
 let family =
     mkContainer "family" (
@@ -136,148 +124,110 @@ module ResolveType =
     //    bit DISABLED;
     //}
 
-module Resolver =
-    open FSharp.Collections
 
-    [<StructuredFormatDisplay("{AsString}")>]
-    type NodeType =
-    | TypeUse of IdentifierReference
-    | TypeDefinition
-    | GroupingUse of IdentifierReference
-    | GroupingDefinition
-    with
-        member this.AsString =
-            match this with
-            | TypeUse      ``type`` -> sprintf "type use: %s" ``type``.Value
-            | TypeDefinition        -> "type definition"
-            | GroupingUse  ``type`` -> sprintf "grouping use: %s" ``type``.Value
-            | GroupingDefinition    -> "grouping definition"
+let xx = DefUseResolver.VisitDefinitions (fun _ -> true) (Statement.Module configuration)
 
-        override this.ToString() = this.AsString
+open System.Text
+open System.Collections.Generic
 
-    [<StructuredFormatDisplay("{AsString}")>]
-    type Path = | Path of (IdentifierReference list)
-    with
-        static member Empty = Path []
-        static member Make (identifier : Identifier) =
-            Path [ IdentifierReference.Make identifier ]
-        static member Make (identifier : IdentifierReference) =
-            Path [ identifier ]
-        static member Make (identifier : IdentifierWithPrefix) =
-            Path [ IdentifierReference.Make identifier ]
+type TypeResolution =
+| TString
+| Unknown
 
-        member this._Path = let (Path path) = this in path
-        member this._Head = let (Path path) = this in List.head path
-
-        member this.Push (identifier : Identifier) =
-            Path ((IdentifierReference.Make identifier) :: this._Path)
-
-        member this.Push (identifier : IdentifierReference) =
-            Path (identifier :: this._Path)
-
-        member this.Push (identifier : IdentifierWithPrefix) =
-            Path ((IdentifierReference.Make identifier) :: this._Path)
-
-        member this.Pop () =
-            let rest = List.tail this._Path
-            Path rest
-
-        member this.AsString =
-            let path = this._Path |> List.rev |> List.map (fun p -> p.Value) |> String.concat "/"
-            sprintf "/%s" path
-
-        override this.ToString() = this.AsString
-
-    [<StructuredFormatDisplay("{AsString}")>]
-    type Node = | Node of Path:Path * Type:(NodeType option)
-    with
-        static member Make (identifier : Identifier, ``type``: NodeType) =
-            Node (Path.Make identifier, Some ``type``)
-
-        member this._Path = let (Node (path, _)) = this in path
-        member this._Head = let (Node (path, _)) = this in path._Head
-        member this._Type = let (Node (_, ``type``)) = this in ``type``
-
-        member this.Push (identifier : Identifier, ``type`` : NodeType) =
-            Node (this._Path.Push identifier, Some ``type``)
-
-        member this.Push (identifier : IdentifierReference, ``type`` : NodeType) =
-            Node (this._Path.Push identifier, Some ``type``)
-
-        member this.Push (identifier : IdentifierWithPrefix, ``type`` : NodeType) =
-            Node (this._Path.Push identifier, Some ``type``)
-
-        member this.Push (identifier : Identifier) =
-            Node (this._Path.Push identifier, None)
-
-        member this.Push (identifier : IdentifierReference) =
-            Node (this._Path.Push identifier, None)
-
-        member this.Push (identifier : IdentifierWithPrefix) =
-            Node (this._Path.Push identifier, None)
-
-        member this.AsString =
-            let (Node (path, ``type``)) = this
-            match ``type`` with
-            | None      -> sprintf "%s [-]" path.AsString
-            | Some t    -> sprintf "%s [%s]" path.AsString t.AsString
+let (|BuildInType|_|) (identifier : IdentifierReference) =
+    if identifier.Value.Equals("string") then Some TString
+    else None
 
 
-    let VisitDefinitions (filter : Statement -> bool) (root : Statement) : Node list=
-        let get (path : Path) (statement : Statement) : Node option =
-            // printfn "Visiting %A" path
-            match statement with
-            | StatementHelper.Patterns.TypeDef (id, _) ->
-                if filter statement then
-                    let path' = path.Push id
-                    Node (path', Some TypeDefinition) |> Some
-                else None
-            | StatementHelper.Patterns.Type (id, _, _) ->
-                if filter statement then
-                    Node (path, Some (TypeUse id)) |> Some
-                else None
-            | StatementHelper.Patterns.Grouping (id, _) ->
-                if filter statement then
-                    let path' = path.Push id
-                    Node (path', Some GroupingDefinition) |> Some
-                else None
-            | StatementHelper.Patterns.Uses (id, _) ->
-                if filter statement then
-                    Node (path, Some (GroupingUse id)) |> Some
-                else None
-            | _ -> None
+type TypeDefinitions = | TypeDefinitions of Definitions:Dictionary<IdentifierReference, TypeResolution> * Parent:(TypeDefinitions option)
+with
+    static member private create () = Dictionary<IdentifierReference, TypeResolution>()
 
-        let rec find (work : (Path * Statement) list) (results : Node list) =
-            match work with
-            | [] -> results
-            | (path, statement) :: tl ->
-                if filter statement then
-                    let inner = StatementHelper.Children statement
-                    match StatementHelper.GetReferenceIdentifier statement with
-                    | None  ->
-                        // Statement without a label. These ones typically don't have sub-statements.
-                        // Ignore them for now.
-                        // TODO: Name resolution for statements without labels
-                        find tl results
-                    | Some id ->
-                        let path' = path.Push id
-                        let extra_work = inner |> List.map (fun work -> path', work)
-                        match get path statement with
-                        | None      -> find (extra_work @ tl) results
-                        | Some v    -> find (extra_work @ tl) (results @ [v])
-                else
-                    find tl results
+    static member Empty = TypeDefinitions (TypeDefinitions.create(), None)
+    static member Make(?parent : TypeDefinitions) =
+        let definitions = Dictionary<IdentifierReference, TypeResolution>()
+        TypeDefinitions (definitions, parent)
 
-        find [ (Path.Empty, root) ] []
+    member private this._Definitions = let (TypeDefinitions (definitions, _)) = this in definitions
+    member private this._Parent = let (TypeDefinitions (_, parent)) = this in parent
 
-    let xx = VisitDefinitions (fun _ -> true) (Statement.Module configuration)
-    xx.[6]
+    member this.Search (identifier : IdentifierReference) =
+        if this._Definitions.ContainsKey(identifier) then Some (this._Definitions.Item identifier)
+        elif this._Parent.IsNone then None
+        else this._Parent.Value.Search(identifier)
+
+    member this.Search (identifier : Identifier) = this.Search (Simple identifier)
+
+    member this.Add (identifier : IdentifierReference, resolved) = this._Definitions.Add(identifier, resolved)
+    member this.Add (identifier : Identifier, resolved) = this._Definitions.Add(Simple identifier, resolved)
+
+    member this.Push () = TypeDefinitions (TypeDefinitions.create (), Some this)
+    member this.Pop  () = this._Parent.Value
 
 
-    type Resolver = {
-        TypeDefs    : Map<Identifier, Type>
-        Containers  : Map<Identifier, ContainerStatement>
-        Parent      : Resolver option
-        Children    : Map<Identifier, Resolver>
-    }
+open StatementHelper.Patterns
 
+type CSharpGenerator (``namespace`` : string, root : ModuleStatement) =
+    let sb = StringBuilder()
+    let indent = "    "
+    let mutable indentation = 0
+    let mutable definitions = TypeDefinitions.Empty
+
+    let indent ()   = Printf.bprintf sb "%s" (String.replicate indentation indent)
+    let push ()     = indentation <- indentation + 1
+    let pop ()      = indentation <- indentation - 1
+    let nl ()       = Printf.bprintf sb "\n"
+    let bb ()       = Printf.bprintf sb " {"; nl(); push ()
+    let eb ()       = pop (); indent(); Printf.bprintf sb "}"; nl()
+
+    member this.Append (statement : ContainerStatement) =
+        let identifier, body = statement
+        nl ()
+        indent ()
+        Printf.bprintf sb "class %s" identifier.Value
+        bb ()
+        let definitions' = definitions.Push()
+        definitions <- definitions'
+        if body.IsSome then
+            body.Value |> List.map ContainerBodyStatement.Translate |> List.iter this.Append
+        eb ()
+
+    member this.Append (statement : ModuleStatement) =
+        let children = StatementHelper.Children (Module statement)
+        children |> List.iter this.Append
+
+    member this.Append (statement : TypeDefStatement) =
+        let identifier, body = statement
+        let ty = body |> List.map TypeDefBodyStatement.Translate |> List.choose ``|Type|_|``
+        match ty with
+        | []        -> failwith (sprintf "Cannot find type for typedef %s" identifier.Value)
+        | [ ty ]    ->
+            let (using_type, _, _) = ty
+            match using_type with
+            | BuildInType resolution -> definitions.Add(identifier, resolution)
+            | _     -> failwith (sprintf "Don't know how to handle type %s" using_type.Value)
+        | _         -> failwith (sprintf "Found multiple types for typedef %s" identifier.Value)
+        ()
+
+    member this.Append (statement : Statement) =
+        match statement with
+        | Statement.Container     st    -> this.Append st
+        | Statement.TypeDef       st    -> this.Append st
+        | _ ->
+            printfn "Not parsing %s" (Statement.Keyword statement)
+
+    member this.Evaluate () =
+        Printf.bprintf sb "namespace %s" ``namespace``
+        bb()
+        this.Append root
+        eb()
+        sb.ToString()
+
+    member this.Read () = sb.ToString()
+
+    static member Evaluate(``namespace`` : string, root : ModuleStatement) =
+        let generator = CSharpGenerator(``namespace``, root)
+        generator.Evaluate()
+
+let program = CSharpGenerator.Evaluate("Juniper", configuration)
+printfn "\n%s\n" program
