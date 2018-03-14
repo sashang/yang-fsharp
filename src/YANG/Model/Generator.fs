@@ -7,8 +7,8 @@ namespace Yang.Model
 module Generator =
     open System
 
-    let mkId id = Identifier.Make id
-    let mkIdRef id = IdentifierReference.Make id
+    let mkId    (id : string) = Identifier.Make id
+    let mkIdRef (id : string) = IdentifierReference.Make id
 
     let mkModule name body : ModuleStatement =
         let version : YangVersionStatement = Version(1, 1), None

@@ -145,7 +145,7 @@ module Identifier =
         /// Create an identifier from a string
         /// </summary>
         /// <param name="id">The identifier</param>
-        static member Make (id) =
+        static member Make (id : string) =
             if String.IsNullOrWhiteSpace(id) then
                 let msg = "Cannot create key from empty string"
                 _logger.Error msg
@@ -155,6 +155,18 @@ module Identifier =
                 Simple (Identifier.Make id)
             else
                 Custom (IdentifierWithPrefix.Make id)
+
+        /// <summary>
+        /// Create a reference identifier from a simple identifier
+        /// </summary>
+        /// <param name="id">The input identifier</param>
+        static member Make (id : Identifier)            = Simple id
+
+        /// <summary>
+        /// Create a reference identifier from a prefixed identifier
+        /// </summary>
+        /// <param name="id">The input identifier</param>
+        static member Make (id : IdentifierWithPrefix)  = Custom id
 
         /// <summary>
         /// Get the string representation of the identifier
