@@ -756,6 +756,7 @@ module Statements =
         class
             static let mutable StatementPrinterImplementation : (Statement -> string) option = None
             static member Set (printer : Statement -> string) = StatementPrinterImplementation <- Some printer
+            static member Reset () = StatementPrinterImplementation <- None
             static member Print (st : Statement) =
                 match StatementPrinterImplementation with
                 | None          -> sprintf "%A" st

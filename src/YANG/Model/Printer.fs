@@ -2,6 +2,8 @@
 // Implements model printing functionality
 namespace Yang.Model
 
+open System
+
 module Printer =
     open System.Text
 
@@ -642,6 +644,11 @@ module Printer =
         let printer = YangPrinter (compact=true)
         printer.Append statement
         printer.ToString ()
+
+#if INTERACTIVE
+    let UsePrettyPrinter ()     = Statements.StatementPrinter.Set StatementToStringCompact
+    let ClearPrettyPrinter ()   = Statements.StatementPrinter.Reset()
+#endif
 
     do
         Statements.StatementPrinter.Set StatementToString

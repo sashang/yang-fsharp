@@ -19,33 +19,6 @@ open Yang.Model
 
 
 
-
-let path = PathKey (2us, [IdentifierReference.Make "test"])
-PathKey (0us, [IdentifierReference.Make "test"])
-PathKey (2us, [IdentifierReference.Make "test"; IdentifierReference.Make "test2"])
-PathKey (0us, [IdentifierReference.Make "test"; IdentifierReference.Make "test2"])
-PathKey (0us, [])
-
-
-
-
-PathPredicate (IdentifierReference.Make "id", path)
-
-
-
-
-
-
-AbsolutePath.Make(["id"; "in"])
-
-
-
-
-
-
-
-
-
 open Generator
 
 let address4 =
@@ -99,7 +72,6 @@ let configuration =
                                         Some [
                                             mkLeaf "name" "interface-unit" |> ContainerBodyStatement.Leaf
                                             mkLeaf "description" "string" |> ContainerBodyStatement.Leaf
-                                            mkLeaf "description" "uint32" |> ContainerBodyStatement.Leaf
 
                                             mkList "unit" (
                                                 [
@@ -164,23 +136,68 @@ module ResolveType =
     //    bit DISABLED;
     //}
 
-//module NameResolution =
-//    open FSharp.Collections
+module Resolver =
+    open FSharp.Collections
 
-//    type ResolvedTypeDef = TypeDefStatement
+    type ResolvedTypeDef = TypeDefStatement
 
-//    type Node = | Node of Label:Identifier * Path:(Identifier list)
+    type Node = | Node of Label:Identifier * Path:(Identifier list)
+    with
+        static member Make (identifier : Identifier) =
+            Node (identifier, [ identifier ])
 
-//    type Resolver = {
-//        TypeDefs    : Map<Identifier, Type>
-//        Containers  : Map<Identifier, ContainerStatement>
-//        Parent      : Resolver option
-//        Children    : Map<Identifier, Resolver>
-//    }
+        member this._Path = let (Node (_, path)) = this in path
 
-//    let rec resolve (db : Resolver) (id : Identifier) : Type option =
-//        if Map.containsKey id db.Definitions then
-//            Map.find id db.Definitions |> Some
-//        elif db.Parent.IsSome then
-//            resolve db.Parent.Value id
-//        else None
+        member this.Push (identifier : Identifier) =
+            Node (identifier, identifier :: this._Path)
+
+        member this.Pop () =
+            let rest = List.tail this._Path
+            let current = List.head rest
+            Node (current, rest)
+
+
+    let VisitDefinitions (filter : Statement -> bool) (root : Statement) =
+        let get (node : Node) (statement : Statement) =
+            printfn "Visiting %A" node
+            match statement with
+            | StatementHelper.Patterns.Container (id, _) ->
+                if filter statement then
+                    let node' = node.Push id
+                    Some (node', statement)
+                else None
+            | StatementHelper.Patterns.TypeDef (id, _) ->
+                if filter statement then
+                    let node' = node.Push id
+                    Some (node', statement)
+                else None
+            | StatementHelper.Patterns.Grouping (id, _) ->
+                if filter statement then
+                    let node' = node.Push id
+                    Some (node', statement)
+                else None
+            | _ -> None
+
+        let rec find (work : (Node * Statement) list) (results : (Node * Statement) list) =
+            match work with
+            | [] -> results
+            | (node, statement) :: tl ->
+                let inner = StatementHelper.Children statement |> List.choose (get node)
+                find (inner @ tl) (results @ inner)
+
+        let id = StatementHelper.GetIdentifier root
+        let node = Node.Make id.Value
+        let inner = StatementHelper.Children root |> List.choose (get node)
+        find inner inner
+
+    let xx = VisitDefinitions (fun _ -> true) (Statement.Module configuration)
+    xx.[6]
+
+
+    type Resolver = {
+        TypeDefs    : Map<Identifier, Type>
+        Containers  : Map<Identifier, ContainerStatement>
+        Parent      : Resolver option
+        Children    : Map<Identifier, Resolver>
+    }
+

@@ -11,6 +11,89 @@ module StatementHelper =
     let private get_inner (statements : 'T list) (map : 'T -> Statement) : Statement list =
         statements |> List.map map
 
+    let GetIdentifier : Statement -> Identifier option = function
+    | Statement.Action              (id, _)
+    | Statement.AnyData             (id, _)
+    | Statement.AnyXml              (id, _)
+    | Statement.Argument            (id, _)
+    | Statement.BelongsTo           (id, _)
+    | Statement.Bit                 (id, _)
+    | Statement.Case                (id, _)
+    | Statement.Choice              (id, _)
+    | Statement.Container           (id, _)
+    | Statement.Extension           (id, _)
+    | Statement.Feature             (id, _)
+    | Statement.Grouping            (id, _)
+    | Statement.Identity            (id, _)
+    | Statement.Import              (id, _)
+    | Statement.Include             (id, _)
+    | Statement.Leaf                (id, _)
+    | Statement.LeafList            (id, _)
+    | Statement.List                (id, _)
+    | Statement.Notification        (id, _)
+    | Statement.Rpc                 (id, _)
+    | Statement.TypeDef             (id, _)
+        -> Some id
+
+    | Statement.Module              m
+        -> Some m.Name
+    | Statement.Submodule           m
+        -> Some m.Name
+
+    | Statement.Base                _
+    | Statement.Type                _
+    | Statement.Uses                _
+    | Statement.Unknown             _
+        -> None
+
+    | Statement.Augment             _
+    | Statement.Config              _
+    | Statement.Contact             _
+    | Statement.Default             _
+    | Statement.Description         _
+    | Statement.DeviateAdd          _
+    | Statement.DeviateDelete       _
+    | Statement.DeviateNotSupported _
+    | Statement.DeviateReplace      _
+    | Statement.Deviation           _
+    | Statement.Enum                _
+    | Statement.ErrorAppTag         _
+    | Statement.ErrorMessage        _
+    | Statement.FractionDigits      _
+    | Statement.IfFeature           _
+    | Statement.Input               _
+    | Statement.Key                 _
+    | Statement.Length              _
+    | Statement.Mandatory           _
+    | Statement.MaxElements         _
+    | Statement.MinElements         _
+    | Statement.Modifier            _
+    | Statement.Must                _
+    | Statement.Namespace           _
+    | Statement.OrderedBy           _
+    | Statement.Organization        _
+    | Statement.Output              _
+    | Statement.Path                _
+    | Statement.Pattern             _
+    | Statement.Position            _
+    | Statement.Prefix              _
+    | Statement.Presence            _
+    | Statement.Range               _
+    | Statement.Reference           _
+    | Statement.Refine              _
+    | Statement.Revision            _
+    | Statement.RevisionDate        _
+    | Statement.RequireInstance     _
+    | Statement.Status              _
+    | Statement.Unique              _
+    | Statement.Units               _
+    | Statement.UsesAugment         _
+    | Statement.When                _
+    | Statement.Value               _
+    | Statement.YangVersion         _
+    | Statement.YinElement          _
+        -> None
+
     let Children : Statement -> Statement list = function
     | Statement.Base                (_, options)
     | Statement.Config              (_, options)
