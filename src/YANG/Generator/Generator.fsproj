@@ -52,6 +52,7 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="..\..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fsi">
       <Paket>True</Paket>
       <Link>ProvidedTypes.fsi</Link>
@@ -64,7 +65,8 @@
       <Paket>True</Paket>
       <Link>ProvidedTypesTesting.fs</Link>
     </Compile>
-    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Errors.fs" />
+    <Compile Include="XmlHelper.fs" />
     <Compile Include="Yang.Types.fs" />
     <Compile Include="YangProvider.fs" />
     <None Include="Playground.fsx" />
@@ -79,6 +81,8 @@
       <HintPath>..\..\..\..\..\..\..\..\..\CxCache\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Model\Model.fsproj">

@@ -24,6 +24,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Model", "Model\Model.fsproj
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Model.Tests.xunit", "Model.Tests.xunit\Model.Tests.xunit.fsproj", "{5B071A6F-FE5F-45E5-8AE8-B72A89D7CC9D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Generator.Tests.xunit", "Generator.Tests.xunit\Generator.Tests.xunit.fsproj", "{AB9AFB12-CCDB-4D74-A6BB-BFFC1BA570F2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -54,6 +56,10 @@ Global
 		{5B071A6F-FE5F-45E5-8AE8-B72A89D7CC9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B071A6F-FE5F-45E5-8AE8-B72A89D7CC9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5B071A6F-FE5F-45E5-8AE8-B72A89D7CC9D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB9AFB12-CCDB-4D74-A6BB-BFFC1BA570F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB9AFB12-CCDB-4D74-A6BB-BFFC1BA570F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB9AFB12-CCDB-4D74-A6BB-BFFC1BA570F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB9AFB12-CCDB-4D74-A6BB-BFFC1BA570F2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

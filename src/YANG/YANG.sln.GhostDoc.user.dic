@@ -3,11 +3,15 @@ defaultof
 elif
 endif
 failwith
+failwithf
 forall
+fsprojects
 Hostname
 iter
+ksprintf
 Namespaces
 optsep
+paket
 pchar
 Printf
 printfn

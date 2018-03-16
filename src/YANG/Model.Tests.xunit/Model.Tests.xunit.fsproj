@@ -9,8 +9,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>5b071a6f-fe5f-45e5-8ae8-b72a89d7cc9d</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Model.Tests.xunit</RootNamespace>
-    <AssemblyName>Model.Tests.xunit</AssemblyName>
+    <RootNamespace>Yang.Model.Tests.xunit</RootNamespace>
+    <AssemblyName>Yang.Model.Tests.xunit</AssemblyName>
     <UseStandardResourceNames>true</UseStandardResourceNames>
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.4.3.0</TargetFSharpCoreVersion>
@@ -81,7 +81,7 @@
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

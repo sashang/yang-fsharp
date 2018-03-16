@@ -1,8 +1,10 @@
 ﻿// Learn more about F# at http://fsharp.org. See the 'F# Tutorial' project
 // for more guidance on F# programming.
 
-#load "Library1.fs"
-open Generator
+#r "System.Xml.dll"
+#r "System.Xml.Linq.dll"
 
-// Define your library scripting code here
+#load @"..\..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fs"
+#load @"..\..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypesTesting.fs"
 
+#load "XmlHelper.fs"
