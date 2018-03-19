@@ -67,6 +67,7 @@
     </Compile>
     <Compile Include="Errors.fs" />
     <Compile Include="XmlHelper.fs" />
+    <Compile Include="Program.fs" />
     <Compile Include="Yang.Types.fs" />
     <Compile Include="YangProvider.fs" />
     <None Include="Playground.fsx" />
