@@ -22,24 +22,25 @@ module Program =
             | None, []  -> false
             | _         -> true
 
-    type Type =
-    | String of StringType
-    | Class of string
-
     type YangInfo = | YangInfo of Name:string * Description:(string option)
 
     type Definition =
     | Class         of ClassDefinition
     | Member        of MemberDefinition * Type
     | ListWithKey   of Member:MemberDefinition * Type:Type * Key:MemberDefinition
+    and Type =
+    | String    of StringType
+    | UInt32    of UInt32Type
+    | Class     of ClassDefinition
     and ClassDefinition = {
         Info            : YangInfo
-        Name            : string option
+        mutable Name    : string option
+        Presence        : bool
         Body            : Definition list
     }
     and MemberDefinition = {
         Info            : YangInfo
-        Name            : string option
+        mutable Name    : string option
         Optional        : bool
     }
 
