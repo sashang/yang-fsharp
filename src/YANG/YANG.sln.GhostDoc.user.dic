@@ -9,6 +9,7 @@ fsprojects
 Hostname
 inet
 iter
+iteri
 ksprintf
 Namespaces
 optsep
@@ -17,6 +18,7 @@ pchar
 Printf
 printfn
 pstring
+readonly
 sprintf
 stmt
 stmtsep

@@ -16,3 +16,8 @@ module Errors =
         inherit YangGeneratorException(
             message,
             match innerException with | Some ex -> ex | _ -> null)
+
+    type ProgramCreationException (message : string, ?innerException:exn) =
+        inherit YangGeneratorException(
+            message,
+            match innerException with | Some ex -> ex | _ -> null)
