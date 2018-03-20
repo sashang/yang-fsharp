@@ -9,6 +9,7 @@ module BodyStatements =
     open Leaf
     open LeafList
     open Yang.Model.Arguments
+    open Yang.Parser.Expressions
 
     // [RFC 7950, p. 185]
     //body-stmts          = *(extension-stmt /
@@ -110,7 +111,8 @@ module BodyStatements =
 
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
             // TODO: fill in missing parsing for ContainerBodyStatement
-                (parse_presence_statement       |>> ContainerBodyStatement.Presence)
+                (parse_if_feature_statement     |>> ContainerBodyStatement.IfFeature)
+            <|> (parse_presence_statement       |>> ContainerBodyStatement.Presence)
             <|> (parse_config_statement         |>> ContainerBodyStatement.Config)
             <|> (parse_status_statement         |>> ContainerBodyStatement.Status)
             <|> (parse_description_statement    |>> ContainerBodyStatement.Description)
@@ -190,7 +192,8 @@ module BodyStatements =
 
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
             // TODO: fill in missing parsing for ListBodyStatement
-                (parse_key_statement            |>> ListBodyStatement.Key)
+                (parse_if_feature_statement     |>> ListBodyStatement.IfFeature)
+            <|> (parse_key_statement            |>> ListBodyStatement.Key)
             <|> (parse_max_elements_statement   |>> ListBodyStatement.MaxElements)
             <|> (parse_ordered_by_statement     |>> ListBodyStatement.OrderedBy)
             <|> (parse_status_statement         |>> ListBodyStatement.Status)
@@ -223,7 +226,8 @@ module BodyStatements =
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
             // TODO: fill in missing parsing for UsesBodyStatement
-                (parse_status_statement         |>> UsesBodyStatement.Status)
+                (parse_if_feature_statement     |>> UsesBodyStatement.IfFeature)
+            <|> (parse_status_statement         |>> UsesBodyStatement.Status)
             <|> (parse_description_statement    |>> UsesBodyStatement.Description)
             <|> (parse_reference_statement      |>> UsesBodyStatement.Reference)
             <|> (parse_unknown_statement        |>> UsesBodyStatement.Unknown)
@@ -246,7 +250,8 @@ module BodyStatements =
 
         let parse_case_body_statement : Parser<CaseBodyStatement, 'a> =
             // TODO: fill in missing parsing for CaseBodyStatement
-                (parse_status_statement         |>> CaseBodyStatement.Status)
+                (parse_if_feature_statement     |>> CaseBodyStatement.IfFeature)
+            <|> (parse_status_statement         |>> CaseBodyStatement.Status)
             <|> (parse_description_statement    |>> CaseBodyStatement.Description)
             <|> (parse_reference_statement      |>> CaseBodyStatement.Reference)
             <|> (parse_data_definition          |>> CaseBodyStatement.FromDataDefinition)
@@ -268,7 +273,8 @@ module BodyStatements =
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
             // TODO: fill in missing parsing for ChoiceBodyStatement
-                (parse_default_statement        |>> ChoiceBodyStatement.Default)
+                (parse_if_feature_statement     |>> ChoiceBodyStatement.IfFeature)
+            <|> (parse_default_statement        |>> ChoiceBodyStatement.Default)
             <|> (parse_config_statement         |>> ChoiceBodyStatement.Config)
             <|> (parse_mandatory_statement      |>> ChoiceBodyStatement.Mandatory)
             <|> (parse_status_statement         |>> ChoiceBodyStatement.Status)

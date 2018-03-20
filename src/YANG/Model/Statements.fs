@@ -380,7 +380,7 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     and IdentityStatement       = Identifier            * (IdentityBodyStatement list option)
-    and IfFeatureStatement      = IfFeatureExpression   * ExtraStatements
+    and IfFeatureStatement      = Expression            * ExtraStatements
     and ImportBodyStatement     =
     | Prefix        of PrefixStatement
     | RevisionDate  of RevisionDateStatement

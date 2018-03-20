@@ -61,6 +61,7 @@
     <Compile Include="Generic.fs" />
     <Compile Include="Identifier.fs" />
     <Compile Include="Statements.fs" />
+    <Compile Include="Expressions.fs" />
     <Compile Include="Header.fs" />
     <Compile Include="Linkage.fs" />
     <Compile Include="Meta.fs" />

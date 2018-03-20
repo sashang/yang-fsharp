@@ -17,6 +17,7 @@
 #load "Generic.fs"
 #load "Identifier.fs"
 #load "Statements.fs"
+#load "Expressions.fs"
 #load "Header.fs"
 #load "Linkage.fs"
 #load "Meta.fs"

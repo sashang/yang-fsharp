@@ -59,4 +59,3 @@ let unknown1 = """junos:posix-pattern "^.{1,64}$";"""
 let _ = apply_parser parse_unknown_statement unknown1
 
 let _ = apply_parser Types.parse_type_statement input
-

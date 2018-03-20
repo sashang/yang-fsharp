@@ -31,6 +31,27 @@ module Utilities =
             printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
             reply
 
+    /// Parser-in-parser: read a string with a string parser, and apply a second
+    /// parser on the string read.
+    let pip<'a, 'b> (outer : Parser<string, 'a>) (inner : Parser<'b, 'a>) =
+        // TODO: Proper testing of parser-in-parser
+        // TODO: Do we need to backtrace in parser-in-parser when failure to parse? If so, where?
+        fun (stream : CharStream<'a>)->
+            let state = stream.State
+            let input = outer stream
+            if input.Status = Ok then
+                let str = input.Result
+                let cs  = new CharStream<'a>(str, 0, str.Length)
+                let output = inner cs
+                if output.Status = Ok then
+                    Reply output.Result
+                else
+                    stream.BacktrackTo(state)
+                    Reply(Error, output.Error)
+            else
+                stream.BacktrackTo(state)
+                Reply (Error, input.Error)
+
     /// try_parse_sequence parser1 parser2: Apply parser1 then parser2. If either fails backtrack the stream.
     /// Both of the parsers will be tried, and the combined parser will succeed if either of parser1 or parser2
     /// succeeds.
