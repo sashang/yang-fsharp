@@ -112,10 +112,12 @@ module BodyStatements =
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
             // TODO: fill in missing parsing for ContainerBodyStatement
                 (parse_if_feature_statement     |>> ContainerBodyStatement.IfFeature)
+            <|> (parse_must_statement           |>> ContainerBodyStatement.Must)
             <|> (parse_presence_statement       |>> ContainerBodyStatement.Presence)
             <|> (parse_config_statement         |>> ContainerBodyStatement.Config)
             <|> (parse_status_statement         |>> ContainerBodyStatement.Status)
             <|> (parse_description_statement    |>> ContainerBodyStatement.Description)
+            <|> (parse_reference_statement      |>> ContainerBodyStatement.Reference)
             <|> (parse_data_definition          |>> ContainerBodyStatement.FromDataDefinition)
             <|> (parse_unknown_statement        |>> ContainerBodyStatement.Unknown)
 
@@ -138,10 +140,10 @@ module BodyStatements =
             //                           *action-stmt
             //                           *notification-stmt
             //                       "}") stmtsep
+            // TODO: Check and enforce cardinality for container-stmt.
             make_statement_parser_optional_generic "container" Identifier.parse_identifier parse_container_body_statement
 
         let parse_typedef_body_statement : Parser<TypeDefBodyStatement, 'a> =
-            // TODO: fill in missing parsing for TypeDefBodyStatement
                 (Types.parse_type_statement     |>> TypeDefBodyStatement.Type)
             <|> (parse_units_statement          |>> TypeDefBodyStatement.Units)
             <|> (parse_default_statement        |>> TypeDefBodyStatement.Default)

@@ -5,12 +5,25 @@ namespace Yang.Model
 
 module Arguments =
     open System
+    open NLog
 
-    // TODO: Fill in the details of augment-arg
-    type Augment = | NA
-    with
-        // TODO: String version of augment-arg
-        member this.Value = "NA"
+        /// Logger for this module
+    let private _logger = LogManager.GetCurrentClassLogger()
+
+    let private throw fmt =
+        let do_throw (message : string) =
+            _logger.Error message
+            raise (YangModelException message)
+        Printf.ksprintf do_throw fmt
+
+#if INTERACTIVE
+    // The following are used only in interactive (fsi) to help with enabling disabling
+    // logging for particular modules.
+
+    type internal Marker = interface end
+    let _full_name = typeof<Marker>.DeclaringType.FullName
+    let _name = typeof<Marker>.DeclaringType.Name
+#endif
 
     // Below we define a custom date field. We could have used the system DateTime,
     // but that gives more information (time) that specified by the grammar.
@@ -74,12 +87,6 @@ module Arguments =
                 | :? Date as other' -> (this :> IComparable<Date>).CompareTo(other')
                 | _                 -> invalidArg "other" "cannot compare values of different types"
 
-    // TODO: Fill details for deviation-arg
-    type Deviation = | NA
-    with
-        // TODO: Fill implementation of deviation argument
-        member this.Value = "NA"
-
     // TODO: Fill details for key-arg
     type Key = IdentifierReference list
 
@@ -131,6 +138,7 @@ module Arguments =
             | User      -> "user"
             | System    -> "system"
 
+    /// Captures the path-arg statements from [RFC 7950, p. 205-206]
     [<AutoOpen>]
     module Path =
         [<StructuredFormatDisplay("{Value}")>]
@@ -247,12 +255,6 @@ module Arguments =
 
         member this.Value = let (Range r) = this in r
 
-    /// Captures the 'refine-arg' definition ([RFC 7950, p. 198])
-    // TODO: Expand definition of Refine
-    type Refine = NA
-    with
-        member this.Value = "NA"
-
     // TODO: Fill helper methods for Status
     type Status =
     | Current
@@ -265,14 +267,41 @@ module Arguments =
             | Obsolete      -> "obsolete"
             | Deprecated    -> "deprecated"
 
-    // TODO: Fill definition of uses-augment-arg
-    type UsesAugment = | NA
+    /// Set of descendant schema nodes that specify uniqueness
+    [<StructuredFormatDisplay("{Value}")>]
+    type Unique = | Unique of SchemaNodeIdentifier list
     with
-        member this.Value = "NA"
+        static member Make (schema : SchemaNodeIdentifier list) =
+            if (List.length schema) = 0 then
+                throw "Cannot create a unique-arg from an empty list"
+            if (schema |> List.exists (fun s -> s.IsAbsolute)) then
+                throw "Cannot create a unique-arg from absolute paths"
 
-    // TODO: Fill definition of unique-arg
-    type Unique = | NA
-    with
-        member this.Value = "NA"
+            Unique schema
+
+        member this.Value =
+            let (Unique schema) = this
+            schema |> List.map (fun i -> i.Value) |> String.concat " "
+        override this.ToString() = this.Value
+
+    let MakeUnique = Unique.Make
+    let MakeUniqueDescendant (schema : SchemaNodeIdentifier list ) =
+        if (schema |> List.exists (fun s -> s.IsAbsolute)) then
+            throw "Did not expect absolute path when creating a unique arg"
+        MakeUnique schema
+
+
+    /// Captures the 'augment-arg' definition ([RFC 7950, p. 199])
+    type Augment = SchemaNodeIdentifier
+
+    /// Captures the 'deviation-arg' definition ([RFC 7950, p. 201])
+    type Deviation = SchemaNodeIdentifier
+
+    /// Captures the 'refine-arg' definition ([RFC 7950, p. 198])
+    type Refine = SchemaNodeIdentifier
+
+    /// Captures the 'uses-augment-arg' definition ([RFC 7950, p. 198])
+    type UsesAugment = SchemaNodeIdentifier
 
     let BoolAsString v = if v then "true" else "false"
+

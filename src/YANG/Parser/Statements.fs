@@ -189,6 +189,12 @@ module Statements =
     let parse_many_statements<'a> : Parser<Statement list, 'a> =
         many parse_statement
 
+    let parse_base_statement<'a> : Parser<BaseStatement, 'a> =
+        // [RFC 7950, p. 187]
+        //base-stmt           = base-keyword sep identifier-ref-arg-str
+        //                        stmtend
+        make_statement_parser_optional "base" Identifier.parse_identifier_reference parse_statement
+
     /// Parses a config statement
     let parse_config_statement<'a> : Parser<ConfigStatement, 'a> =
         // [RFC 7950, p. 191]
@@ -197,7 +203,7 @@ module Statements =
         //config-arg-str      = < a string that matches the rule >
         //                        < config-arg >
         //config-arg          = true-keyword / false-keyword
-        make_statement_parser_optional "config" Arguments.parse_boolean parse_statement
+        make_statement_parser_optional "config" (pip Strings.parse_string Arguments.parse_boolean) parse_statement
 
     /// Parses a contact statement
     let parse_contact_statement<'a> : Parser<ContactStatement, 'a> =
@@ -266,6 +272,14 @@ module Statements =
         //                        min-value-arg-str stmtend
         make_statement_parser_optional "min-elements" Arguments.parse_min_value parse_statement
 
+    let parse_modifier_statement<'a> : Parser<ModifierStatement, 'a> =
+        // [RFC 7950, p. 190]
+        //modifier-stmt       = modifier-keyword sep modifier-arg-str stmtend
+        //modifier-arg-str    = < a string that matches the rule >
+        //                        < modifier-arg >
+        //modifier-arg        = invert-match-keyword
+        make_statement_parser_optional "modifier" Arguments.parse_modifier parse_statement
+
     /// Parses a reference statement
     let parse_namespace_statement<'a> : Parser<NamespaceStatement, 'a> =
         // [RFC 7950, p. 186]
@@ -285,6 +299,15 @@ module Statements =
         // [RFC 7950, p. 186]
         // organization-stmt   = organization-keyword sep string stmtend
         make_statement_parser_optional "organization" Strings.parse_string parse_statement
+
+    let parse_position_statement<'a> : Parser<PositionStatement, 'a> =
+        // [RFC 7950, p. 191]
+        //position-stmt       = position-keyword sep
+        //                        position-value-arg-str stmtend
+        //position-value-arg-str = < a string that matches the rule >
+        //                        < position-value-arg >
+        //position-value-arg  = non-negative-integer-value
+        make_statement_parser_optional "position" (pip Strings.parse_string puint32) parse_statement
 
     /// Parses a prefix statement
     let parse_prefix_statement<'a> : Parser<PrefixStatement, 'a> =
@@ -307,6 +330,30 @@ module Statements =
         // [RFC 7950, p. 186]
         // reference-stmt      = reference-keyword sep string stmtend
         make_statement_parser_optional "reference" Strings.parse_string parse_statement
+
+    let parse_require_instance_statement<'a> : Parser<RequireInstanceStatement, 'a> =
+        // [RFC 7950, p. 190]
+        //require-instance-stmt = require-instance-keyword sep
+        //                        require-instance-arg-str stmtend
+        //require-instance-arg-str = < a string that matches the rule >
+        //                            < require-instance-arg >
+        //require-instance-arg = true-keyword / false-keyword
+        make_statement_parser_optional "require-instance" (pip Strings.parse_string Arguments.parse_boolean) parse_statement
+
+    let parse_revision_body_statement<'a> : Parser<RevisionBodyStatement, 'a> =
+            (parse_description_statement        |>> RevisionBodyStatement.Description)
+        <|> (parse_reference_statement          |>> RevisionBodyStatement.Reference)
+
+    let parse_revision_statement<'a> : Parser<RevisionStatement, 'a> =
+        // [RFC 7950, p. 186]
+        //revision-stmt       = revision-keyword sep revision-date optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "revision" Arguments.parse_date parse_revision_body_statement
 
     let parse_revision_date_statement<'a> : Parser<RevisionDateStatement, 'a> =
         // [RFC 7950, p. 186]
@@ -340,6 +387,20 @@ module Statements =
         //yang-version-arg    = "1.1"        skipString "reference" >>. spaces >>.
         make_statement_parser_optional "yang-version" (Strings.parse_string |>> Version.Parse) parse_statement
 
+    let parse_yin_element_statement<'a> : Parser<YinElementStatement, 'a> =
+        // [RFC 7950, p. 187]
+        //yin-element-stmt    = yin-element-keyword sep yin-element-arg-str
+        //                        stmtend
+        //yin-element-arg-str = < a string that matches the rule >
+        //                        < yin-element-arg >
+        //yin-element-arg     = true-keyword / false-keyword
+        make_statement_parser_optional "yin-element" Arguments.parse_boolean parse_statement
+
+    let parse_unique_statement<'a> : Parser<UniqueStatement, 'a> =
+        // [RFC 7950, p. 195]
+        // unique-stmt         = unique-keyword sep unique-arg-str stmtend
+        make_statement_parser_optional "unique" (pip Strings.parse_string Identifier.parse_unique) parse_statement
+
     /// Helper method to parse an unknown statement
     let parse_unknown_statement<'a> : Parser<UnknownStatement, 'a> =
         // Unknown statement do not necessarily have an argument.
@@ -353,26 +414,61 @@ module Statements =
                 )
         |>> (fun (identifier, (argument, body)) -> identifier, argument, body)
 
-    let parse_enum_body_statement<'a> : Parser<EnumBodyStatement, 'a> =
-        // TODO: Fill in the rest cases for EnumBodyStatement
-            (parse_status_statement         |>> EnumBodyStatement.Status)
-        <|> (parse_description_statement    |>> EnumBodyStatement.Description)
-        <|> (parse_reference_statement      |>> EnumBodyStatement.Reference)
-        <|> (parse_unknown_statement        |>> EnumBodyStatement.Unknown)
+    let parse_value_statement<'a> : Parser<ValueStatement, 'a> =
+        // [RFC 7950, p. 193]
+        //value-stmt          = value-keyword sep integer-value-str stmtend
+        //integer-value-str   = < a string that matches the rule >
+        //                        < integer-value >
+        make_statement_parser_optional "value" (pip Strings.parse_string pint64) parse_statement
 
-    let parse_enum_statement<'a> : Parser<EnumStatement, 'a> =
-        // [RFC 7950, p. 190]
-        //enum-stmt           = enum-keyword sep string optsep
+    //
+    // The definitions below depend on some definitions above
+    //
+
+    let parse_argument_body_statement<'a> : Parser<ArgumentBodyStatement, 'a> =
+            (parse_yin_element_statement    |>> ArgumentBodyStatement.YinElement)
+        <|> (parse_unknown_statement        |>> ArgumentBodyStatement.Unknown)
+
+    let parse_argument_statement<'a> : Parser<ArgumentStatement, 'a> =
+        // [RFC 7950, p. 187]
+        //argument-stmt       = argument-keyword sep identifier-arg-str optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            [yin-element-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "argument" Identifier.parse_identifier parse_argument_body_statement
+
+    let parse_belongs_to_body_statement<'a> : Parser<BelongsToBodyStatement, 'a> =
+            (parse_prefix_statement     |>> BelongsToBodyStatement.Prefix)
+        <|> (parse_unknown_statement    |>> BelongsToBodyStatement.Unknown)
+
+    let parse_belongs_to_statement<'a> : Parser<BelongsToStatement, 'a> =
+        // [RFC 7950, p. 186]
+        //belongs-to-stmt     = belongs-to-keyword sep identifier-arg-str
+        //                        optsep
+        //                        "{" stmtsep
+        //                            prefix-stmt
+        //                        "}" stmtsep
+        make_statement_parser_generic "belongs-to" Identifier.parse_identifier parse_belongs_to_body_statement
+
+    let parse_extension_body_statement<'a> : Parser<ExtensionBodyStatement, 'a> =
+            (parse_argument_statement       |>> ExtensionBodyStatement.Argument)
+        <|> (parse_status_statement         |>> ExtensionBodyStatement.Status)
+        <|> (parse_description_statement    |>> ExtensionBodyStatement.Description)
+        <|> (parse_reference_statement      |>> ExtensionBodyStatement.Reference)
+
+    let parse_extension_statement<'a> : Parser<ExtensionStatement, 'a> =
+        // [RFC 7950, p. 187]
+        //extension-stmt      = extension-keyword sep identifier-arg-str optsep
         //                        (";" /
         //                        "{" stmtsep
         //                            ;; these stmts can appear in any order
-        //                            *if-feature-stmt
-        //                            [value-stmt]
+        //                            [argument-stmt]
         //                            [status-stmt]
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "enum" Strings.parse_string parse_enum_body_statement
+        make_statement_parser_optional_generic "extension" Identifier.parse_identifier parse_extension_body_statement
 
     let parse_length_body_statement<'a> : Parser<LengthBodyStatement, 'a> =
             (parse_error_message_statement  |>> LengthBodyStatement.ErrorMessage)
@@ -395,8 +491,28 @@ module Statements =
         //                        "}") stmtsep
         make_statement_parser_optional_generic "length" Arguments.parse_length parse_length_body_statement
 
+    let parse_must_body_statement<'a> : Parser<MustBodyStatement, 'a> =
+            (parse_error_message_statement  |>> MustBodyStatement.ErrorMessage)
+        <|> (parse_error_app_tag_statement  |>> MustBodyStatement.ErrorAppTag)
+        <|> (parse_description_statement    |>> MustBodyStatement.Description)
+        <|> (parse_reference_statement      |>> MustBodyStatement.Reference)
+
+    let parse_must_statement<'a> : Parser<MustStatement, 'a> =
+        // [RFC 7950, p. 192]
+        //must-stmt           = must-keyword sep string optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [error-message-stmt]
+        //                            [error-app-tag-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "must" Strings.parse_string parse_must_body_statement
+
     let parse_pattern_body_statement<'a> : Parser<PatternBodyStatement, 'a> =
-            (parse_error_message_statement      |>> PatternBodyStatement.ErrorMessage)
+            (parse_modifier_statement           |>> PatternBodyStatement.Modifier)
+        <|> (parse_error_message_statement      |>> PatternBodyStatement.ErrorMessage)
         <|> (parse_error_app_tag_statement      |>> PatternBodyStatement.ErrorAppTag)
         <|> (parse_description_statement        |>> PatternBodyStatement.Description)
         <|> (parse_reference_statement          |>> PatternBodyStatement.Reference)
@@ -438,3 +554,19 @@ module Statements =
 
         // TODO: Unit tests for range statement
         make_statement_parser_optional_generic "range" Arguments.parse_range parse_range_body_statement
+
+    let parse_when_body_statement<'a> : Parser<WhenBodyStatement, 'a> =
+            (parse_description_statement    |>> WhenBodyStatement.Description)
+        <|> (parse_reference_statement      |>> WhenBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> WhenBodyStatement.Unknown)
+
+    let parse_when_statement<'a> : Parser<WhenStatement, 'a> =
+        // [RFC 7950, p. 199]
+        //when-stmt           = when-keyword sep string optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "when" Strings.parse_string parse_when_body_statement

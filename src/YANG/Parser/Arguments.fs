@@ -14,6 +14,10 @@ module Arguments =
     let parse_boolean<'a> : Parser<bool, 'a> =
             (skipString "true"  .>> spaces |>> (fun _ -> true))
         <|> (skipString "false" .>> spaces |>> (fun _ -> false))
+        <|> (skipString "'true'"  .>> spaces |>> (fun _ -> true))
+        <|> (skipString "'false'" .>> spaces |>> (fun _ -> false))
+        <|> (skipString "\"true\""  .>> spaces |>> (fun _ -> true))
+        <|> (skipString "\"false\"" .>> spaces |>> (fun _ -> false))
 
     /// Parses a YANG date
     let parse_date<'a> : Parser<Date, 'a> =
@@ -54,7 +58,7 @@ module Arguments =
         Strings.parse_string .>> spaces |>> (fun s -> Length s)
 
     let parse_max_value<'a> : Parser<MaxValue, 'a> =
-        // [RFC 7050, p.192, 207 and 209]
+        // [RFC 7950, p.192, 207 and 209]
         //max-value-arg-str   = < a string that matches the rule >
         //                        < max-value-arg >
         //max-value-arg       = unbounded-keyword /
@@ -65,11 +69,19 @@ module Arguments =
         <|> (puint64                |>> (fun value -> MaxValue.Bounded value)) .>> spaces
 
     let parse_min_value<'a> : Parser<MinValue, 'a> =
-        // [RFC 7050, p.192]
+        // [RFC 7950, p.192]
         //min-value-arg-str   = < a string that matches the rule >
         //                        < min-value-arg >
         //min-value-arg       = non-negative-integer-value
             puint32 |>> MinValue
+
+    let parse_modifier<'a> : Parser<Modifier, 'a> =
+        // [RFC 7950, p. 190]
+        //modifier-arg-str    = < a string that matches the rule >
+        //                        < modifier-arg >
+        //modifier-arg        = invert-match-keyword
+        pip Strings.parse_string (skipString "invert-match" |>> (fun _-> Modifier.InvertMatch)) .>>
+        spaces
 
     let parse_ordered_by<'a> : Parser<OrderedBy, 'a> =
         // [RFC 7950, p. 192]

@@ -70,6 +70,38 @@ module Identifier =
             | Some name -> Custom (IdentifierWithPrefix.MakeUnchecked (name1, name))
         )
 
+    let parse_schema_node_identifier<'a> : Parser<SchemaNodeIdentifier, 'a> =
+        // [RFC 7950, p. 204-205]
+        //schema-nodeid       = absolute-schema-nodeid /
+        //                        descendant-schema-nodeid
+        //absolute-schema-nodeid = 1*("/" node-identifier)
+        //descendant-schema-nodeid =
+        //                        node-identifier
+        //                        [absolute-schema-nodeid]
+        //node-identifier     = [prefix ":"] identifier
+            (skipChar '/' >>. sepBy1 parse_identifier_reference (skipChar '/')
+             |>> SchemaNodeIdentifier.MakeAbsolute)
+        <|> (sepBy parse_identifier_reference (skipChar '/')
+             |>> SchemaNodeIdentifier.MakeDescendant)
+
+    let parse_schema_node_identifier_absolute<'a> : Parser<SchemaNodeIdentifier, 'a> =
+        // Similar to parser above, but guarantees that this is an absolute node
+        skipChar '/' >>. sepBy1 parse_identifier_reference (skipChar '/')
+        |>> SchemaNodeIdentifier.MakeAbsolute
+
+    let parse_schema_node_identifier_descendant<'a> : Parser<SchemaNodeIdentifier, 'a> =
+        // Similar to parser above, but guarantees that this is a descendant node
+        sepBy1 parse_identifier_reference (skipChar '/')
+        |>> SchemaNodeIdentifier.MakeDescendant
+
+    let parse_unique<'a> : Parser<Arguments.Unique, 'a> =
+        // [RFC 7950, p. 195]
+        //unique-arg          = descendant-schema-nodeid
+        //                        *(sep descendant-schema-nodeid)
+        sepBy1 parse_schema_node_identifier spaces
+        |>> Yang.Model.Arguments.MakeUniqueDescendant
+
+
     /// Helper methods for using regular expressions with identifiers
     module RegularExpressions =
         /// Regular expression for normal identifier

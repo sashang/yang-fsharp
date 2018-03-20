@@ -11,6 +11,12 @@ module Identifier =
     /// Logger for this module
     let private _logger = LogManager.GetCurrentClassLogger()
 
+    let private throw fmt =
+        let do_throw (message : string) =
+            _logger.Error message
+            raise (YangModelException message)
+        Printf.ksprintf do_throw fmt
+
 #if INTERACTIVE
     // The following are used only in interactive (fsi) to help with enabling disabling
     // logging for particular modules.
@@ -48,8 +54,7 @@ module Identifier =
         /// <param name="name">The input identifier</param>
         static member Make (name : string) =
             if (is_identifier_valid name) = false then
-                _logger.Error(sprintf "Invalid identifier: %s" name)
-                raise (new YangModelException(sprintf "Invalid identifier: %s" name))
+                throw "Invalid identifier: %s" name
             else
                 String name
 
@@ -87,13 +92,9 @@ module Identifier =
         /// <param name="name">The name of the identifier</param>
         static member Make (prefix, name) =
             if (is_identifier_valid prefix) = false then
-                let msg = sprintf "Invalid prefix for identifier: %s" prefix
-                _logger.Error msg
-                raise (new YangModelException(msg))
+                throw "Invalid prefix for identifier: %s" prefix
             if (is_identifier_valid name) = false then
-                let msg = sprintf "Invalid name of (prefixed) identifier: %s" name
-                _logger.Error msg
-                raise (new YangModelException(msg))
+                throw "Invalid name of (prefixed) identifier: %s" name
 
             { Prefix = prefix; Name = name }
 
@@ -103,21 +104,15 @@ module Identifier =
         /// <param name="id">The identifier as a string</param>
         static member Make (id) =
             if String.IsNullOrWhiteSpace(id) then
-                let msg = "Cannot create key from empty string"
-                _logger.Error msg
-                raise (new YangModelException(msg))
+                throw "Cannot create key from empty string"
 
             let separator = id.IndexOf(':')
             if separator < 0 then
-                let msg = sprintf "Invalid name for custom identifier (missing colon ':'): %s" id
-                _logger.Error msg
-                raise (new YangModelException(msg))
+                throw "Invalid name for custom identifier (missing colon ':'): %s" id
 
             let rseparator = id.IndexOf(':')
             if separator <> rseparator then
-                let msg = sprintf "Invalid name for custom identifier (multiple prefixes): %s" id
-                _logger.Error msg
-                raise (new YangModelException(msg))
+                throw "Invalid name for custom identifier (multiple prefixes): %s" id
 
             let prefix      = id.Substring(0, separator)
             let identifier  = id.Substring(separator+1)
@@ -147,9 +142,7 @@ module Identifier =
         /// <param name="id">The identifier</param>
         static member Make (id : string) =
             if String.IsNullOrWhiteSpace(id) then
-                let msg = "Cannot create key from empty string"
-                _logger.Error msg
-                raise (new YangModelException(msg))
+                throw "Cannot create key from empty string"
 
             if id.IndexOf(':') < 0 then
                 Simple (Identifier.Make id)
@@ -185,4 +178,27 @@ module Identifier =
             match this with
             | Simple identifier -> identifier.IsValid
             | Custom identifier -> identifier.IsValid
+
+    [<StructuredFormatDisplay("{Value}")>]
+    type SchemaNodeIdentifier = | SchemaNodeIdentifier of Schema:(IdentifierReference list) * Absolute:bool
+    with
+        static member MakeAbsolute (schema : IdentifierReference list) =
+            if schema.Length = 0 then
+                throw "Empty list of identifiers when creating schema"
+            SchemaNodeIdentifier (schema, true)
+
+        static member MakeDescendant (schema : IdentifierReference list) =
+            if schema.Length = 0 then
+                throw "Empty list of identifiers when creating schema"
+            SchemaNodeIdentifier (schema, false)
+
+        member this.IsAbsolute = let (SchemaNodeIdentifier (_, absolute)) = this in absolute
+        member this.IsDescendant = let (SchemaNodeIdentifier (_, absolute)) = this in absolute = false
+        member this._Schema = let (SchemaNodeIdentifier (schema, _)) = this in schema
+
+        member this.Value =
+            let (SchemaNodeIdentifier (schema, absolute)) = this
+            let prefix = if absolute then "/" else ""
+            sprintf "%s%s" prefix (schema |> List.map (fun i -> i.Value) |> String.concat "/")
+
 
