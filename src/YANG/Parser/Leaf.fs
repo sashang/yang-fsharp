@@ -89,7 +89,7 @@ module LeafList =
         <|> (parse_must_statement           |>> LeafListBodyStatement.Must)
         <|> (parse_default_statement        |>> LeafListBodyStatement.Default)
         <|> (parse_config_statement         |>> LeafListBodyStatement.Config)
-        <|> (parse_min_elemenets_statement  |>> LeafListBodyStatement.MinElements)
+        <|> (parse_min_elements_statement   |>> LeafListBodyStatement.MinElements)
         <|> (parse_max_elements_statement   |>> LeafListBodyStatement.MaxElements)
         <|> (parse_ordered_by_statement     |>> LeafListBodyStatement.OrderedBy)
         <|> (parse_status_statement         |>> LeafListBodyStatement.Status)

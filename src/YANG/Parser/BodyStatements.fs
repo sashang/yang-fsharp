@@ -194,12 +194,20 @@ module BodyStatements =
 
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
             // TODO: fill in missing parsing for ListBodyStatement
-                (parse_if_feature_statement     |>> ListBodyStatement.IfFeature)
+                (parse_when_statement           |>> ListBodyStatement.When)
+            <|> (parse_if_feature_statement     |>> ListBodyStatement.IfFeature)
+            <|> (parse_must_statement           |>> ListBodyStatement.Must)
             <|> (parse_key_statement            |>> ListBodyStatement.Key)
+            <|> (parse_unique_statement         |>> ListBodyStatement.Unique)
+            <|> (parse_config_statement         |>> ListBodyStatement.Config)
+            <|> (parse_min_elements_statement   |>> ListBodyStatement.MinElements)
             <|> (parse_max_elements_statement   |>> ListBodyStatement.MaxElements)
             <|> (parse_ordered_by_statement     |>> ListBodyStatement.OrderedBy)
             <|> (parse_status_statement         |>> ListBodyStatement.Status)
             <|> (parse_description_statement    |>> ListBodyStatement.Description)
+            <|> (parse_reference_statement      |>> ListBodyStatement.Reference)
+            <|> (parse_typedef_statement        |>> ListBodyStatement.TypeDef)
+            <|> (parse_grouping                 |>> ListBodyStatement.Grouping)
             <|> (parse_data_definition          |>> ListBodyStatement.FromDataDefinition)
             <|> (parse_unknown_statement        |>> ListBodyStatement.Unknown)
 
@@ -228,10 +236,12 @@ module BodyStatements =
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
             // TODO: fill in missing parsing for UsesBodyStatement
-                (parse_if_feature_statement     |>> UsesBodyStatement.IfFeature)
+                (parse_when_statement           |>> UsesBodyStatement.When)
+            <|> (parse_if_feature_statement     |>> UsesBodyStatement.IfFeature)
             <|> (parse_status_statement         |>> UsesBodyStatement.Status)
             <|> (parse_description_statement    |>> UsesBodyStatement.Description)
             <|> (parse_reference_statement      |>> UsesBodyStatement.Reference)
+            <|> (parse_refine_statement         |>> UsesBodyStatement.Refine)
             <|> (parse_unknown_statement        |>> UsesBodyStatement.Unknown)
 
         let parse_uses_statement : Parser<UsesStatement, 'a> =
@@ -252,7 +262,8 @@ module BodyStatements =
 
         let parse_case_body_statement : Parser<CaseBodyStatement, 'a> =
             // TODO: fill in missing parsing for CaseBodyStatement
-                (parse_if_feature_statement     |>> CaseBodyStatement.IfFeature)
+                (parse_when_statement           |>> CaseBodyStatement.When)
+            <|> (parse_if_feature_statement     |>> CaseBodyStatement.IfFeature)
             <|> (parse_status_statement         |>> CaseBodyStatement.Status)
             <|> (parse_description_statement    |>> CaseBodyStatement.Description)
             <|> (parse_reference_statement      |>> CaseBodyStatement.Reference)
@@ -271,11 +282,13 @@ module BodyStatements =
             //                            [reference-stmt]
             //                            *data-def-stmt
             //                        "}") stmtsep
+            // TODO: Check and enforce cardinality for case-stmt
             make_statement_parser_optional_generic "case" Identifier.parse_identifier parse_case_body_statement
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
             // TODO: fill in missing parsing for ChoiceBodyStatement
-                (parse_if_feature_statement     |>> ChoiceBodyStatement.IfFeature)
+                (parse_when_statement           |>> ChoiceBodyStatement.When)
+            <|> (parse_if_feature_statement     |>> ChoiceBodyStatement.IfFeature)
             <|> (parse_default_statement        |>> ChoiceBodyStatement.Default)
             <|> (parse_config_statement         |>> ChoiceBodyStatement.Config)
             <|> (parse_mandatory_statement      |>> ChoiceBodyStatement.Mandatory)
@@ -313,6 +326,7 @@ module BodyStatements =
             //                        list-stmt /
             //                        anydata-stmt /
             //                        anyxml-stmt
+            // TODO: Check and enforce cardinality and other constraints for choice-stmt
             make_statement_parser_optional_generic "choice" Identifier.parse_identifier parse_choice_body_statement
 
         let parse_data_definition_implementation : Parser<BodyStatement, 'a> =

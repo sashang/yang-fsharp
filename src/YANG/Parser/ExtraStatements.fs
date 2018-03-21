@@ -9,6 +9,62 @@ module ExtraStatements =
     open Yang.Model
     open Expressions
 
+    let parse_any_data_body_statement<'a> : Parser<AnyDataBodyStatement, 'a> =
+            (parse_when_statement           |>> AnyDataBodyStatement.When)
+        <|> (parse_if_feature_statement     |>> AnyDataBodyStatement.IfFeature)
+        <|> (parse_must_statement           |>> AnyDataBodyStatement.Must)
+        <|> (parse_config_statement         |>> AnyDataBodyStatement.Config)
+        <|> (parse_mandatory_statement      |>> AnyDataBodyStatement.Mandatory)
+        <|> (parse_status_statement         |>> AnyDataBodyStatement.Status)
+        <|> (parse_description_statement    |>> AnyDataBodyStatement.Description)
+        <|> (parse_reference_statement      |>> AnyDataBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> AnyDataBodyStatement.Unknown)
+
+    let parse_any_data_statement<'a> : Parser<AnyDataStatement, 'a> =
+        // [RFC7950, p. 197]
+        //anydata-stmt        = anydata-keyword sep identifier-arg-str optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [when-stmt]
+        //                            *if-feature-stmt
+        //                            *must-stmt
+        //                            [config-stmt]
+        //                            [mandatory-stmt]
+        //                            [status-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "anydata" Identifier.parse_identifier parse_any_data_body_statement
+
+    let parse_any_xml_body_statement<'a> : Parser<AnyXmlBodyStatement, 'a> =
+            (parse_when_statement           |>> AnyXmlBodyStatement.When)
+        <|> (parse_if_feature_statement     |>> AnyXmlBodyStatement.IfFeature)
+        <|> (parse_must_statement           |>> AnyXmlBodyStatement.Must)
+        <|> (parse_config_statement         |>> AnyXmlBodyStatement.Config)
+        <|> (parse_mandatory_statement      |>> AnyXmlBodyStatement.Mandatory)
+        <|> (parse_status_statement         |>> AnyXmlBodyStatement.Status)
+        <|> (parse_description_statement    |>> AnyXmlBodyStatement.Description)
+        <|> (parse_reference_statement      |>> AnyXmlBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> AnyXmlBodyStatement.Unknown)
+
+    let parse_any_xml_statement<'a> : Parser<AnyXmlStatement, 'a> =
+        // [RFC7950, p. 197]
+        //anyxml-stmt         = anyxml-keyword sep identifier-arg-str optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [when-stmt]
+        //                            *if-feature-stmt
+        //                            *must-stmt
+        //                            [config-stmt]
+        //                            [mandatory-stmt]
+        //                            [status-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "anyxml" Identifier.parse_identifier parse_any_xml_body_statement
+
     let parse_feature_body_statement<'a> : Parser<FeatureBodyStatement, 'a> =
             (parse_if_feature_statement     |>> FeatureBodyStatement.IfFeature)
         <|> (parse_status_statement         |>> FeatureBodyStatement.Status)
@@ -78,16 +134,18 @@ module ExtraStatements =
 
     let parse_refine_body_statement<'a> : Parser<RefineBodyStatement, 'a> =
             (parse_if_feature_statement |>> RefineBodyStatement.IfFeature)
+        <|> (parse_must_statement       |>> RefineBodyStatement.Must)
+        <|> (parse_presence_statement   |>> RefineBodyStatement.Presence)
         <|> (parse_default_statement    |>> RefineBodyStatement.Default)
         <|> (parse_config_statement     |>> RefineBodyStatement.Config)
         <|> (parse_mandatory_statement  |>> RefineBodyStatement.Mandatory)
-        <|> (parse_min_elemenets_statement  |>> RefineBodyStatement.MinElements)
+        <|> (parse_min_elements_statement   |>> RefineBodyStatement.MinElements)
         <|> (parse_max_elements_statement   |>> RefineBodyStatement.MaxElements)
         <|> (parse_description_statement    |>> RefineBodyStatement.Description)
         <|> (parse_reference_statement  |>> RefineBodyStatement.Reference)
         <|> (parse_unknown_statement    |>> RefineBodyStatement.Unknown)
 
-    /// Parses a range stateement
+    /// Parses a range statement
     let parse_refine_statement<'a> : Parser<RefineStatement, 'a> =
         // [RFC 7950, p. 189]
         //refine-stmt         = refine-keyword sep refine-arg-str optsep
@@ -104,4 +162,5 @@ module ExtraStatements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}" stmtsep
+        // TODO: Check and enforce cardinality for refine-stmt
         make_statement_parser_optional_generic "refine" Identifier.parse_schema_node_identifier_descendant parse_refine_body_statement

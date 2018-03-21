@@ -4,7 +4,6 @@ namespace Yang.Generator
 
 module Program =
     open Yang.Model
-    open Yang.Model.Arguments.Path
 
     let private throw fmt =
         let do_throw message = raise (ProgramCreationException message)
@@ -12,7 +11,7 @@ module Program =
 
     type UInt32Type = {
         Description     : string option
-        Range           : Arguments.Range option
+        Range           : Arguments.Range.Range option
         Default         : System.UInt32 option
     }
 

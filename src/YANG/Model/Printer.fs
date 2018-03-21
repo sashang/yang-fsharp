@@ -236,7 +236,7 @@ module Printer =
 
         member __.Append (statement : KeyStatement) =
             let key, extra = statement
-            indent(); Printf.bprintf sb "key %s" (ToYangString (Arguments.Key.Value key))
+            indent(); Printf.bprintf sb "key %s" (ToYangString key.Value)
             this.Append extra
 
         member __.Append (statement : LeafStatement) =

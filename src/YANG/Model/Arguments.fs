@@ -87,48 +87,131 @@ module Arguments =
                 | :? Date as other' -> (this :> IComparable<Date>).CompareTo(other')
                 | _                 -> invalidArg "other" "cannot compare values of different types"
 
-    // TODO: Fill details for key-arg
-    type Key = IdentifierReference list
 
-    /// Helper methods for the Statement type
-    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-    module Key =
-        /// Create a key from a string
-        let MakeFromString (keys : string) : Key =
+    [<StructuredFormatDisplay("{Value}")>]
+    type Key = | Key of IdentifierReference list
+    with
+        static member Make (keys : string) =
             if String.IsNullOrWhiteSpace(keys) then invalidArg "keys" "keys cannot be null or whitespace"
             let keys = keys.Split([| ' '; '\t'; '\r'; '\t' |], StringSplitOptions.RemoveEmptyEntries) |> Array.toList
-            keys |> List.map (IdentifierReference.Make)
+            Key (keys |> List.map (IdentifierReference.Make))
 
-        let Value (key : Key) =
-            key |> List.map (fun k -> k.Value) |> String.concat " "
+        member this.Value =
+            let (Key keys) = this
+            keys |> List.map (fun k -> k.Value) |> String.concat " "
 
-    // TODO: Fill detail of length-arg (currently it is just string)
-    type Length = | Length of string
-    with
-        member this.Value = let (Length v) = this in v
+        override this.ToString() = this.Value
 
+    let KeyFromString (keys : string) = Key.Make keys
+
+    [<AutoOpen>]
+    module Length =
+        [<StructuredFormatDisplay("{Value}")>]
+        type LengthBoundary =
+        | Min
+        | Max
+        | Number of uint64
+        with
+            // TODO: Add comparison support for LengthBoundary
+
+            member this.Value =
+                match this with
+                | Min       -> "min"
+                | Max       -> "max"
+                | Number v  -> sprintf "%d" v
+
+            override this.ToString() = this.Value
+
+        [<StructuredFormatDisplay("{Value}")>]
+        type LengthPart =
+        | Single of LengthBoundary
+        | Range of LengthBoundary * LengthBoundary
+        with
+            static member Make(value : uint64) =
+                Single (Number value)
+
+            static member Make(left, right) =
+                // TODO: Check that the left boundary is smaller than the right
+                Range (Number left, Number right)
+
+            member this.Value =
+                match this with
+                | Single boundary       -> boundary.Value
+                | Range (left, right)   -> sprintf "%s .. %s" left.Value right.Value
+
+            override this.ToString() = this.Value
+
+            member this.IsInRange value =
+                match this with
+                | Single (Min _)
+                | Single (Max _)        -> false
+                | Single (Number v)     -> v = value
+                | Range (left, right)   ->
+                    match left, right with
+                    | _, Min
+                    | Max, _        -> throw "Invalid length range: %s .. %s" left.Value right.Value
+                    | Min, Max      ->
+                        _logger.Warn("Detected trivial range that accepts all lengths")
+                        true
+                    | Min, Number v -> value <= v
+                    | Number v, Max -> value >= v
+                    | Number left, Number right     -> left <= value && value <= right
+
+        [<StructuredFormatDisplay("{Value}")>]
+        type Length = | Length of LengthPart list
+        with
+            member this.Value = let (Length v) = this in v |> List.map (fun v' -> v'.Value) |> String.concat " | "
+            override this.ToString() = this.Value
+
+            member this.IsInRange value =
+                let (Length v) = this
+                v |> List.exists (fun part -> part.IsInRange value)
+
+
+    /// Captures the max-value-arg from [RFC 7950, p. 192]
+    [<StructuredFormatDisplay("{Value}")>]
     type MaxValue =
     | Unbounded
-    // TODO: The MaxValue must be greater than zero (and never zero)
     | Bounded   of uint64
     with
-        member this.Value =
-            // TODO: Implement convert to string for MaxValue
-            sprintf "%A" this
+        static member Make (bound : uint64) =
+            if bound = 0uL then
+                throw "MaxValue cannot be zero"
+            Bounded bound
 
-    // TODO: Fill details of modifier-arg
+        static member Make (bound : uint32) =
+            if bound = 0ul then
+                throw "MaxValue cannot be zero"
+            Bounded (uint64 bound)
+
+        static member Make (bound : int32) =
+            if bound <= 0 then
+                throw "MaxValue cannot be zero or negative"
+            Bounded (uint64 bound)
+
+        member this.Value =
+            match this with
+            | Unbounded     -> "unbounded"
+            | Bounded v     -> sprintf "%d" v
+
+        override this.ToString() = this.Value
+
+
+    [<StructuredFormatDisplay("{Value}")>]
     type Modifier =
     | InvertMatch
     with
         member this.Value = "invert-match"
+        override this.ToString() = this.Value
 
-    // TODO: Fill details for min-value-arg
+    [<StructuredFormatDisplay("{Value}")>]
     type MinValue = | MinValue of uint32
     with
         static member Make (value : uint32) = MinValue value
         member this.Value = let (MinValue mv) = this in sprintf "%d" mv
+        override this.ToString() = this.Value
 
-    // TODO: Fill help methods for OrderedBy
+    [<StructuredFormatDisplay("{Value}")>]
     type OrderedBy =
     | User
     | System
@@ -137,6 +220,7 @@ module Arguments =
             match this with
             | User      -> "user"
             | System    -> "system"
+        override this.ToString() = this.Value
 
     /// Captures the path-arg statements from [RFC 7950, p. 205-206]
     [<AutoOpen>]
@@ -247,15 +331,268 @@ module Arguments =
 
 
     /// Definition of Range ([RFC 7950, p. 204])
-    // TODO: Expand definition of Range
-    type Range = | Range of string
-    with
-        static member Make (s : string) =
-            Range s
+    [<AutoOpen>]
+    module Range =
 
-        member this.Value = let (Range r) = this in r
+        [<StructuredFormatDisplay("{Value}")>]
+        [<CustomEquality; CustomComparison>]
+        type RangeBoundary =
+        | Min
+        | Max
+        | Integer of int64
+        | Decimal of System.Decimal
+        with
+            static member Make (value : int64) = Integer value
+            static member Make (value : int32) = Integer (int64 value)
+            static member Make (value : System.Decimal) = Decimal value
 
-    // TODO: Fill helper methods for Status
+            member this.Value =
+                match this with
+                | Min       -> "min"
+                | Max       -> "max"
+                | Integer v -> sprintf "%d" v
+                | Decimal v -> sprintf "%f" v
+
+            override this.ToString() = this.Value
+
+            member this._IsMin = match this with | Min -> true | _ -> false
+            member this._IsMax = match this with | Max -> true | _ -> false
+            member this._IsInteger = match this with | Integer _ -> true | _ -> false
+            member this._IsDecimal = match this with | Decimal _ -> true | _ -> false
+
+            member this.AsInteger =
+                match this with
+                | Integer value -> Some value
+                | _             -> None
+
+            member this.AsDecimal =
+                match this with
+                | Decimal value -> Some value
+                | _             -> None
+
+            interface IEquatable<RangeBoundary> with
+                member this.Equals(other : RangeBoundary) =
+                    match this, other with
+                    | Min, Min
+                    | Max, Max
+                        -> true
+
+                    | Min, _
+                    | _, Min
+                    | _, Max
+                    | Max, _
+                        -> false
+
+                    | Integer v1, Integer v2    -> v1 = v2
+                    | Decimal v1, Decimal v2    -> v1 = v2
+                    | Integer v1, Decimal v2
+                    | Decimal v2, Integer v1
+                        -> (System.Decimal v1) = v2
+
+            interface IComparable<RangeBoundary> with
+                member this.CompareTo(other : RangeBoundary) =
+                    match this, other with
+                    | Min, Min
+                    | Max, Max
+                        -> 0
+
+                    | Min, _
+                    | _, Max
+                        -> -1
+
+                    | _, Min
+                    | Max, _
+                        -> 1
+
+                    | Integer v1, Integer v2    -> v1.CompareTo(v2)
+                    | Decimal v1, Decimal v2    -> v1.CompareTo(v2)
+                    | Integer v1, Decimal v2
+                    | Decimal v2, Integer v1
+                        -> (System.Decimal v1).CompareTo(v2)
+
+        [<StructuredFormatDisplay("{Value}")>]
+        type RangePart =
+        | Single    of RangeBoundary
+        | Region    of RangeBoundary * RangeBoundary
+        with
+            static member Make(value : int64) = Single (RangeBoundary.Make value)
+            static member Make(value : int32) = Single (RangeBoundary.Make value)
+            static member Make(value : Decimal) = Single (RangeBoundary.Make value)
+
+            static member Make(left : int64, right : int64) =
+                if left > right then throw "Invalid range: %d .. %d" left right
+                if left = right then Single (RangeBoundary.Make left)
+                else Region (RangeBoundary.Make left, RangeBoundary.Make right)
+
+            static member Make(left : int32, right : int32) =
+                if left > right then throw "Invalid range: %d .. %d" left right
+                if left = right then Single (RangeBoundary.Make left)
+                else Region (RangeBoundary.Make left, RangeBoundary.Make right)
+
+            static member Make(left : Decimal, right : Decimal) =
+                if left > right then throw "Invalid range: %f .. %f" left right
+                if left = right then Single (RangeBoundary.Make left)
+                else Region (RangeBoundary.Make left, RangeBoundary.Make right)
+
+            member this.Value =
+                match this with
+                | Single boundary       -> boundary.Value
+                | Region (left, right)  -> sprintf "%s .. %s" left.Value right.Value
+
+            override this.ToString() = this.Value
+
+            member this._IsSingle =
+                match this with
+                | Single _ -> true
+                | Region _ -> false
+
+            member this._IsRegion =
+                match this with
+                | Single _ -> false
+                | Region _ -> true
+
+            member this.AsSingle =
+                match this with
+                | Single boundary   -> Some boundary
+                | _                 -> None
+
+            member this.AsRegion =
+                match this with
+                | Single _              -> None
+                | Region (left, right)  -> Some (left, right)
+
+            member this.IsInRange (value : int64) =
+                match this with
+                | Single Min
+                | Single Max    -> false
+                | Single (Integer v)    -> value = v
+                | Single (Decimal v)    -> (System.Decimal value) = v
+                | Region (_, Min)
+                | Region (Max, _)       -> throw "Invalid range-part: %A" this
+                | Region (Min, Max)     ->
+                    _logger.Warn("Detected trivial range part (min .. max)")
+                    true
+                | Region (Min, Integer v)   -> value <= v
+                | Region (Min, Decimal v)   -> (System.Decimal value) <= v
+                | Region (Integer v, Max)   -> v <= value
+                | Region (Decimal v, Max)   -> v <= (System.Decimal value)
+                | Region (Integer left, Integer right) ->
+                    left <= value && value <= right
+                | Region (Decimal left, Decimal right) ->
+                    let value' = System.Decimal value
+                    left <= value' && value' <= right
+                | Region (Integer left, Decimal right) ->
+                    let value' = System.Decimal value
+                    left <= value && value' <= right
+                | Region (Decimal left, Integer right) ->
+                    let value' = System.Decimal value
+                    left <= value' && value <= right
+
+            member this.IsInRange (value : int32) = this.IsInRange (int64 value)
+
+            member this.IsInRange (value : Decimal) =
+                match this with
+                | Single Min
+                | Single Max    -> false
+                | Single (Integer v)    -> value = (System.Decimal v)
+                | Single (Decimal v)    -> value = v
+                | Region (_, Min)
+                | Region (Max, _)       -> throw "Invalid range-part: %A" this
+                | Region (Min, Max)     ->
+                    _logger.Warn("Detected trivial range part (min .. max)")
+                    true
+                | Region (Min, Integer v)   -> value <= (System.Decimal v)
+                | Region (Min, Decimal v)   -> value <= v
+                | Region (Integer v, Max)   -> (System.Decimal v) <= value
+                | Region (Decimal v, Max)   -> v <= value
+                | Region (Integer left, Integer right) ->
+                    (System.Decimal left) <= value && value <= (System.Decimal right)
+                | Region (Decimal left, Decimal right) ->
+                    left <= value && value <= right
+                | Region (Integer left, Decimal right) ->
+                    (System.Decimal left) <= value && value <= right
+                | Region (Decimal left, Integer right) ->
+                    left <= value && value <= (System.Decimal right)
+
+            member this.IsValid =
+                match this with
+                | Single _  -> true
+                | Region (left, right) ->
+                    (left :> IComparable<RangeBoundary>).CompareTo(right) <= 0
+
+
+        /// Definition of Range ([RFC 7950, p. 204])
+        [<StructuredFormatDisplay("{Value}")>]
+        type Range = | Range of RangePart list
+        with
+            static member Make (left : int64, right : int64) =
+                if left > right then throw "Left region cannot be larger than right (%d .. %d)" left right
+                if left = right then
+                    Range [ Single (Integer left) ]
+                else
+                    Range [ Region (Integer left, Integer right) ]
+
+            static member Make (left : int32, right : int32) =
+                if left > right then throw "Left region cannot be larger than right (%d .. %d)" left right
+                if left = right then
+                    Range [ Single (Integer (int64 left)) ]
+                else
+                    Range [ Region (Integer (int64 left), Integer (int64 right)) ]
+
+            static member Make (left : System.Decimal, right : System.Decimal) =
+                if left > right then throw "Left region cannot be larger than right (%f .. %f)" left right
+                if left = right then
+                    Range [ Single (Decimal left) ]
+                else
+                    Range [ Region (Decimal left, Decimal right) ]
+
+            member this.Value = let (Range range) = this in range |> List.map (fun part -> part.Value) |> String.concat " | "
+            override this.ToString() = this.Value
+
+            member this.IsInRange (value : int64) =
+                let (Range range) = this
+                range |> List.exists (fun part -> part.IsInRange value)
+
+            member this.IsInRange (value : int32) =
+                let (Range range) = this
+                range |> List.exists (fun part -> part.IsInRange value)
+
+            member this.IsInRange (value : Decimal) =
+                let (Range range) = this
+                range |> List.exists (fun part -> part.IsInRange value)
+
+            member this.IsValid =
+                // TODO: Implement unit tests for validity check for range, see [RFC 7950, p. 147]
+                let (Range ranges) = this
+                let is_valid, _ =
+                    ranges |> List.fold (
+                        fun (valid, minimum) range ->
+                            if valid = false            then (false, None)
+                            elif range.IsValid = false  then (false, None)
+                            else
+                                match range with
+                                | Single r ->
+                                    if minimum.IsNone then (true, Some r)
+                                    elif (minimum.Value :> IComparable<RangeBoundary>).CompareTo(r) < 0 then (true, Some r)
+                                    else (false, None)
+                                | Region (left, right) ->
+                                    // We have already checked that the range is valid above.
+                                    if (minimum.Value :> IComparable<RangeBoundary>).CompareTo(left) < 0 then (true, Some right)
+                                    else (false, None)
+                    ) (true, None)
+
+                is_valid
+
+            member this.Append (part : RangePart) =
+                // TODO: Implement range narrowing, see [RFC 7950, p. 147]
+                let (Range ranges) = this
+                throw "Range narrowing not implemented"
+
+
+        let MakeInt32Range (left : int32, right : int32) = Range.Make (left, right)
+
+
+    [<StructuredFormatDisplay("{Value}")>]
     type Status =
     | Current
     | Obsolete
@@ -266,6 +603,8 @@ module Arguments =
             | Current       -> "current"
             | Obsolete      -> "obsolete"
             | Deprecated    -> "deprecated"
+
+        override this.ToString() = this.Value
 
     /// Set of descendant schema nodes that specify uniqueness
     [<StructuredFormatDisplay("{Value}")>]

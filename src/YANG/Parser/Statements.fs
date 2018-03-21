@@ -249,7 +249,7 @@ module Statements =
         //                        < key-arg >
         //key-arg             = node-identifier *(sep node-identifier)
         make_statement_parser_optional "key" Strings.parse_string parse_statement
-        |>> (fun (key, block) -> Arguments.Key.MakeFromString key, block)
+        |>> (fun (key, block) -> Arguments.KeyFromString key, block)
 
     let parse_mandatory_statement<'a> : Parser<MandatoryStatement, 'a> =
         // [RFC 7950, p. 192]
@@ -266,7 +266,7 @@ module Statements =
         //                        max-value-arg-str stmtend
         make_statement_parser_optional "max-elements" Arguments.parse_max_value parse_statement
 
-    let parse_min_elemenets_statement<'a> : Parser<MinElementsStatement, 'a> =
+    let parse_min_elements_statement<'a> : Parser<MinElementsStatement, 'a> =
         // [RFC 7950, p. 192]
         //min-elements-stmt   = min-elements-keyword sep
         //                        min-value-arg-str stmtend
@@ -489,6 +489,7 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
+        // TODO: Check and enforce cardinality constraints for length-stmt
         make_statement_parser_optional_generic "length" Arguments.parse_length parse_length_body_statement
 
     let parse_must_body_statement<'a> : Parser<MustBodyStatement, 'a> =

@@ -45,6 +45,22 @@ module Arguments =
         // TODO: Proper parsing of fraction-digts; it could be a string in general
         puint8 .>> spaces
 
+    let parse_length_boundary<'a> : Parser<LengthBoundary, 'a> =
+            (skipString "min"   |>> fun _ -> LengthBoundary.Min)
+        <|> (skipString "max"   |>> fun _ -> LengthBoundary.Max)
+        <|> (puint64            |>> LengthBoundary.Number)
+        .>> spaces
+
+    let parse_length_part<'a> : Parser<LengthPart, 'a> =
+        parse_length_boundary .>> spaces .>>. (opt (skipString ".." >>. spaces >>. parse_length_boundary)) .>> spaces
+        |>> (
+            fun (left, right) ->
+                match right with
+                | None          -> LengthPart.Single left
+                | Some right    -> LengthPart.Range (left, right)
+        )
+        .>> spaces
+
     let parse_length<'a> : Parser<Length, 'a> =
         // [RFC 7950, page 204]
         //length-arg-str      = < a string that matches the rule >
@@ -55,7 +71,8 @@ module Arguments =
         //length-boundary     = min-keyword / max-keyword /
         //                        non-negative-integer-value
         // TODO: Proper parsing of length
-        Strings.parse_string .>> spaces |>> (fun s -> Length s)
+        pip Strings.parse_string (sepBy1 parse_length_part (spaces >>. skipChar '|' .>> spaces)) |>> (fun s -> Length s)
+        .>> spaces
 
     let parse_max_value<'a> : Parser<MaxValue, 'a> =
         // [RFC 7950, p.192, 207 and 209]
@@ -92,6 +109,27 @@ module Arguments =
             <|> (skipString "system"    |>> (fun _ -> OrderedBy.System))
             .>> spaces
 
+    let parse_range_boundary<'a> : Parser<RangeBoundary, 'a> =
+        let numberFormat =     NumberLiteralOptions.AllowMinusSign
+                           ||| NumberLiteralOptions.AllowFraction
+
+        (skipString "min"   |>> fun _ -> RangeBoundary.Min)
+        <|> (skipString "max"   |>> fun _ -> RangeBoundary.Max)
+        <|> (numberLiteral numberFormat "range boundary"
+             |>> fun v -> if v.HasFraction then RangeBoundary.Decimal (System.Decimal.Parse(v.String))
+                                           else RangeBoundary.Integer (System.Int64.Parse(v.String)))
+        .>> spaces
+
+    let parse_range_part<'a> : Parser<RangePart, 'a> =
+        parse_range_boundary .>> spaces .>>. (opt (skipString ".." >>. spaces >>. parse_range_boundary)) .>> spaces
+        |>> (
+            fun (left, right) ->
+                match right with
+                | None          -> RangePart.Single left
+                | Some right    -> RangePart.Region (left, right)
+        )
+        .>> spaces
+
     let parse_range<'a> : Parser<Range, 'a> =
         // [RFC 7950, p. 204]
         //range-arg-str       = < a string that matches the rule >
@@ -101,7 +139,9 @@ module Arguments =
         //                        [optsep ".." optsep range-boundary]
         //range-boundary      = min-keyword / max-keyword /
         //                        integer-value / decimal-value
-        Strings.parse_string .>> spaces |>> (fun s -> Range.Make s)
+        pip Strings.parse_string (sepBy1 parse_range_part (spaces >>. skipChar '|' .>> spaces))
+        |>> Range
+        .>> spaces
 
     let parse_status<'a> : Parser<Status, 'a> =
             (skipString "current"       >>. spaces  |>> (fun _ -> Status.Current))

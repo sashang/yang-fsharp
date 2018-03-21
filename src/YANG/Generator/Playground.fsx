@@ -22,7 +22,7 @@ let mkTypeStringSimple (description : string option) : Yang.Generator.Program.Ty
     Default         = None
 }
 
-let mkTypeUInt32 (description : string option, range : Arguments.Range option) : Yang.Generator.Program.Type = Type.UInt32 {
+let mkTypeUInt32 (description : string option, range : Arguments.Range.Range option) : Yang.Generator.Program.Type = Type.UInt32 {
     Description     = description
     Range           = range
     Default         = None
@@ -139,7 +139,7 @@ let interface_class : ContainerDefinition = {
         [
             Member (interface_class_name, mkTypeStringSimple None)
             mkMember ("description", Some "Text description of interface", mkTypeStringSimple None)
-            mkMember ("mtu", Some "Maximum transmission unit packet size", mkTypeUInt32 (None, Some (Arguments.Range "256 .. 9216")))
+            mkMember ("mtu", Some "Maximum transmission unit packet size", mkTypeUInt32 (None, Some (Arguments.Range.MakeInt32Range(256, 9216))))
             mkMemberListWithKey ("unit", Some "Logical interface", Type.Class unit_class, unit_class_name)
         ]
 }
