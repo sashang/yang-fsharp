@@ -47,15 +47,32 @@ module ArgumentsTests =
     [<Fact>]
     let ``parse range of integer number value`` () =
         let input = "15"
-        let result = FParsecHelper.apply parse_range input
-        Assert.Equal(Range [ (RangePart.Single (RangeBoundary.Integer 15L)) ], result)
+        let (Range result) = FParsecHelper.apply parse_range input
+        Assert.Equal(1, result.Length)
+        let part = result.Head
+        Assert.True(part._IsSingle)
+        let single = part.AsSingle
+        Assert.True(single.IsSome)
+        let boundary = single.Value
+        Assert.True(boundary._IsInteger)
+        let value = boundary.AsInteger
+        Assert.True(value.IsSome)
+        Assert.Equal(15L, value.Value)
 
     [<Fact>]
     let ``parse range of negative integer number value`` () =
         let input = "-15"
-        let result = FParsecHelper.apply parse_range input
-        Assert.Equal(Range [ (RangePart.Single (RangeBoundary.Integer -15L)) ], result)
-
+        let (Range result) = FParsecHelper.apply parse_range input
+        Assert.Equal(1, result.Length)
+        let part = result.Head
+        Assert.True(part._IsSingle)
+        let single = part.AsSingle
+        Assert.True(single.IsSome)
+        let boundary = single.Value
+        Assert.True(boundary._IsInteger)
+        let value = boundary.AsInteger
+        Assert.True(value.IsSome)
+        Assert.Equal(-15L, value.Value)
     [<Fact>]
     let ``parse range of decimal number value`` () =
         let input = "3.14"
@@ -73,7 +90,6 @@ module ArgumentsTests =
     [<Fact>]
     let ``parse range of negative decimal number value`` () =
         let input = "-3.14"
-        let input = "3.14"
         let (Range result) = FParsecHelper.apply parse_range input
         Assert.Equal(1, result.Length)
         let part = result.Head
@@ -88,7 +104,20 @@ module ArgumentsTests =
     [<Fact>]
     let ``parse range of set of values`` () =
         let input = "'15 .. 20'"
-        let result = FParsecHelper.apply parse_range input
-        Assert.Equal(Range [ (RangePart.Region (RangeBoundary.Integer 15L, RangeBoundary.Integer 20L)) ], result)
+        let (Range result) = FParsecHelper.apply parse_range input
+        Assert.Equal(1, result.Length)
+        let region = result.Head
+        Assert.True(region._IsRegion)
+        let r = region.AsRegion
+        Assert.True(r.IsSome)
+        let (left, right) = r.Value
+        Assert.True(left._IsInteger)
+        Assert.True(right._IsInteger)
+        let li = left.AsInteger
+        let ri = right.AsInteger
+        Assert.True(li.IsSome)
+        Assert.True(ri.IsSome)
+        Assert.Equal(15L, li.Value)
+        Assert.Equal(20L, ri.Value)
 
     // TODO: Add more tests for range-arg parser
