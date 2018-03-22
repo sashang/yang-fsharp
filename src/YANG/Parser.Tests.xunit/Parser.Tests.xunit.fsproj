@@ -68,6 +68,7 @@
     <Compile Include="ArgumentsTests.fs" />
     <Compile Include="GenericTests.fs" />
     <Compile Include="IdentifierTests.fs" />
+    <Compile Include="PathArgumentTests.fs" />
     <Compile Include="StatementsTests.fs" />
     <Compile Include="ExpressionTests.fs" />
     <Compile Include="HeaderTests.fs" />

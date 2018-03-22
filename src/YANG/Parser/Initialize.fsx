@@ -16,6 +16,7 @@
 #load "Arguments.fs"
 #load "Generic.fs"
 #load "Identifier.fs"
+#load "PathArgument.fs"
 #load "Statements.fs"
 #load "Expressions.fs"
 #load "ExtraStatements.fs"

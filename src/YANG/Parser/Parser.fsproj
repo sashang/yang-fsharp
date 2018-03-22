@@ -60,6 +60,7 @@
     <Compile Include="Arguments.fs" />
     <Compile Include="Generic.fs" />
     <Compile Include="Identifier.fs" />
+    <Compile Include="PathArgument.fs" />
     <Compile Include="Statements.fs" />
     <Compile Include="Expressions.fs" />
     <Compile Include="ExtraStatements.fs" />

@@ -121,27 +121,3 @@ module ArgumentsTests =
         Assert.Equal(20L, ri.Value)
 
     // TODO: Add more tests for range-arg parser
-
-    [<Fact>]
-    let ``parse absolute path`` () =
-        let input ="/fiber:fiber-wavelength-profiles/fiber:wavelength-profile/fiber:name"
-        let path = FParsecHelper.apply parse_path input
-        Assert.True(path._IsAbsolute)
-        let p = path.AsAbsolute
-        Assert.True(p.IsSome)
-        Assert.True(p.Value.IsValid)
-        let items = p.Value.Path
-        Assert.Equal(3, items.Length)
-        let item1 = List.item 0 items
-        let item2 = List.item 1 items
-        let item3 = List.item 2 items
-
-        Assert.Equal("fiber:fiber-wavelength-profiles", item1.Value)
-        Assert.Equal("fiber:wavelength-profile", item2.Value)
-        Assert.Equal("fiber:name", item3.Value)
-
-    [<Theory>]
-    [<InlineData("/fiber:fiber-wavelength-profiles/fiber:wavelength-profile/fiber:name")>]
-    let ``reconstruct path string`` (input) =
-        let path = FParsecHelper.apply parse_path input
-        Assert.Equal(input, path.Value)

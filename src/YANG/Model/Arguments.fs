@@ -242,6 +242,9 @@ module Arguments =
 
             override this.ToString() = this.Value
 
+            member this._Up = let (PathKey (up, _)) = this in up
+            member this._Node = let (PathKey (_, node)) = this in node
+
         [<StructuredFormatDisplay("{Value}")>]
         type PathPredicate = | PathPredicate of Node:IdentifierReference * PathKey:PathKey
         with
@@ -251,8 +254,11 @@ module Arguments =
 
             override this.ToString() = this.Value
 
+            member this._Node = let (PathPredicate (node, _)) = this in node
+            member this._Key = let (PathPredicate (_, key)) = this in key
+
         [<StructuredFormatDisplay("{Value}")>]
-        type PathItem = | PathItem of Node:IdentifierReference * Predicate:(PathPredicate option)
+        type PathItem = | PathItem of Node:IdentifierReference * Predicate:(PathPredicate list option)
         with
             static member Make (identifier : string) =
                 PathItem (IdentifierReference.Make identifier, None)
@@ -261,7 +267,17 @@ module Arguments =
                 let (PathItem (node, predicate)) = this
                 match predicate with
                 | None              -> sprintf "%s" node.Value
-                | Some predicate    -> sprintf "%s[%s]" node.Value predicate.Value
+                | Some predicate    ->
+                    let predicates = predicate |> List.map (fun p -> sprintf "[%s]" p.Value)
+                    sprintf "%s%s" node.Value (String.concat "" predicates)
+
+            member this._Predicate = let (PathItem (_, predicate)) = this in predicate
+
+            member this.HasPredicate =
+                match this._Predicate with
+                | None
+                | Some []   -> false
+                | _         -> true
 
             override this.ToString() = this.Value
 
@@ -283,10 +299,26 @@ module Arguments =
             member this.Path = let (AbsolutePath path) = this in path
 
             member this.Append (identifier : string, ?predicate : PathPredicate) =
+                let predicate =
+                    match predicate with
+                    | None      -> None
+                    | Some p    -> Some [p]
+                let item = PathItem (IdentifierReference.Make identifier, predicate)
+                AbsolutePath (this.Raw @ [item])
+
+            member this.Append (identifier : string, ?predicate : PathPredicate list) =
                 let item = PathItem (IdentifierReference.Make identifier, predicate)
                 AbsolutePath (this.Raw @ [item])
 
             member this.Append (identifier : IdentifierReference, ?predicate : PathPredicate) =
+                let predicate =
+                    match predicate with
+                    | None      -> None
+                    | Some p    -> Some [p]
+                let item = PathItem (identifier, predicate)
+                AbsolutePath (this.Raw @ [item])
+
+            member this.Append (identifier : IdentifierReference, ?predicate : PathPredicate list) =
                 let item = PathItem (identifier, predicate)
                 AbsolutePath (this.Raw @ [item])
 
@@ -316,12 +348,29 @@ module Arguments =
             override this.ToString() = this.Value
 
             member this.Append (identifier : string, ?predicate : PathPredicate) =
+                let predicate =
+                    match predicate with
+                    | None      -> None
+                    | Some p    -> Some [p]
+                let item = PathItem (IdentifierReference.Make identifier, predicate)
+                RelativePath (this.UpSteps, (this.Path @ [item]))
+
+            member this.Append (identifier : string, ?predicate : PathPredicate list) =
                 let item = PathItem (IdentifierReference.Make identifier, predicate)
                 RelativePath (this.UpSteps, (this.Path @ [item]))
 
             member this.Append (identifier : IdentifierReference, ?predicate : PathPredicate) =
+                let predicate =
+                    match predicate with
+                    | None      -> None
+                    | Some p    -> Some [p]
                 let item = PathItem (identifier, predicate)
                 RelativePath (this.UpSteps, this.Path @ [item])
+
+            member this.Append (identifier : IdentifierReference, ?predicate : PathPredicate list) =
+                let item = PathItem (identifier, predicate)
+                RelativePath (this.UpSteps, this.Path @ [item])
+
 
         [<StructuredFormatDisplay("{Value}")>]
         type Path =
