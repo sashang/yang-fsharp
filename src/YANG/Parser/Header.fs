@@ -97,3 +97,69 @@ module Header =
             foldState               = foldState,
             resultFromState         = result
         )
+
+
+    type private SubModuleHeaderStatement =
+    | YangVersion   of YangVersionStatement
+    | BelongsTo     of BelongsToStatement
+    | Unknown       of UnknownStatement
+
+    /// Parse a header statement
+    let private parse_submodule_header_body_statement<'a> : Parser<SubModuleHeaderStatement, 'a> =
+            (parse_yang_version_statement   |>> YangVersion)
+        <|> (parse_belongs_to_statement     |>> BelongsTo)
+        <|> (parse_unknown_statement        |>> Unknown)
+
+    /// Parses all header statements for submodules
+    let parse_submodule_header<'a> : Parser<SubmoduleHeaderStatements, 'a> =
+        /// Element parser
+        let elementParser = parse_submodule_header_body_statement
+
+        /// Create the state from the first element
+        let stateFromFirstElement = function
+        // We keep track of which elements we have seen, to make sure that they appear exactly once.
+        | YangVersion   e   -> Some e, None, None
+        | BelongsTo     e   -> None, Some e, None
+        | Unknown       e   -> None, None, Some [e]
+
+        /// Update state from element
+        let foldState state element =
+            match state, element with
+            | (None, bt, un),   YangVersion e   -> Some e, bt, un
+            | (Some _, _, _),   YangVersion e   ->
+                _logger.Error("Detected duplicate yang-version statement in sub-module header")
+                raise (YangParserException "Detected duplicate yang-version statement in sub-module header")
+
+            | (vs, None, un),   BelongsTo e     -> vs, Some e, un
+            | (_, Some _, _),   BelongsTo e     ->
+                _logger.Error("Detected duplicate belongs-to statement in sub-module header")
+                raise (YangParserException "Detected duplicate belongs-to statement in sub-module header")
+
+            | (vs, bt, None),   Unknown e       -> vs, bt, Some [e]
+            | (vs, bt, Some un), Unknown e      -> vs, bt, Some (un @ [e])
+
+        let result state =
+            match state with
+            | Some vs, Some bt, un -> vs, bt, un
+            | None,    Some bt, un ->
+                // Special case: the yang-version statement must appear, but there are cases where it is omitted.
+                // So we will generate it.
+                _logger.Warn("Module missing yang-version statement; will assume 1.1")
+                let vs = Version(1, 1), None
+                vs, bt, un
+            | _                             ->
+                let sb = StringBuilder("Failed to find all mandatory header statements for submodule; missing:")
+                let (vs, bt, _) = state
+                if vs.IsNone then Printf.bprintf sb " yang-version"
+                if bt.IsNone then Printf.bprintf sb " belongs-to"
+
+                _logger.Error("Error parsing header statements: Missing header statements; got state:\n{0}", state)
+
+                raise (YangParserException (sb.ToString()))
+
+        ParserHelper.ConsumeMany(
+            elementParser           = elementParser,
+            stateFromFirstElement   = stateFromFirstElement,
+            foldState               = foldState,
+            resultFromState         = result
+        )

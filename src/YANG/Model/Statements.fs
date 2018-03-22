@@ -28,7 +28,7 @@ module Statements =
      * reasonable).
      *
      * The model requires in many cases that the cardinality of a particular statement in a block is one or more.
-     * It is not particularly convenient to define lists that have at least one item, and we instead use lists.
+     * It is not particularly convenient to define lists that havPe at least one item, and we instead use lists.
      * The caller/user needs to verify cardinality --- in other words, cardinality constraints are not enforced
      * below.
      *
@@ -319,7 +319,7 @@ module Statements =
     | DeviateDelete         of DeviateDeleteStatement
     | Unknown               of UnknownStatement
     /// Captures the 'deviation-stmt' statement from [RFC 7950, p. 201].
-    and DeviationStatement      = Deviation     * (DeviationBodyStatement list option)
+    and DeviationStatement      = Deviation     * (DeviationBodyStatement list)
     and EnumBodyStatement       =
     | IfFeature     of IfFeatureStatement
     | Value         of ValueStatement
@@ -835,6 +835,17 @@ module Statements =
     /// Helper methods for the AugmentBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module AugmentBodyStatement =
+
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> AugmentBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> AugmentBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> AugmentBodyStatement.LeafList     st
+        | BodyStatement.List          st -> AugmentBodyStatement.List         st
+        | BodyStatement.Choice        st -> AugmentBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> AugmentBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> AugmentBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> AugmentBodyStatement.Uses         st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type AugmentBodyStatement from %A" th))
 
         let Translate = function
         | AugmentBodyStatement.When          st -> Statement.When           st
@@ -1451,6 +1462,17 @@ module Statements =
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module NotificationBodyStatement =
 
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> NotificationBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> NotificationBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> NotificationBodyStatement.LeafList     st
+        | BodyStatement.List          st -> NotificationBodyStatement.List         st
+        | BodyStatement.Choice        st -> NotificationBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> NotificationBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> NotificationBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> NotificationBodyStatement.Uses         st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type NotificationBodyStatement from %A" th))
+
         let Translate = function
         | NotificationBodyStatement.IfFeature     st -> Statement.IfFeature     st
         | NotificationBodyStatement.Must          st -> Statement.Must          st
@@ -1687,6 +1709,17 @@ module Statements =
     /// Helper methods for the UsesAugmentBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module UsesAugmentBodyStatement =
+
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> UsesAugmentBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> UsesAugmentBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> UsesAugmentBodyStatement.LeafList     st
+        | BodyStatement.List          st -> UsesAugmentBodyStatement.List         st
+        | BodyStatement.Choice        st -> UsesAugmentBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> UsesAugmentBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> UsesAugmentBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> UsesAugmentBodyStatement.Uses         st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type UsesAugmentBodyStatement from %A" th))
 
         let Translate = function
         | UsesAugmentBodyStatement.When          st -> Statement.When           st

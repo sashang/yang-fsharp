@@ -68,6 +68,7 @@
     <Compile Include="Meta.fs" />
     <Compile Include="Revisions.fs" />
     <Compile Include="Types.fs" />
+    <Compile Include="Deviation.fs" />
     <Compile Include="Leaf.fs" />
     <Compile Include="BodyStatements.fs" />
     <Compile Include="Module.fs" />

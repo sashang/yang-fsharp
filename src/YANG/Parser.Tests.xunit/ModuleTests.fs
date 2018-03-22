@@ -64,3 +64,5 @@ module example-system {
         Assert.Empty(m.Body)
 
     // TODO: add more module tests
+
+    // TODO: add tests for submodules

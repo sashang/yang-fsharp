@@ -168,7 +168,7 @@ module Printer =
         member __.Append (statement : DeviationStatement) =
             let deviation, body = statement
             indent(); Printf.bprintf sb "deviation %s" (ToYangString deviation.Value)
-            block_o body (fun s -> this.Append (DeviationBodyStatement.Translate s))
+            block body (fun s -> this.Append (DeviationBodyStatement.Translate s))
 
         member __.Append (statement : EnumStatement) =
             let enum, body = statement

@@ -18,11 +18,13 @@
 #load "Identifier.fs"
 #load "Statements.fs"
 #load "Expressions.fs"
+#load "ExtraStatements.fs"
 #load "Header.fs"
 #load "Linkage.fs"
 #load "Meta.fs"
 #load "Revisions.fs"
 #load "Types.fs"
+#load "Deviation.fs"
 #load "Leaf.fs"
 #load "BodyStatements.fs"
 #load "Module.fs"
@@ -75,6 +77,21 @@ module MyEnvironment =
                         state
 
         ) (initial ())
+
+    let try_for_all_models (filter : string -> bool) apply =
+        get_all_external_models.Value
+        |> Seq.filter filter
+        |> Seq.map (
+            fun (filename : string) ->
+                printfn "%A\t\tParsing: %s" (DateTime.Now) (filename.Substring(external_modules_dir.Length))
+
+                try
+                    Some (apply filename)
+                with
+                    | ex ->
+                        printfn "Error parsing: %s\n%A" filename ex
+                        None
+        )
 
     do
         if Directory.Exists(sample_dir) = false then

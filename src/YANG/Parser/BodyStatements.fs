@@ -112,40 +112,6 @@ module BodyStatements =
         // Make sure that when parse_uses_statement appears, it is in the end,
         // and that leaf-list is parsed before leaf
 
-        let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
-            // TODO: fill in missing parsing for ContainerBodyStatement
-                (parse_if_feature_statement     |>> ContainerBodyStatement.IfFeature)
-            <|> (parse_must_statement           |>> ContainerBodyStatement.Must)
-            <|> (parse_presence_statement       |>> ContainerBodyStatement.Presence)
-            <|> (parse_config_statement         |>> ContainerBodyStatement.Config)
-            <|> (parse_status_statement         |>> ContainerBodyStatement.Status)
-            <|> (parse_description_statement    |>> ContainerBodyStatement.Description)
-            <|> (parse_reference_statement      |>> ContainerBodyStatement.Reference)
-            <|> (parse_data_definition          |>> ContainerBodyStatement.FromDataDefinition)
-            <|> (parse_unknown_statement        |>> ContainerBodyStatement.Unknown)
-
-        let parse_container_statement : Parser<ContainerStatement, 'a> =
-            // [RFC 7950, p.193]
-            //container-stmt      = container-keyword sep identifier-arg-str optsep
-            //                      (";" /
-            //                       "{" stmtsep
-            //                           ;; these stmts can appear in any order
-            //                           [when-stmt]
-            //                           *if-feature-stmt
-            //                           *must-stmt
-            //                           [presence-stmt]
-            //                           [config-stmt]
-            //                           [status-stmt]
-            //                           [description-stmt]
-            //                           [reference-stmt]
-            //                           *(typedef-stmt / grouping-stmt)
-            //                           *data-def-stmt
-            //                           *action-stmt
-            //                           *notification-stmt
-            //                       "}") stmtsep
-            // TODO: Check and enforce cardinality for container-stmt.
-            make_statement_parser_optional_generic "container" Identifier.parse_identifier parse_container_body_statement
-
         let parse_typedef_body_statement : Parser<TypeDefBodyStatement, 'a> =
                 (Types.parse_type_statement     |>> TypeDefBodyStatement.Type)
             <|> (parse_units_statement          |>> TypeDefBodyStatement.Units)
@@ -169,13 +135,43 @@ module BodyStatements =
             //                        "}" stmtsep
             make_statement_parser_generic "typedef" Identifier.parse_identifier parse_typedef_body_statement
 
+        let parse_notification_body_statement : Parser<NotificationBodyStatement, 'a> =
+                (parse_if_feature_statement     |>> NotificationBodyStatement.IfFeature)
+            <|> (parse_must_statement           |>> NotificationBodyStatement.Must)
+            <|> (parse_status_statement         |>> NotificationBodyStatement.Status)
+            <|> (parse_description_statement    |>> NotificationBodyStatement.Description)
+            <|> (parse_reference_statement      |>> NotificationBodyStatement.Reference)
+            <|> (parse_typedef_statement        |>> NotificationBodyStatement.TypeDef)
+            <|> (parse_grouping_statement       |>> NotificationBodyStatement.Grouping)
+            <|> (parse_data_definition          |>> NotificationBodyStatement.FromDataDefinition)
+            <|> (parse_unknown_statement        |>> NotificationBodyStatement.Unknown)
+
+        let parse_notification_statement : Parser<NotificationStatement, 'a> =
+            // [RFC 7950, p. 200]
+            //notification-stmt   = notification-keyword sep
+            //                        identifier-arg-str optsep
+            //                        (";" /
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            *if-feature-stmt
+            //                            *must-stmt
+            //                            [status-stmt]
+            //                            [description-stmt]
+            //                            [reference-stmt]
+            //                            *(typedef-stmt / grouping-stmt)
+            //                            *data-def-stmt
+            //                        "}") stmtsep
+            // TODO: Check and enforce cardinality constraints for notification-stmt
+            make_statement_parser_optional_generic "notification" Identifier.parse_identifier parse_notification_body_statement
+
         let parse_grouping_body_statement : Parser<GroupingBodyStatement, 'a> =
-            // TODO: fill in missing parsing for GroupingBodyStatement
                 (parse_status_statement             |>> GroupingBodyStatement.Status)
             <|> (parse_description_statement        |>> GroupingBodyStatement.Description)
             <|> (parse_reference_statement          |>> GroupingBodyStatement.Reference)
             <|> (parse_typedef_statement            |>> GroupingBodyStatement.TypeDef)
             <|> (parse_grouping_statement           |>> GroupingBodyStatement.Grouping)
+            <|> (parse_action_statement             |>> GroupingBodyStatement.Action)
+            <|> (parse_notification_statement       |>> GroupingBodyStatement.Notification)
             <|> (parse_data_definition              |>> GroupingBodyStatement.FromDataDefinition)
             <|> (parse_unknown_statement            |>> GroupingBodyStatement.Unknown)
 
@@ -193,6 +189,7 @@ module BodyStatements =
             //                            *action-stmt
             //                            *notification-stmt
             //                        "}") stmtsep
+            // TODO: Check and enforce cardinality constraints for grouping-stmt
             make_statement_parser_optional_generic "grouping" Identifier.parse_identifier parse_grouping_body_statement
 
         let parse_input_body_statement : Parser<InputBodyStatement, 'a> =
@@ -214,7 +211,6 @@ module BodyStatements =
             make_statement_parser_no_argument_generic "input" parse_input_body_statement
 
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
-            // TODO: fill in missing parsing for ListBodyStatement
                 (parse_when_statement           |>> ListBodyStatement.When)
             <|> (parse_if_feature_statement     |>> ListBodyStatement.IfFeature)
             <|> (parse_must_statement           |>> ListBodyStatement.Must)
@@ -229,6 +225,8 @@ module BodyStatements =
             <|> (parse_reference_statement      |>> ListBodyStatement.Reference)
             <|> (parse_typedef_statement        |>> ListBodyStatement.TypeDef)
             <|> (parse_grouping_statement       |>> ListBodyStatement.Grouping)
+            <|> (parse_action_statement         |>> ListBodyStatement.Action)
+            <|> (parse_notification_statement   |>> ListBodyStatement.Notification)
             <|> (parse_data_definition          |>> ListBodyStatement.FromDataDefinition)
             <|> (parse_unknown_statement        |>> ListBodyStatement.Unknown)
 
@@ -253,6 +251,7 @@ module BodyStatements =
             //                            *action-stmt
             //                            *notification-stmt
             //                        "}" stmtsep
+            // TODO: Check and enforce cardinality constraints for list-stmt
             make_statement_parser_generic "list" Identifier.parse_identifier parse_list_body_statement
 
         let parse_output_body_statement : Parser<OutputBodyStatement, 'a> =
@@ -273,31 +272,32 @@ module BodyStatements =
             //                        "}" stmtsep
             make_statement_parser_no_argument_generic "output" parse_output_body_statement
 
-        let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
-            // TODO: fill in missing parsing for UsesBodyStatement
-                (parse_when_statement           |>> UsesBodyStatement.When)
-            <|> (parse_if_feature_statement     |>> UsesBodyStatement.IfFeature)
-            <|> (parse_status_statement         |>> UsesBodyStatement.Status)
-            <|> (parse_description_statement    |>> UsesBodyStatement.Description)
-            <|> (parse_reference_statement      |>> UsesBodyStatement.Reference)
-            <|> (parse_refine_statement         |>> UsesBodyStatement.Refine)
-            <|> (parse_unknown_statement        |>> UsesBodyStatement.Unknown)
+        let parse_rpc_body_statement : Parser<RpcBodyStatement, 'a> =
+                (parse_if_feature_statement         |>> RpcBodyStatement.IfFeature)
+            <|> (parse_status_statement             |>> RpcBodyStatement.Status)
+            <|> (parse_description_statement        |>> RpcBodyStatement.Description)
+            <|> (parse_reference_statement          |>> RpcBodyStatement.Reference)
+            <|> (parse_typedef_statement            |>> RpcBodyStatement.TypeDef)
+            <|> (parse_grouping_statement           |>> RpcBodyStatement.Grouping)
+            <|> (parse_input_statement              |>> RpcBodyStatement.Input)
+            <|> (parse_output_statement             |>> RpcBodyStatement.Output)
+            <|> (parse_unknown_statement            |>> RpcBodyStatement.Unknown)
 
-        let parse_uses_statement : Parser<UsesStatement, 'a> =
-            // [RFC 7950, p. 197]
-            //uses-stmt           = uses-keyword sep identifier-ref-arg-str optsep
+        let parse_rpc_statement : Parser<RpcStatement, 'a> =
+            //[RFC 7950, p. 199]
+            //rpc-stmt            = rpc-keyword sep identifier-arg-str optsep
             //                        (";" /
             //                        "{" stmtsep
             //                            ;; these stmts can appear in any order
-            //                            [when-stmt]
             //                            *if-feature-stmt
             //                            [status-stmt]
             //                            [description-stmt]
             //                            [reference-stmt]
-            //                            *refine-stmt
-            //                            *uses-augment-stmt
+            //                            *(typedef-stmt / grouping-stmt)
+            //                            [input-stmt]
+            //                            [output-stmt]
             //                        "}") stmtsep
-            make_statement_parser_optional_generic "uses" Identifier.parse_identifier_reference parse_uses_body_statement
+            make_statement_parser_optional_generic "rpc" Identifier.parse_identifier parse_rpc_body_statement
 
         let parse_action_body_statement : Parser<ActionBodyStatement, 'a> =
                 (parse_if_feature_statement     |>> ActionBodyStatement.IfFeature)
@@ -328,7 +328,6 @@ module BodyStatements =
             make_statement_parser_optional_generic "action" Identifier.parse_identifier parse_action_body_statement
 
         let parse_case_body_statement : Parser<CaseBodyStatement, 'a> =
-            // TODO: fill in missing parsing for CaseBodyStatement
                 (parse_when_statement           |>> CaseBodyStatement.When)
             <|> (parse_if_feature_statement     |>> CaseBodyStatement.IfFeature)
             <|> (parse_status_statement         |>> CaseBodyStatement.Status)
@@ -338,6 +337,7 @@ module BodyStatements =
             <|> (parse_unknown_statement        |>> CaseBodyStatement.Unknown)
 
         let parse_case_statement : Parser<CaseStatement, 'a> =
+            // [RFC 7950, p.196]
             //case-stmt           = case-keyword sep identifier-arg-str optsep
             //                        (";" /
             //                        "{" stmtsep
@@ -351,6 +351,70 @@ module BodyStatements =
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality for case-stmt
             make_statement_parser_optional_generic "case" Identifier.parse_identifier parse_case_body_statement
+
+        let parse_augment_body_statement : Parser<AugmentBodyStatement, 'a> =
+                (parse_when_statement           |>> AugmentBodyStatement.When)
+            <|> (parse_if_feature_statement     |>> AugmentBodyStatement.IfFeature)
+            <|> (parse_status_statement         |>> AugmentBodyStatement.Status)
+            <|> (parse_description_statement    |>> AugmentBodyStatement.Description)
+            <|> (parse_reference_statement      |>> AugmentBodyStatement.Reference)
+            <|> (parse_case_statement           |>> AugmentBodyStatement.Case)
+            <|> (parse_action_statement         |>> AugmentBodyStatement.Action)
+            <|> (parse_notification_statement   |>> AugmentBodyStatement.Notification)
+            <|> (parse_data_definition          |>> AugmentBodyStatement.FromDataDefinition)
+            <|> (parse_unknown_statement        |>> AugmentBodyStatement.Unknown)
+
+        let parse_augment_statement : Parser<AugmentStatement, 'a> =
+            // [RFC 7950, p.199]
+            //augment-stmt        = augment-keyword sep augment-arg-str optsep
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            [when-stmt]
+            //                            *if-feature-stmt
+            //                            [status-stmt]
+            //                            [description-stmt]
+            //                            [reference-stmt]
+            //                            1*(data-def-stmt / case-stmt /
+            //                            action-stmt / notification-stmt)
+            //                        "}" stmtsep
+            make_statement_parser_generic "augment" (pip Strings.parse_string Identifier.parse_schema_node_identifier_absolute) parse_augment_body_statement
+
+        let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
+                (parse_if_feature_statement     |>> ContainerBodyStatement.IfFeature)
+            <|> (parse_must_statement           |>> ContainerBodyStatement.Must)
+            <|> (parse_presence_statement       |>> ContainerBodyStatement.Presence)
+            <|> (parse_config_statement         |>> ContainerBodyStatement.Config)
+            <|> (parse_status_statement         |>> ContainerBodyStatement.Status)
+            <|> (parse_description_statement    |>> ContainerBodyStatement.Description)
+            <|> (parse_reference_statement      |>> ContainerBodyStatement.Reference)
+            <|> (parse_typedef_statement        |>> ContainerBodyStatement.TypeDef)
+            <|> (parse_grouping_statement       |>> ContainerBodyStatement.Grouping)
+            <|> (parse_action_statement         |>> ContainerBodyStatement.Action)
+            <|> (parse_notification_statement   |>> ContainerBodyStatement.Notification)
+            <|> (parse_data_definition          |>> ContainerBodyStatement.FromDataDefinition)
+            <|> (parse_unknown_statement        |>> ContainerBodyStatement.Unknown)
+
+        let parse_container_statement : Parser<ContainerStatement, 'a> =
+            // [RFC 7950, p.193]
+            //container-stmt      = container-keyword sep identifier-arg-str optsep
+            //                      (";" /
+            //                       "{" stmtsep
+            //                           ;; these stmts can appear in any order
+            //                           [when-stmt]
+            //                           *if-feature-stmt
+            //                           *must-stmt
+            //                           [presence-stmt]
+            //                           [config-stmt]
+            //                           [status-stmt]
+            //                           [description-stmt]
+            //                           [reference-stmt]
+            //                           *(typedef-stmt / grouping-stmt)
+            //                           *data-def-stmt
+            //                           *action-stmt
+            //                           *notification-stmt
+            //                       "}") stmtsep
+            // TODO: Check and enforce cardinality for container-stmt.
+            make_statement_parser_optional_generic "container" Identifier.parse_identifier parse_container_body_statement
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
                 (parse_when_statement           |>> ChoiceBodyStatement.When)
@@ -397,6 +461,59 @@ module BodyStatements =
             // TODO: Check and enforce cardinality and other constraints for choice-stmt
             make_statement_parser_optional_generic "choice" Identifier.parse_identifier parse_choice_body_statement
 
+        let parse_uses_augment_body_statement : Parser<UsesAugmentBodyStatement, 'a> =
+                (parse_when_statement           |>> UsesAugmentBodyStatement.When)
+            <|> (parse_if_feature_statement     |>> UsesAugmentBodyStatement.IfFeature)
+            <|> (parse_status_statement         |>> UsesAugmentBodyStatement.Status)
+            <|> (parse_description_statement    |>> UsesAugmentBodyStatement.Description)
+            <|> (parse_reference_statement      |>> UsesAugmentBodyStatement.Reference)
+            <|> (parse_case_statement           |>> UsesAugmentBodyStatement.Case)
+            <|> (parse_action_statement         |>> UsesAugmentBodyStatement.Action)
+            <|> (parse_notification_statement   |>> UsesAugmentBodyStatement.Notification)
+            <|> (parse_data_definition          |>> UsesAugmentBodyStatement.FromDataDefinition)
+            <|> (parse_unknown_statement        |>> UsesAugmentBodyStatement.Unknown)
+
+        let parse_uses_augment_statement : Parser<UsesAugmentStatement, 'a> =
+            // [RFC 7950, p. 198]
+            //uses-augment-stmt   = augment-keyword sep uses-augment-arg-str optsep
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            [when-stmt]
+            //                            *if-feature-stmt
+            //                            [status-stmt]
+            //                            [description-stmt]
+            //                            [reference-stmt]
+            //                            1*(data-def-stmt / case-stmt /
+            //                            action-stmt / notification-stmt)
+            //                        "}" stmtsep
+            make_statement_parser_generic "augment" Identifier.parse_schema_node_identifier_descendant parse_uses_augment_body_statement
+
+        let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
+            // TODO: fill in missing parsing for UsesBodyStatement
+                (parse_when_statement           |>> UsesBodyStatement.When)
+            <|> (parse_if_feature_statement     |>> UsesBodyStatement.IfFeature)
+            <|> (parse_status_statement         |>> UsesBodyStatement.Status)
+            <|> (parse_description_statement    |>> UsesBodyStatement.Description)
+            <|> (parse_reference_statement      |>> UsesBodyStatement.Reference)
+            <|> (parse_refine_statement         |>> UsesBodyStatement.Refine)
+            <|> (parse_uses_augment_statement   |>> UsesBodyStatement.UsesAugment)
+            <|> (parse_unknown_statement        |>> UsesBodyStatement.Unknown)
+
+        let parse_uses_statement : Parser<UsesStatement, 'a> =
+            // [RFC 7950, p. 197]
+            //uses-stmt           = uses-keyword sep identifier-ref-arg-str optsep
+            //                        (";" /
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            [when-stmt]
+            //                            *if-feature-stmt
+            //                            [status-stmt]
+            //                            [description-stmt]
+            //                            [reference-stmt]
+            //                            *refine-stmt
+            //                            *uses-augment-stmt
+            //                        "}") stmtsep
+            make_statement_parser_optional_generic "uses" Identifier.parse_identifier_reference parse_uses_body_statement
         let parse_data_definition_implementation : Parser<BodyStatement, 'a> =
             // TODO: fill in missing parsing for data-def-stmt
                 (parse_container_statement  |>> BodyStatement.Container)
@@ -415,9 +532,16 @@ module BodyStatements =
 
         let parse_body : Parser<BodyStatement, 'a> =
             // TODO: fill in missing parsing for body-stmt
-                (parse_typedef_statement                    |>> BodyStatement.TypeDef)
+                (parse_extension_statement                  |>> BodyStatement.Extension)
+            <|> (parse_feature_statement                    |>> BodyStatement.Feature)
+            <|> (parse_identity_statement                   |>> BodyStatement.Identity)
+            <|> (parse_typedef_statement                    |>> BodyStatement.TypeDef)
             <|> (parse_grouping_statement_implementation    |>> BodyStatement.Grouping)
             <|> parse_data_definition_implementation
+            <|> (parse_augment_statement                    |>> BodyStatement.Augment)
+            <|> (parse_rpc_statement                        |>> BodyStatement.Rpc)
+            <|> (parse_notification_statement               |>> BodyStatement.Notification)
+            <|> (parse_deviation_statement                  |>> BodyStatement.Deviation)
 
         {
             Body            = parse_body

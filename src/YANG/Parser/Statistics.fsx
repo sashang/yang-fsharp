@@ -321,3 +321,19 @@ Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("contai
 Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("container", Some "vlan-id"))
 Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("container", Some "family"))
 Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("container", Some "inet6"))
+
+
+//
+// Parsing of all modules
+//
+
+let _ =
+    // It would be good to avoid parsing identical files many times,
+    try_for_all_models ignore_known_incorrect_models (
+        fun filename ->
+            let model = get_external_model filename
+            let root = apply_parser Module.parse_module_or_submodule model
+            root
+    )
+    |> Seq.choose id
+    |> Seq.toList

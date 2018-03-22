@@ -58,7 +58,7 @@ module StatementHelper =
     | Statement.DeviateAdd          body        -> get_inner_optional body DeviateAddBodyStatement.Translate
     | Statement.DeviateDelete       body        -> get_inner_optional body DeviateDeleteBodyStatement.Translate
     | Statement.DeviateReplace      body        -> get_inner_optional body DeviateReplaceBodyStatement.Translate
-    | Statement.Deviation           (_, body)   -> get_inner_optional body DeviationBodyStatement.Translate
+    | Statement.Deviation           (_, body)   -> get_inner          body DeviationBodyStatement.Translate
     | Statement.Enum                (_, body)   -> get_inner_optional body EnumBodyStatement.Translate
     | Statement.Extension           (_, body)   -> get_inner_optional body ExtensionBodyStatement.Translate
     | Statement.Feature             (_, body)   -> get_inner_optional body FeatureBodyStatement.Translate

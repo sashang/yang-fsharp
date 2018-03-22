@@ -280,6 +280,8 @@ module Arguments =
             member this.Value = sprintf "/%s" (this.Raw |> List.map (fun node -> node.Value) |> String.concat "/")
             override this.ToString() = this.Value
 
+            member this.Path = let (AbsolutePath path) = this in path
+
             member this.Append (identifier : string, ?predicate : PathPredicate) =
                 let item = PathItem (IdentifierReference.Make identifier, predicate)
                 AbsolutePath (this.Raw @ [item])
@@ -288,6 +290,7 @@ module Arguments =
                 let item = PathItem (identifier, predicate)
                 AbsolutePath (this.Raw @ [item])
 
+        [<StructuredFormatDisplay("{Value}")>]
         type RelativePath = | RelativePath of Up:uint16 * PathItem list
         with
             static member Make (identifier : string, ?up : uint16) =
@@ -320,6 +323,7 @@ module Arguments =
                 let item = PathItem (identifier, predicate)
                 RelativePath (this.UpSteps, this.Path @ [item])
 
+        [<StructuredFormatDisplay("{Value}")>]
         type Path =
         | Absolute of AbsolutePath
         | Relative of RelativePath
@@ -328,6 +332,12 @@ module Arguments =
                 match this with
                 | Absolute path -> path.Value
                 | Relative path -> path.Value
+            override this.ToString() = this.Value
+
+            member this._IsAbsolute = match this with | Absolute _ -> true | _ -> false
+            member this._IsRelative = match this with | Relative _ -> true | _ -> false
+            member this.AsAbsolute = match this with | Absolute v -> Some v | _ -> None
+            member this.AsRelative = match this with | Relative v -> Some v | _ -> None
 
 
     /// Definition of Range ([RFC 7950, p. 204])

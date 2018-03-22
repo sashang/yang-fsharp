@@ -295,6 +295,6 @@ module Types =
             <|> do_parse "uint32"
             <|> do_parse "uint64"
             <|> do_parse "decimal64"
-            <|> (Identifier.parse_identifier_reference .>>. parse_end_of_unknown_type)
+            <|> (Identifier.parse_identifier_reference .>> spaces .>>. parse_end_of_unknown_type)
         )
         |>> fun (id, (restriction, unknowns)) -> id, restriction, unknowns

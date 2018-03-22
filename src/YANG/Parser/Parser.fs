@@ -30,3 +30,6 @@ module Parser =
         | Failure (message, _, _)   ->
             raise (YangParserException (sprintf "Failed to parse model, error: %s" message))
 
+    let ParseFile (filename : string) =
+        let content = ReadAndClean filename
+        apply_parser Module.parse_module_or_submodule content

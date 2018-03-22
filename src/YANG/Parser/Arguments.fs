@@ -42,7 +42,7 @@ module Arguments =
         //fraction-digits-arg = ("1" ["0" / "1" / "2" / "3" / "4" /
         //                            "5" / "6" / "7" / "8"])
         //                        / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
-        // TODO: Proper parsing of fraction-digts; it could be a string in general
+        // TODO: Proper parsing of fraction-digits; it could be a string in general
         puint8 .>> spaces
 
     let parse_length_boundary<'a> : Parser<LengthBoundary, 'a> =
@@ -108,6 +108,41 @@ module Arguments =
                 (skipString "user"      |>> (fun _ -> OrderedBy.User))
             <|> (skipString "system"    |>> (fun _ -> OrderedBy.System))
             .>> spaces
+
+    let parse_path_item<'a> : Parser<PathItem, 'a> =
+        failwith "Not implemented exception"
+
+    let parse_path_absolute<'a> : Parser<AbsolutePath, 'a> =
+        // [RFC 7950, p. 205-206]
+        //absolute-path       = 1*("/" (node-identifier *path-predicate))
+        //path-predicate      = "[" *WSP path-equality-expr *WSP "]"
+        //path-equality-expr  = node-identifier *WSP "=" *WSP path-key-expr
+        //path-key-expr       = current-function-invocation *WSP "/" *WSP
+        //                        rel-path-keyexpr
+        //rel-path-keyexpr    = 1*(".." *WSP "/" *WSP)
+        //                        *(node-identifier *WSP "/" *WSP)
+        //                        node-identifier
+        skipChar '/' >>. (sepBy1 parse_path_item (skipChar '/')) |>> AbsolutePath
+
+    let parse_path_relative<'a> : Parser<RelativePath, 'a> =
+        // [RFC 7950, p. 205-206]
+        //relative-path       = 1*("../") descendant-path
+        //descendant-path     = node-identifier
+        //                        [*path-predicate absolute-path]
+        //path-predicate      = "[" *WSP path-equality-expr *WSP "]"
+        //path-equality-expr  = node-identifier *WSP "=" *WSP path-key-expr
+        //path-key-expr       = current-function-invocation *WSP "/" *WSP
+        //                        rel-path-keyexpr
+        //rel-path-keyexpr    = 1*(".." *WSP "/" *WSP)
+        //                        *(node-identifier *WSP "/" *WSP)
+        //                        node-identifier
+        failwith "Not implemented exception"
+
+    let parse_path<'a> : Parser<Path, 'a> =
+        // [RFC 7950, p. 205]
+        //path-arg            = absolute-path / relative-path
+            (parse_path_absolute    |>> Path.Absolute)
+        <|> (parse_path_relative    |>> Path.Relative)
 
     let parse_range_boundary<'a> : Parser<RangeBoundary, 'a> =
         let numberFormat =     NumberLiteralOptions.AllowMinusSign

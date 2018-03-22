@@ -59,3 +59,18 @@ let unknown1 = """junos:posix-pattern "^.{1,64}$";"""
 let _ = apply_parser parse_unknown_statement unknown1
 
 let _ = apply_parser Types.parse_type_statement input
+
+
+
+apply_parser parse_length_statement """length "8";"""
+
+apply_parser (pip Strings.parse_string Identifier.parse_schema_node_identifier_absolute) "'/if:interfaces/if:interface'"
+
+apply_parser parse_path_statement
+
+
+let file1 = @"D:\Users\chrisgk\Stable\Repos\Me\Universe\PL\Parsers\YangDotNet\src\YANG\Parser\../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-base.yang"
+let file2 = @"D:\Users\chrisgk\Stable\Repos\Me\Universe\PL\Parsers\YangDotNet\src\YANG\Parser\../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-channelpair-body.yang"
+
+Parser.ParseFile file1
+Parser.ParseFile file2
