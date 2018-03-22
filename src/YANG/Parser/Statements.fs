@@ -116,6 +116,15 @@ module Statements =
                 <|> (begin_block >>. (block_generic body)   |>> Some)
             )
 
+    /// Parser for statements that require a child block, and do not have an argument.
+    let inline make_statement_parser_no_argument_generic<'a, 'b>
+        (keyword    : string)
+        (body       : Parser<'b, 'a>) : Parser<('b list), 'a>
+        =
+            skipString keyword >>. spaces >>.
+            begin_block >>.
+            (block_generic body)
+
     /// Parses an unknown statement; those have an identifier which includes a prefix
     let inline private unknown_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
             Identifier.parse_identifier_with_prefix

@@ -1187,6 +1187,17 @@ module Statements =
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module InputBodyStatement =
 
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> InputBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> InputBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> InputBodyStatement.LeafList     st
+        | BodyStatement.List          st -> InputBodyStatement.List         st
+        | BodyStatement.Choice        st -> InputBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> InputBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> InputBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> InputBodyStatement.Uses         st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type InputBodyStatement from %A" th))
+
         let Translate = function
         | InputBodyStatement.Must          st -> Statement.Must             st
         | InputBodyStatement.TypeDef       st -> Statement.TypeDef          st
@@ -1461,6 +1472,18 @@ module Statements =
     /// Helper methods for the OutputBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module OutputBodyStatement =
+
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> OutputBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> OutputBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> OutputBodyStatement.LeafList     st
+        | BodyStatement.List          st -> OutputBodyStatement.List         st
+        | BodyStatement.Choice        st -> OutputBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> OutputBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> OutputBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> OutputBodyStatement.Uses         st
+        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type InputBodyStatement from %A" th))
+
 
         let Translate = function
         | OutputBodyStatement.Must          st -> Statement.Must        st

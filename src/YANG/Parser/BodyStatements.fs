@@ -94,10 +94,13 @@ module BodyStatements =
         // First, create some placeholders for parsers in order to break the dependencies.
         //
 
+        let (parse_action_statement : Parser<ActionStatement, 'a>), (parse_action_statement_ref : Parser<ActionStatement, 'a> ref) =
+            createParserForwardedToRef<ActionStatement, 'a>()
+
         let (parse_data_definition : Parser<BodyStatement, 'a>), (parse_data_definition_ref : Parser<BodyStatement, 'a> ref) =
             createParserForwardedToRef<BodyStatement, 'a>()
 
-        let (parse_grouping : Parser<GroupingStatement, 'a>), (parse_grouping_ref : Parser<GroupingStatement, 'a> ref) =
+        let (parse_grouping_statement : Parser<GroupingStatement, 'a>), (parse_grouping_statement_ref : Parser<GroupingStatement, 'a> ref) =
             createParserForwardedToRef<GroupingStatement, 'a>()
 
         let (parse_choice_statement : Parser<ChoiceStatement, 'a>), (parse_choice_statement_ref : Parser<ChoiceStatement, 'a> ref) =
@@ -172,7 +175,7 @@ module BodyStatements =
             <|> (parse_description_statement        |>> GroupingBodyStatement.Description)
             <|> (parse_reference_statement          |>> GroupingBodyStatement.Reference)
             <|> (parse_typedef_statement            |>> GroupingBodyStatement.TypeDef)
-            <|> (parse_grouping                     |>> GroupingBodyStatement.Grouping)
+            <|> (parse_grouping_statement           |>> GroupingBodyStatement.Grouping)
             <|> (parse_data_definition              |>> GroupingBodyStatement.FromDataDefinition)
             <|> (parse_unknown_statement            |>> GroupingBodyStatement.Unknown)
 
@@ -192,6 +195,24 @@ module BodyStatements =
             //                        "}") stmtsep
             make_statement_parser_optional_generic "grouping" Identifier.parse_identifier parse_grouping_body_statement
 
+        let parse_input_body_statement : Parser<InputBodyStatement, 'a> =
+                (parse_must_statement           |>> InputBodyStatement.Must)
+            <|> (parse_typedef_statement        |>> InputBodyStatement.TypeDef)
+            <|> (parse_grouping_statement       |>> InputBodyStatement.Grouping)
+            <|> (parse_data_definition          |>> InputBodyStatement.FromDataDefinition)
+            <|> (parse_unknown_statement        |>> InputBodyStatement.Unknown)
+
+        let parse_input_statement : Parser<InputStatement, 'a> =
+            //[RFC 7950, p. 200]
+            //input-stmt          = input-keyword optsep
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            *must-stmt
+            //                            *(typedef-stmt / grouping-stmt)
+            //                            1*data-def-stmt
+            //                        "}" stmtsep
+            make_statement_parser_no_argument_generic "input" parse_input_body_statement
+
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
             // TODO: fill in missing parsing for ListBodyStatement
                 (parse_when_statement           |>> ListBodyStatement.When)
@@ -207,7 +228,7 @@ module BodyStatements =
             <|> (parse_description_statement    |>> ListBodyStatement.Description)
             <|> (parse_reference_statement      |>> ListBodyStatement.Reference)
             <|> (parse_typedef_statement        |>> ListBodyStatement.TypeDef)
-            <|> (parse_grouping                 |>> ListBodyStatement.Grouping)
+            <|> (parse_grouping_statement       |>> ListBodyStatement.Grouping)
             <|> (parse_data_definition          |>> ListBodyStatement.FromDataDefinition)
             <|> (parse_unknown_statement        |>> ListBodyStatement.Unknown)
 
@@ -233,6 +254,24 @@ module BodyStatements =
             //                            *notification-stmt
             //                        "}" stmtsep
             make_statement_parser_generic "list" Identifier.parse_identifier parse_list_body_statement
+
+        let parse_output_body_statement : Parser<OutputBodyStatement, 'a> =
+                (parse_must_statement           |>> OutputBodyStatement.Must)
+            <|> (parse_typedef_statement        |>> OutputBodyStatement.TypeDef)
+            <|> (parse_grouping_statement       |>> OutputBodyStatement.Grouping)
+            <|> (parse_data_definition          |>> OutputBodyStatement.FromDataDefinition)
+            <|> (parse_unknown_statement        |>> OutputBodyStatement.Unknown)
+
+        let parse_output_statement : Parser<OutputStatement, 'a> =
+            //[RFC 7950, p. 200]
+            //input-stmt          = output-keyword optsep
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            *must-stmt
+            //                            *(typedef-stmt / grouping-stmt)
+            //                            1*data-def-stmt
+            //                        "}" stmtsep
+            make_statement_parser_no_argument_generic "output" parse_output_body_statement
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
             // TODO: fill in missing parsing for UsesBodyStatement
@@ -260,6 +299,34 @@ module BodyStatements =
             //                        "}") stmtsep
             make_statement_parser_optional_generic "uses" Identifier.parse_identifier_reference parse_uses_body_statement
 
+        let parse_action_body_statement : Parser<ActionBodyStatement, 'a> =
+                (parse_if_feature_statement     |>> ActionBodyStatement.IfFeature)
+            <|> (parse_status_statement         |>> ActionBodyStatement.Status)
+            <|> (parse_description_statement    |>> ActionBodyStatement.Description)
+            <|> (parse_reference_statement      |>> ActionBodyStatement.Reference)
+            <|> (parse_typedef_statement        |>> ActionBodyStatement.TypeDef)
+            <|> (parse_grouping_statement       |>> ActionBodyStatement.Grouping)
+            <|> (parse_input_statement          |>> ActionBodyStatement.Input)
+            <|> (parse_output_statement         |>> ActionBodyStatement.Output)
+            <|> (parse_unknown_statement        |>> ActionBodyStatement.Unknown)
+
+        let parse_action_statement_implementation : Parser<ActionStatement, 'a> =
+            // [RFC 7950, p. 200]
+            //action-stmt         = action-keyword sep identifier-arg-str optsep
+            //                        (";" /
+            //                        "{" stmtsep
+            //                            ;; these stmts can appear in any order
+            //                            *if-feature-stmt
+            //                            [status-stmt]
+            //                            [description-stmt]
+            //                            [reference-stmt]
+            //                            *(typedef-stmt / grouping-stmt)
+            //                            [input-stmt]
+            //                            [output-stmt]
+            //                        "}") stmtsep
+            // TODO: Check and enforce cardinality constraints for action-stmt
+            make_statement_parser_optional_generic "action" Identifier.parse_identifier parse_action_body_statement
+
         let parse_case_body_statement : Parser<CaseBodyStatement, 'a> =
             // TODO: fill in missing parsing for CaseBodyStatement
                 (parse_when_statement           |>> CaseBodyStatement.When)
@@ -286,7 +353,6 @@ module BodyStatements =
             make_statement_parser_optional_generic "case" Identifier.parse_identifier parse_case_body_statement
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
-            // TODO: fill in missing parsing for ChoiceBodyStatement
                 (parse_when_statement           |>> ChoiceBodyStatement.When)
             <|> (parse_if_feature_statement     |>> ChoiceBodyStatement.IfFeature)
             <|> (parse_default_statement        |>> ChoiceBodyStatement.Default)
@@ -300,6 +366,8 @@ module BodyStatements =
             <|> (parse_leaf_list_statement      |>> ChoiceBodyStatement.LeafList)
             <|> (parse_leaf_statement           |>> ChoiceBodyStatement.Leaf)
             <|> (parse_list_statement           |>> ChoiceBodyStatement.List)
+            <|> (parse_any_data_statement       |>> ChoiceBodyStatement.AnyData)
+            <|> (parse_any_xml_statement        |>> ChoiceBodyStatement.AnyXml)
             <|> (parse_case_statement           |>> ChoiceBodyStatement.Case)
             <|> (parse_unknown_statement        |>> ChoiceBodyStatement.Unknown)
 
@@ -336,11 +404,14 @@ module BodyStatements =
             <|> (parse_leaf_statement       |>> BodyStatement.Leaf)
             <|> (parse_list_statement       |>> BodyStatement.List)
             <|> (parse_choice_statement     |>> BodyStatement.Choice)
+            <|> (parse_any_data_statement   |>> BodyStatement.AnyData)
+            <|> (parse_any_xml_statement    |>> BodyStatement.AnyXml)
             <|> (parse_uses_statement       |>> BodyStatement.Uses)
 
-        parse_data_definition_ref   := parse_data_definition_implementation
-        parse_grouping_ref          := parse_grouping_statement_implementation
-        parse_choice_statement_ref  := parse_choice_statement_implementation
+        parse_action_statement_ref      := parse_action_statement_implementation
+        parse_data_definition_ref       := parse_data_definition_implementation
+        parse_grouping_statement_ref    := parse_grouping_statement_implementation
+        parse_choice_statement_ref      := parse_choice_statement_implementation
 
         let parse_body : Parser<BodyStatement, 'a> =
             // TODO: fill in missing parsing for body-stmt
