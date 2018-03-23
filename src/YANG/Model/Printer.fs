@@ -446,31 +446,146 @@ module Printer =
             Printf.bprintf sb "}"
             nl()
 
+        member __.Append (specification : BinarySpecification) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | BinaryBodySpecification.Length    length  -> this.Append length
+                    | BinaryBodySpecification.Unknown   unknown -> this.Append unknown
+
+                    nl ()
+            )
+
+        member __.Append (specification : BitsSpecification) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | BitsBodySpecification.Bit     bit         -> this.Append bit
+                    | BitsBodySpecification.Unknown unknown     -> this.Append unknown
+
+                    nl ()
+            )
+
+        member __.Append (specification : Decimal64Specification) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | Decimal64BodySpecification.FractionDigits fraction    -> this.Append fraction
+                    | Decimal64BodySpecification.Range          range       -> this.Append range
+                    | Decimal64BodySpecification.Unknown        unknown     -> this.Append unknown
+
+                    nl ()
+            )
+
+        member __.Append (specification : EnumSpecification) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | EnumBodySpecification.Enum    enum                    -> this.Append enum
+                    | EnumBodySpecification.Unknown unknown                 -> this.Append unknown
+
+                    nl()
+            )
+
+        member __.Append (specification : IdentityRefSpecification) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | IdentityRefBodySpecification.Base     ``base``        -> this.Append ``base``
+                    | IdentityRefBodySpecification.Unknown  unknown         -> this.Append unknown
+
+                    nl()
+            )
+
+        member __.Append (specification : InstanceIdentifierSpecification) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | InstanceIdentifierBodySpecification.RequireInstance   require -> this.Append require
+                    | InstanceIdentifierBodySpecification.Unknown           unknown -> this.Append unknown
+
+                    nl()
+            )
+
+        member __.Append (specification : LeafRefSpecification) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | LeafRefBodySpecification.Path     path                -> this.Append path
+                    | LeafRefBodySpecification.Require  require             -> this.Append require
+                    | LeafRefBodySpecification.Unknown  unknown             -> this.Append unknown
+
+                    nl()
+            )
+
+        member __.Append (specification : NumericalRestrictions) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | NumericalBodyRestrictions.Range   range               -> this.Append range
+                    | NumericalBodyRestrictions.Unknown unknown             -> this.Append unknown
+
+                    nl()
+            )
+
+        member __.Append (specification : StringRestrictions) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | StringBodyRestrictions.Length     length              -> this.Append length
+                    | StringBodyRestrictions.Pattern    pattern             -> this.Append pattern
+                    | StringBodyRestrictions.Unknown    unknown             -> this.Append unknown
+
+                    nl()
+            )
+
+        member __.Append (specification : UnionSpecification) =
+            specification
+            |> List.iter (
+                fun spec ->
+                    match spec with
+                    | UnionBodySpecification.Type       ``type``            -> this.Append ``type``
+                    | UnionBodySpecification.Unknown    unknown             -> this.Append unknown
+
+                    nl()
+            )
+
+        member __.Append (statement : TypeBodyStatement) =
+            match statement with
+            | TypeBodyStatement.BinarySpecification             arg -> this.Append arg
+            | TypeBodyStatement.BitsSpecification               arg -> this.Append arg
+            | TypeBodyStatement.Decimal64Specification          arg -> this.Append arg
+            | TypeBodyStatement.EnumSpecification               arg -> this.Append arg
+            | TypeBodyStatement.IdentityRefSpecification        arg -> this.Append arg
+            | TypeBodyStatement.InstanceIdentifierSpecification arg -> this.Append arg
+            | TypeBodyStatement.LeafRefSpecification            arg -> this.Append arg
+            | TypeBodyStatement.NumericalRestrictions           arg -> this.Append arg
+            | TypeBodyStatement.StringRestrictions              arg -> this.Append arg
+            | TypeBodyStatement.UnionSpecification              arg -> this.Append arg
+            | TypeBodyStatement.UnknownTypeSpecification        arg ->
+                arg |> List.iter (fun st -> this.Append st; nl())
 
         member __.Append (statement : TypeStatement) =
-            let id, arg, body = statement
+            let id, arg = statement
             indent(); Printf.bprintf sb "type %s" id.Value
 
-            if arg.IsNone && body.IsNone then Printf.bprintf sb ";"; nl()
-            elif arg.IsNone && body.Value.Length = 0 then Printf.bprintf sb " {}"; nl()
+            if arg.IsNone then Printf.bprintf sb ";"; nl()
+            elif arg.IsNone && (TypeBodyStatement.Length arg.Value) = 0 then Printf.bprintf sb " {}"; nl()
             else
                 Printf.bprintf sb "{"
                 nl()
                 indent ()
 
-                if arg.IsSome then
-                    // TODO: Pretty print TypeBodyStatement
-                    Printf.bprintf sb " %A" arg.Value
-                    nl()
-                    indent()
-
-                if body.IsSome then
-                    body.Value
-                    |> List.iter (
-                        fun b ->
-                            this.Append b
-                            indent ()
-                    )
+                if arg.IsSome then this.Append(arg.Value)
 
         member __.Append (statement : TypeDefStatement) =
             let id, body = statement

@@ -273,13 +273,13 @@ module Statements =
         // [RFC 7950, p. 192]
         //max-elements-stmt   = max-elements-keyword sep
         //                        max-value-arg-str stmtend
-        make_statement_parser_optional "max-elements" Arguments.parse_max_value parse_statement
+        make_statement_parser_optional "max-elements" (pip Strings.parse_string Arguments.parse_max_value) parse_statement
 
     let parse_min_elements_statement<'a> : Parser<MinElementsStatement, 'a> =
         // [RFC 7950, p. 192]
         //min-elements-stmt   = min-elements-keyword sep
         //                        min-value-arg-str stmtend
-        make_statement_parser_optional "min-elements" Arguments.parse_min_value parse_statement
+        make_statement_parser_optional "min-elements" (pip Strings.parse_string Arguments.parse_min_value) parse_statement
 
     let parse_modifier_statement<'a> : Parser<ModifierStatement, 'a> =
         // [RFC 7950, p. 190]

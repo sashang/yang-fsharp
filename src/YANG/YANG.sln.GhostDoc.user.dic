@@ -9,10 +9,12 @@ failwithf
 forall
 fsprojects
 Hostname
+identityref
 inet
 iter
 iteri
 ksprintf
+leafref
 Namespaces
 optsep
 paket

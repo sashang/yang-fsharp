@@ -62,9 +62,15 @@ apply_parser (pip Strings.parse_string Identifier.parse_schema_node_identifier_a
 
 let file1 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-base.yang"
 let file2 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-channelpair-body.yang"
+let file3 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-if-type.yang"
+let file4 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-types.yang"
+let file5 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\standard\interface\bbf-fast-line-performance-body.yang"
 
 Parser.ParseFile file1
 Parser.ParseFile file2
+Parser.ParseFile file3
+Parser.ParseFile file4
+Parser.ParseFile file5
 
 // TODO: why does the following work?
 apply_parser parse_when_statement """when "../crypto = 'mc:aes'";"""
@@ -77,3 +83,15 @@ apply_parser Identifier.parse_schema_node_identifier "/ex:system/ex:user[ex:name
 apply_parser Identifier.parse_schema_node_identifier "/ex:system/ex:server[ex:ip='192.0.2.1'][ex:port='80']"
 apply_parser Identifier.parse_schema_node_identifier 
 *)
+
+
+let input = """identity bbf-fiber-interface-type {
+    base if:interface-type;
+    description
+      "This identity is used as a base for all xPON interface types
+       defined by the BBF that are not in the 'ifType definitions'
+       registry maintained by IANA.";
+  }"""
+
+
+apply_parser parse_identity_statement input

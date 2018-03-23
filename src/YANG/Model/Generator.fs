@@ -26,14 +26,14 @@ module Generator =
 
     let mkContainer name body = ((mkId name), body)
     let mkContainerInternal name body = ((mkId name), body) |> ContainerBodyStatement.Container
-    let mkType name body : TypeStatement = (mkIdRef name), body, None
+    let mkType name body : TypeStatement = (mkIdRef name), body
 
     let mkTypeDefFromString name : BodyStatement =
         let body : TypeDefBodyStatement = mkType "string" None |> TypeDefBodyStatement.Type
         (mkId name, [ body ]) |> BodyStatement.TypeDef
 
     let mkLeaf name ``type`` : LeafStatement =
-        let t = LeafBodyStatement.Type (mkIdRef ``type``, None, None)
+        let t = LeafBodyStatement.Type (mkIdRef ``type``, None)
         let leaf : LeafStatement = mkId name, [ t ]
         leaf
 

@@ -102,7 +102,7 @@ module DefUseResolver =
                     let path' = path.Push id
                     Node (path', Some TypeDefinition) |> Some
                 else None
-            | Type (id, _, _) ->
+            | Type (id, _) ->
                 if filter statement then
                     Node (path, Some (TypeUse id)) |> Some
                 else None

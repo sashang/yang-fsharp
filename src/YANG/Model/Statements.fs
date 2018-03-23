@@ -597,10 +597,11 @@ module Statements =
     | BitsSpecification                 of BitsSpecification
     | UnionSpecification                of UnionSpecification
     | BinarySpecification               of BinarySpecification
+    | UnknownTypeSpecification          of Statement list
     /// Captures the 'type-stmt' statement from [RFC 7950, p. 188].
     /// The definition assumes a number of unknown statements (from the stmtsep),
     /// followed by zero or one type-body-stmts.
-    and TypeStatement           = IdentifierReference   * (TypeBodyStatement option) * (UnknownStatement list option)
+    and TypeStatement           = IdentifierReference   * (TypeBodyStatement option)
     and TypeDefBodyStatement    =
     | Type          of TypeStatement
     | Units         of UnitsStatement
@@ -789,7 +790,7 @@ module Statements =
     and InstanceIdentifierBodySpecification =
     | RequireInstance   of RequireInstanceStatement
     | Unknown           of UnknownStatement
-    and InstanceIdentifierSpecification = InstanceIdentifierBodySpecification option
+    and InstanceIdentifierSpecification = InstanceIdentifierBodySpecification list
     and LeafRefBodySpecification        =
     | Path              of PathStatement
     | Require           of RequireInstanceStatement
@@ -906,6 +907,18 @@ module Statements =
         let Translate = function
         | BelongsToBodyStatement.Prefix     st -> Statement.Prefix      st
         | BelongsToBodyStatement.Unknown    st -> Statement.Unknown     st
+
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module BinaryBodySpecification =
+        let Translate = function
+        | BinaryBodySpecification.Length    st  -> Statement.Length     st
+        | BinaryBodySpecification.Unknown   st  -> Statement.Unknown    st
+
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module BitsBodySpecification =
+        let Translate = function
+        | BitsBodySpecification.Bit         st -> Statement.Bit         st
+        | BitsBodySpecification.Unknown     st -> Statement.Unknown     st
 
     /// Helper methods for the BitBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1073,6 +1086,12 @@ module Statements =
             | ContainerBodyStatement.LeafList   _   -> true
             | _                                     -> false
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module Decimal64BodySpecification =
+        let Translate = function
+        | Decimal64BodySpecification.FractionDigits st -> Statement.FractionDigits  st
+        | Decimal64BodySpecification.Range          st -> Statement.Range           st
+        | Decimal64BodySpecification.Unknown        st -> Statement.Unknown         st
 
     /// Helper methods for the DeviateAddBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1126,6 +1145,12 @@ module Statements =
         | DeviationBodyStatement.DeviateReplace         st -> Statement.DeviateReplace      st
         | DeviationBodyStatement.DeviateDelete          st -> Statement.DeviateDelete       st
         | DeviationBodyStatement.Unknown                st -> Statement.Unknown             st
+
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module EnumBodySpecification =
+        let Translate = function
+        | EnumBodySpecification.Enum    st  -> Statement.Enum       st
+        | EnumBodySpecification.Unknown st  -> Statement.Unknown    st
 
     /// Helper methods for the EnumBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1206,6 +1231,12 @@ module Statements =
         | IdentityBodyStatement.Reference     st -> Statement.Reference     st
         | IdentityBodyStatement.Unknown       st -> Statement.Unknown       st
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module IdentityRefBodySpecification =
+        let Translate = function
+        | IdentityRefBodySpecification.Base     st -> Statement.Base    st
+        | IdentityRefBodySpecification.Unknown  st -> Statement.Unknown st
+
     /// Helper methods for the ImportBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module ImportBodyStatement =
@@ -1255,6 +1286,12 @@ module Statements =
         | InputBodyStatement.AnyXml        st -> Statement.AnyXml           st
         | InputBodyStatement.Uses          st -> Statement.Uses             st
         | InputBodyStatement.Unknown       st -> Statement.Unknown          st
+
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module InstanceIdentifierBodySpecification =
+        let Translate = function
+        | InstanceIdentifierBodySpecification.RequireInstance   st -> Statement.RequireInstance st
+        | InstanceIdentifierBodySpecification.Unknown           st -> Statement.Unknown         st
 
     /// Helper methods for the LeafBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1325,6 +1362,12 @@ module Statements =
 
         let Statements (this : LeafListStatement) = let (_, st) = this in st
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module LeafRefBodySpecification =
+        let Translate = function
+        | LeafRefBodySpecification.Path     st -> Statement.Path            st
+        | LeafRefBodySpecification.Require  st -> Statement.RequireInstance st
+        | LeafRefBodySpecification.Unknown  st -> Statement.Unknown         st
 
     /// Helper methods for the LeafStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1524,6 +1567,12 @@ module Statements =
         | NotificationBodyStatement.Uses          st -> Statement.Uses          st
         | NotificationBodyStatement.Unknown       st -> Statement.Unknown       st
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module NumericalBodyRestrictions =
+        let Translate = function
+        | NumericalBodyRestrictions.Range       st  -> Statement.Range st
+        | NumericalBodyRestrictions.Unknown     st  -> Statement.Unknown st
+
     /// Helper methods for the OutputBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module OutputBodyStatement =
@@ -1657,6 +1706,13 @@ module Statements =
         | RpcBodyStatement.Output        st -> Statement.Output st
         | RpcBodyStatement.Unknown       st -> Statement.Unknown st
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module StringBodyRestrictions =
+        let Translate = function
+        | StringBodyRestrictions.Length     st -> Statement.Length      st
+        | StringBodyRestrictions.Pattern    st -> Statement.Pattern     st
+        | StringBodyRestrictions.Unknown    st -> Statement.Unknown     st
+
     /// Helper methods for the SubmoduleStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module SubmoduleStatement =
@@ -1664,35 +1720,44 @@ module Statements =
             this.Body
             |> List.map (BodyStatement.Translate)
 
+    // The following appears out of alphabetical order to allow the compilation of the TypeBodyStatement module
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module UnionBodySpecification =
+        let Translate = function
+        | UnionBodySpecification.Type       st -> Statement.Type        st
+        | UnionBodySpecification.Unknown    st -> Statement.Unknown     st
+
     /// Helper methods for the TypeBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module TypeBodyStatement =
         open System.Text
 
-        let Print (sb : StringBuilder, _indentation : int) = function
-        // TODO: Fix printing of type restrictions and specifications
-        | TypeBodyStatement.NumericalRestrictions    rs                     ->
-            Printf.bprintf sb "%A" rs
-        | TypeBodyStatement.Decimal64Specification  specification           ->
-            specification |> List.iter (fun spec -> Printf.bprintf sb "%A;" spec)
-        | TypeBodyStatement.StringRestrictions      specification              ->
-            specification |> List.iter (fun spec -> Printf.bprintf sb "%A;" spec)
-        | TypeBodyStatement.EnumSpecification        enums                  ->
-            enums |> List.iter (fun enum -> Printf.bprintf sb "%A " enum)
-        | TypeBodyStatement.LeafRefSpecification    specification           ->
-            specification |> List.iter (fun spec -> Printf.bprintf sb "%A; " spec)
-        | TypeBodyStatement.IdentityRefSpecification statements             ->
-            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
-        | TypeBodyStatement.InstanceIdentifierSpecification     None        ->
-            ()
-        | TypeBodyStatement.InstanceIdentifierSpecification     requires    ->
-            Printf.bprintf sb "%A" requires
-        | TypeBodyStatement.BitsSpecification statements ->
-            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
-        | TypeBodyStatement.UnionSpecification          statements ->
-            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
-        | TypeBodyStatement.BinarySpecification  statements ->
-            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
+        let Length = function
+        | TypeBodyStatement.NumericalRestrictions           spec    -> spec.Length
+        | TypeBodyStatement.Decimal64Specification          spec    -> spec.Length
+        | TypeBodyStatement.StringRestrictions              spec    -> spec.Length
+        | TypeBodyStatement.EnumSpecification               spec    -> spec.Length
+        | TypeBodyStatement.LeafRefSpecification            spec    -> spec.Length
+        | TypeBodyStatement.IdentityRefSpecification        spec    -> spec.Length
+        | TypeBodyStatement.InstanceIdentifierSpecification spec    -> spec.Length
+        | TypeBodyStatement.BitsSpecification               spec    -> spec.Length
+        | TypeBodyStatement.UnionSpecification              spec    -> spec.Length
+        | TypeBodyStatement.BinarySpecification             spec    -> spec.Length
+        | TypeBodyStatement.UnknownTypeSpecification        spec    -> spec.Length
+
+        let Translate = function
+        | TypeBodyStatement.NumericalRestrictions           spec    -> spec |> List.map NumericalBodyRestrictions.Translate
+        | TypeBodyStatement.Decimal64Specification          spec    -> spec |> List.map Decimal64BodySpecification.Translate
+        | TypeBodyStatement.StringRestrictions              spec    -> spec |> List.map StringBodyRestrictions.Translate
+        | TypeBodyStatement.EnumSpecification               spec    -> spec |> List.map EnumBodySpecification.Translate
+        | TypeBodyStatement.LeafRefSpecification            spec    -> spec |> List.map LeafRefBodySpecification.Translate
+        | TypeBodyStatement.IdentityRefSpecification        spec    -> spec |> List.map IdentityRefBodySpecification.Translate
+        | TypeBodyStatement.InstanceIdentifierSpecification spec    -> spec |> List.map InstanceIdentifierBodySpecification.Translate
+        | TypeBodyStatement.BitsSpecification               spec    -> spec |> List.map BitsBodySpecification.Translate
+        | TypeBodyStatement.UnionSpecification              spec    -> spec |> List.map UnionBodySpecification.Translate
+        | TypeBodyStatement.BinarySpecification             spec    -> spec |> List.map BinaryBodySpecification.Translate
+        | TypeBodyStatement.UnknownTypeSpecification        spec    -> spec
+
 
     /// Helper methods for the TypeDefBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1849,7 +1914,7 @@ module Statements =
             | Statement.Refine              (_, _)
             | Statement.Revision            (_, _)
             | Statement.Submodule           _
-            | Statement.Type                (_, _, _)
+            | Statement.Type                (_, _)
             | Statement.TypeDef             (_, _)
             | Statement.Uses                (_, _)
             | Statement.UsesAugment         (_, _)

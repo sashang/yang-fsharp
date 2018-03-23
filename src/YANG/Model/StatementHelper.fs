@@ -96,9 +96,9 @@ module StatementHelper =
 
         (Statement.YangVersion version) :: (Statement.Namespace ns) :: (Statement.Prefix prefix) :: unknown' @ linkage @ meta @ revision @ body'
 
-    | Statement.Type                (_, _, extra) ->
+    | Statement.Type                (_, extra) ->
         // TODO: Do we need to surface the type restrictions in the list of children of a node?
-        if extra.IsSome then extra.Value |> List.map Statement.Unknown else []
+        if extra.IsSome then TypeBodyStatement.Translate extra.Value else []
 
     | Statement.Submodule           body ->
         let version, belongs_to, unknown    = body.Header
@@ -224,7 +224,7 @@ module StatementHelper =
         -> Some (IdentifierReference.Simple m.Name)
 
     | Statement.Base                (id, _)
-    | Statement.Type                (id, _, _)
+    | Statement.Type                (id, _)
     | Statement.Uses                (id, _)
         -> Some id
 
@@ -332,18 +332,13 @@ module StatementHelper =
     /// <param name="statement">The root statement</param>
     let rec CountDescendants (statement : Statement) =
         let children = Children statement
-        let starting =
-            match statement with
-            | Patterns.Type (_, restriction, extra) ->
-                if restriction.IsSome then 1 else 0
-            | _ -> 0
 
         // TODO: Rewrite as a proper tail recursive function, assuming that it still works on big models
         children
         |> List.fold (
             fun state child ->
                 state + (CountDescendants child)
-        ) (starting + List.length children)
+        ) (List.length children)
 
     let GetDescription (body : Statement list) : string option =
         // Find all description statements.

@@ -21,10 +21,7 @@ module Program =
         Default         : string option
     }
     with
-        member this.HasRestrictions =
-            match this.Restrictions with
-            | None, []  -> false
-            | _         -> true
+        member this.HasRestrictions = this.Restrictions.Length > 0
 
     [<StructuredFormatDisplay("{Display}")>]
     type YangInfo = | YangInfo of Name:Identifier * Description:(string option) * Path:(Identifier list) * PathDescription:(string list)

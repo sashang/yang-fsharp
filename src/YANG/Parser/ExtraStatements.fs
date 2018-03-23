@@ -65,6 +65,28 @@ module ExtraStatements =
         //                        "}") stmtsep
         make_statement_parser_optional_generic "anyxml" Identifier.parse_identifier parse_any_xml_body_statement
 
+    let parse_bit_body_statement<'a> : Parser<BitBodyStatement, 'a> =
+            (parse_if_feature_statement     |>> BitBodyStatement.IfFeature)
+        <|> (parse_position_statement       |>> BitBodyStatement.Position)
+        <|> (parse_status_statement         |>> BitBodyStatement.Status)
+        <|> (parse_description_statement    |>> BitBodyStatement.Description)
+        <|> (parse_reference_statement      |>> BitBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> BitBodyStatement.Unknown)
+
+    let parse_bit_statement<'a> : Parser<BitStatement, 'a> =
+        // [RFC7950, p. 191]
+        //bit-stmt            = bit-keyword sep identifier-arg-str optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            *if-feature-stmt
+        //                            [position-stmt]
+        //                            [status-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "bit" Identifier.parse_identifier parse_bit_body_statement
+
     let parse_feature_body_statement<'a> : Parser<FeatureBodyStatement, 'a> =
             (parse_if_feature_statement     |>> FeatureBodyStatement.IfFeature)
         <|> (parse_status_statement         |>> FeatureBodyStatement.Status)
@@ -107,7 +129,7 @@ module ExtraStatements =
         //                            [reference-stmt]
         //                        "}") stmtsep
         // TODO: Check and enforce cardinality of refine-stmt body
-        make_statement_parser_optional_generic "refine" Identifier.parse_identifier parse_identity_body_statement
+        make_statement_parser_optional_generic "identity" Identifier.parse_identifier parse_identity_body_statement
 
     let parse_enum_body_statement<'a> : Parser<EnumBodyStatement, 'a> =
         // TODO: Fill in the rest cases for EnumBodyStatement
