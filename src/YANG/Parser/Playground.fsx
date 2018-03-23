@@ -49,16 +49,10 @@ let _ = apply_parser BodyStatements.parse_container_statement configuration
 let _ = apply_parser BodyStatements.parse_body_statement configuration
 
 
-let input = "'1 .. 128'"
-let _ = apply_parser Arguments.parse_length input
+apply_parser Arguments.parse_length "'1 .. 128'"
+apply_parser parse_length_statement """length "1 .. 128";"""
 
-let input = """length "1 .. 128";"""
-let _ = apply_parser parse_length_statement input
-
-let unknown1 = """junos:posix-pattern "^.{1,64}$";"""
-let _ = apply_parser parse_unknown_statement unknown1
-
-let _ = apply_parser Types.parse_type_statement input
+apply_parser parse_unknown_statement """junos:posix-pattern "^.{1,64}$";"""
 
 
 
@@ -66,8 +60,20 @@ apply_parser parse_length_statement """length "8";"""
 
 apply_parser (pip Strings.parse_string Identifier.parse_schema_node_identifier_absolute) "'/if:interfaces/if:interface'"
 
-let file1 = @"D:\Users\chrisgk\Stable\Repos\Me\Universe\PL\Parsers\YangDotNet\src\YANG\Parser\../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-base.yang"
-let file2 = @"D:\Users\chrisgk\Stable\Repos\Me\Universe\PL\Parsers\YangDotNet\src\YANG\Parser\../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-channelpair-body.yang"
+let file1 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-base.yang"
+let file2 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-channelpair-body.yang"
 
 Parser.ParseFile file1
 Parser.ParseFile file2
+
+// TODO: why does the following work?
+apply_parser parse_when_statement """when "../crypto = 'mc:aes'";"""
+
+(*
+How do we parse examples from p.169?
+apply_parser Identifier.parse_schema_node_identifier "/ex:system/ex:services/ex:ssh"
+apply_parser Identifier.parse_schema_node_identifier "/ex:system/ex:user[ex:name=fred]"
+apply_parser Identifier.parse_schema_node_identifier "/ex:system/ex:user[ex:name='fred']"
+apply_parser Identifier.parse_schema_node_identifier "/ex:system/ex:server[ex:ip='192.0.2.1'][ex:port='80']"
+apply_parser Identifier.parse_schema_node_identifier 
+*)

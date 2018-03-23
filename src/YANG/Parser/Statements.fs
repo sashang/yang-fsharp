@@ -309,6 +309,12 @@ module Statements =
         // organization-stmt   = organization-keyword sep string stmtend
         make_statement_parser_optional "organization" Strings.parse_string parse_statement
 
+    /// Parses a path statement
+    let parse_path_statement<'a> : Parser<PathStatement, 'a> =
+        // [RFC 7950, p. 190]
+        // path-stmt           = path-keyword sep path-arg-str stmtend
+        make_statement_parser_optional "path" (pip Strings.parse_string parse_path) parse_statement
+
     let parse_position_statement<'a> : Parser<PositionStatement, 'a> =
         // [RFC 7950, p. 191]
         //position-stmt       = position-keyword sep

@@ -765,16 +765,49 @@ module Statements =
 
     // Helper types that are not exported as statements
 
-    and BinarySpecification             = LengthStatement option
-    and BitsSpecification               = BitStatement list
-    and Decimal64Specification          = FractionDigitsStatement   * (RangeStatement option)
-    and EnumSpecification               = EnumStatement list
-    and IdentityRefSpecification        = BaseStatement list
-    and InstanceIdentifierSpecification = RequireInstanceStatement option
-    and LeafRefSpecification            = PathStatement             * (RequireInstanceStatement option)
-    and NumericalRestrictions           = RangeStatement
-    and StringRestrictions              = (LengthStatement option)  * (PatternStatement list)
-    and UnionSpecification              = TypeStatement list
+    and BinaryBodySpecification         =
+    | Length            of LengthStatement
+    | Unknown           of UnknownStatement
+    and BinarySpecification             = BinaryBodySpecification list
+    and BitsBodySpecification           =
+    | Bit               of BitStatement
+    | Unknown           of UnknownStatement
+    and BitsSpecification               = BitsBodySpecification list
+    and Decimal64BodySpecification      =
+    | FractionDigits    of FractionDigitsStatement
+    | Range             of RangeStatement
+    | Unknown           of UnknownStatement
+    and Decimal64Specification          = Decimal64BodySpecification list
+    and EnumBodySpecification           =
+    | Enum              of EnumStatement
+    | Unknown           of UnknownStatement
+    and EnumSpecification               = EnumBodySpecification list
+    and IdentityRefBodySpecification    =
+    | Base              of BaseStatement
+    | Unknown           of UnknownStatement
+    and IdentityRefSpecification        = IdentityRefBodySpecification list
+    and InstanceIdentifierBodySpecification =
+    | RequireInstance   of RequireInstanceStatement
+    | Unknown           of UnknownStatement
+    and InstanceIdentifierSpecification = InstanceIdentifierBodySpecification option
+    and LeafRefBodySpecification        =
+    | Path              of PathStatement
+    | Require           of RequireInstanceStatement
+    | Unknown           of UnknownStatement
+    and LeafRefSpecification            = LeafRefBodySpecification list
+    and NumericalBodyRestrictions       =
+    | Range             of RangeStatement
+    | Unknown           of UnknownStatement
+    and NumericalRestrictions           = NumericalBodyRestrictions list
+    and StringBodyRestrictions          =
+    | Length            of LengthStatement
+    | Pattern           of PatternStatement
+    | Unknown           of UnknownStatement
+    and StringRestrictions              = StringBodyRestrictions list
+    and UnionBodySpecification          =
+    | Type              of TypeStatement
+    | Unknown           of UnknownStatement
+    and UnionSpecification              = UnionBodySpecification list
 
     (*
      * End of Statement and related definitions
@@ -1640,25 +1673,14 @@ module Statements =
         // TODO: Fix printing of type restrictions and specifications
         | TypeBodyStatement.NumericalRestrictions    rs                     ->
             Printf.bprintf sb "%A" rs
-        | TypeBodyStatement.Decimal64Specification  (fraction, None)        ->
-            Printf.bprintf sb "%A" fraction
-        | TypeBodyStatement.Decimal64Specification  (fraction, Some range)  ->
-            Printf.bprintf sb "%A %A" fraction range
-        | TypeBodyStatement.StringRestrictions      (None, [])              ->
-            ()
-        | TypeBodyStatement.StringRestrictions      (Some length, [])       ->
-            Printf.bprintf sb "%A" length
-        | TypeBodyStatement.StringRestrictions      (None, patterns)        ->
-            patterns |> List.iter (fun pattern -> Printf.bprintf sb "%A " pattern)
-        | TypeBodyStatement.StringRestrictions      (Some length, patterns) ->
-            Printf.bprintf sb "%A" length
-            patterns |> List.iter (fun pattern -> Printf.bprintf sb "%A " pattern)
+        | TypeBodyStatement.Decimal64Specification  specification           ->
+            specification |> List.iter (fun spec -> Printf.bprintf sb "%A;" spec)
+        | TypeBodyStatement.StringRestrictions      specification              ->
+            specification |> List.iter (fun spec -> Printf.bprintf sb "%A;" spec)
         | TypeBodyStatement.EnumSpecification        enums                  ->
             enums |> List.iter (fun enum -> Printf.bprintf sb "%A " enum)
-        | TypeBodyStatement.LeafRefSpecification    (path, None)            ->
-            Printf.bprintf sb "%A" path
-        | TypeBodyStatement.LeafRefSpecification    (path, requires)        ->
-            Printf.bprintf sb "%A %A" path requires
+        | TypeBodyStatement.LeafRefSpecification    specification           ->
+            specification |> List.iter (fun spec -> Printf.bprintf sb "%A; " spec)
         | TypeBodyStatement.IdentityRefSpecification statements             ->
             statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
         | TypeBodyStatement.InstanceIdentifierSpecification     None        ->
@@ -1669,10 +1691,8 @@ module Statements =
             statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
         | TypeBodyStatement.UnionSpecification          statements ->
             statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
-        | TypeBodyStatement.BinarySpecification  None ->
-            ()
-        | TypeBodyStatement.BinarySpecification  (Some length) ->
-            Printf.bprintf sb "%A" length
+        | TypeBodyStatement.BinarySpecification  statements ->
+            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
 
     /// Helper methods for the TypeDefBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

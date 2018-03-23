@@ -77,9 +77,13 @@ module Types =
         //string-restrictions = ;; these stmts can appear in any order
         //                        [length-stmt]
         //                        *pattern-stmt
-
-            (parse_length_statement     |>> fun v -> Some v, [])
-        <|> (parse_pattern_statement    |>> fun v -> None,   [v])
+        // TODO: Check and enforce cardinality of string-restrictions
+        many (
+                (parse_length_statement     |>> StringBodyRestrictions.Length)
+            <|> (parse_pattern_statement    |>> StringBodyRestrictions.Pattern)
+            <|> (parse_unknown_statement    |>> StringBodyRestrictions.Unknown)
+            .>> wse
+        )
 
     let private parse_enum_specification<'a> : Parser<EnumSpecification, 'a> =
         // [RFC 7950, p. 190]
@@ -94,20 +98,48 @@ module Types =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        many1 parse_enum_statement
+        // TODO: Check and enforce cardinality of enum-specification
+        many1 (
+                (parse_enum_statement       |>> EnumBodySpecification.Enum)
+            <|> (parse_unknown_statement    |>> EnumBodySpecification.Unknown)
+            .>> wse
+        )
+
+    let private parse_leaf_ref_body_specification<'a> : Parser<LeafRefBodySpecification, 'a> =
+            (parse_path_statement               |>> LeafRefBodySpecification.Path)
+        <|> (parse_require_instance_statement   |>> LeafRefBodySpecification.Require)
+        <|> (parse_unknown_statement            |>> LeafRefBodySpecification.Unknown)
+
+    let private parse_leaf_ref_specification<'a> : Parser<LeafRefSpecification, 'a> =
+        // [RFC 7950, p. 190]
+        //leafref-specification =
+        //                        ;; these stmts can appear in any order
+        //                        path-stmt
+        //                        [require-instance-stmt]
+        // TODO: Check and enforce cardinality of leafref-specification
+        many1 (parse_leaf_ref_body_specification .>> wse)
 
     let private parse_type_body_numerical_restrictions<'a> : Parser<NumericalRestrictions, 'a> =
         // [RFC 7950, p. 189]
         // numerical-restrictions = [range-stmt]
-        parse_range_statement
+        // TODO: Check and enforce cardinality of numerical-restrictions
+        many1 (
+                (parse_range_statement      |>> NumericalBodyRestrictions.Range)
+            <|> (parse_unknown_statement    |>> NumericalBodyRestrictions.Unknown)
+             .>> wse
+        )
+
+    let private parse_type_decimal64_body_restrictions<'a> : Parser<Decimal64BodySpecification, 'a> =
+            (parse_fraction_digits_statement    |>> Decimal64BodySpecification.FractionDigits)
+        <|> (parse_range_statement              |>> Decimal64BodySpecification.Range)
+        <|> (parse_unknown_statement            |>> Decimal64BodySpecification.Unknown)
 
     let private parse_type_decimal64_restrictions<'a> : Parser<Decimal64Specification, 'a> =
         // [RFC 7950, p. 189]
         //decimal64-specification = ;; these stmts can appear in any order
         //                            fraction-digits-stmt
         //                            [range-stmt]
-            (parse_fraction_digits_statement    |>> (fun v -> v, None))
-        <|> (parse_range_statement              |>> (fun r -> (System.Byte.MaxValue, None), Some r))
+        many1 (parse_type_decimal64_body_restrictions .>> wse)
 
     /// Resolve the parser for the type specific restriction statements
     let private parse_type_body_restriction_statement<'a> (``type`` : string) : Parser<TypeBodyStatement, 'a> =
@@ -127,6 +159,7 @@ module Types =
                 ("uint32",      parse_type_body_numerical_restrictions  |>> TypeBodyStatement.NumericalRestrictions)
                 ("uint64",      parse_type_body_numerical_restrictions  |>> TypeBodyStatement.NumericalRestrictions)
                 ("decimal64",   parse_type_decimal64_restrictions       |>> TypeBodyStatement.Decimal64Specification)
+                ("leafref",     parse_leaf_ref_specification            |>> TypeBodyStatement.LeafRefSpecification)
             ]
 
         if (restrictions.ContainsKey ``type``) = false then
@@ -138,89 +171,6 @@ module Types =
     let private force_type_name<'a> (``type`` : string) : Parser<IdentifierReference, 'a> =
         pstring ``type`` .>> spaces
         |>> fun v -> Yang.Model.Identifier.IdentifierReference.Make ``type``
-
-    /// Transforms a list of type restrictions into a single type restriction
-    let translate_type_restrictions (``type`` : string) (restrictions : TypeBodyStatement list) : TypeBodyStatement option =
-        // REFACTOR: The type restrictions should be broken to separate functions per type.
-
-        if ``type``.Equals("string") then
-            let result =
-                restrictions
-                |> List.fold (
-                    fun state restriction ->
-                        match state, restriction with
-                        | (None, patterns), StringRestrictions (Some length, [])    -> Some length, patterns
-                        | (None, _), StringRestrictions (Some length, _)            ->
-                            raise (YangParserException "Internal error: expected either length restriction or pattern; got both")
-                        | (Some _, _),      StringRestrictions (Some _, _)          ->
-                            raise (YangParserException "Error: only one length restriction statement allowed")
-                        | (length, patterns), StringRestrictions (None, pattern)    -> length, patterns @ pattern
-                        | _ ->
-                            raise (YangParserException "Only string restrictions allowed for string type")
-                ) (None, [])
-
-            match result  with
-            | None, []      -> None
-            | _             -> Some (TypeBodyStatement.StringRestrictions result)
-
-        elif ``type``.Equals("enumeration") then
-            let enumerations =
-                restrictions
-                |> List.collect (
-                    fun enum ->
-                        match enum with
-                        | TypeBodyStatement.EnumSpecification enums -> enums
-                        | _     -> raise (YangParserException (sprintf "Expected enum specification, got %A" enum))
-                )
-
-            // TODO: Check that the labels of all enumerations are difference, and write unit test
-            if List.length enumerations = 0 then
-                raise (YangParserException (sprintf "Enumerations must have at least one case"))
-
-            Some (TypeBodyStatement.EnumSpecification enumerations)
-
-        elif   ``type``.Equals("int8")  || ``type``.Equals("int16")  || ``type``.Equals("int32")  || ``type``.Equals("int64")
-            || ``type``.Equals("uint8") || ``type``.Equals("uint16") || ``type``.Equals("uint32") || ``type``.Equals("uint64")
-        then
-            if List.length restrictions  = 0    then None
-            elif List.length restrictions > 1   then raise (YangParserException (sprintf "Only a single numerical restriction is allowed; got: %A" restrictions))
-            else
-                let restriction = List.head restrictions
-                match restriction with
-                // TODO: Do we need to make the following check; it should be guaranteed tha the value could be of NumericalRestrictions type
-                | TypeBodyStatement.NumericalRestrictions range ->
-                    // TODO: Check that the range limits are compatible with the specified type
-                    Some restriction
-                | _ -> raise (YangParserException (sprintf "Only a single range restriction allowed for numerics; got: %A" restriction))
-
-        elif ``type``.Equals("decimal64") then
-            match restrictions with
-            | []    ->
-                raise (YangParserException (sprintf "Decimal64 type requires at least the specification of the number of fraction digits"))
-
-            | (TypeBodyStatement.Decimal64Specification ((fraction, _), _) as r) :: []   ->
-                if fraction = System.Byte.MaxValue then 
-                    raise (YangParserException (sprintf "Missing specification of the number of fractional digits"))
-                else Some r
-
-            | (TypeBodyStatement.Decimal64Specification r1) :: (TypeBodyStatement.Decimal64Specification r2) :: [] ->
-                match r1, r2 with
-                | ((System.Byte.MaxValue, _), _), ((System.Byte.MaxValue, _), _) ->
-                    raise (YangParserException (sprintf "Missing specification of the number of fractional digits"))
-
-                | ((System.Byte.MaxValue, _), range), (length, None)
-                | (length, None), ((System.Byte.MaxValue, _), range)
-                    ->
-                        let result = Decimal64Specification (length, range)
-                        Some result
-
-                | _ -> raise (YangParserException (sprintf "Invalid specification parameters for Decimal64"))
-
-            | _ -> raise (YangParserException (sprintf "Decimal64 type requires one or two specification statements"))
-
-        else
-            // TODO: Write type restriction accumulators for all basic types
-            failwith (sprintf "Support for type %s not implemented" ``type``)
 
     type BodyParserState<'T> =
     | InternalUnknown       of UnknownStatement
@@ -253,18 +203,13 @@ module Types =
 
 
     /// Type-specific parser that implements the logic of parsing the specified parser and the appropriate parser restrictions.
-    let private parse_type_implementation_statement<'a> (``type`` : string) : Parser<(TypeBodyStatement option) * (UnknownStatement list option), 'a> =
+    let private parse_type_implementation_statement<'a> (``type`` : string) : Parser<(TypeBodyStatement list option) * (UnknownStatement list option), 'a> =
             (skipChar ';' >>. wse   |>> fun _ -> None, None)
         <|> (skipChar '{' >>. wse >>.
              (try_parse_type_restrictions (parse_type_body_restriction_statement ``type``)) .>>
              skipChar '}' .>> wse
+             |>> (fun (unknowns, restrictions) -> restrictions, unknowns)
             )
-        |>> fun (unknowns, restrictions) ->
-                let unknowns' =
-                    if unknowns.IsSome && unknowns.Value.Length = 0 then None
-                    else unknowns
-                if restrictions.IsNone then None, unknowns
-                else (translate_type_restrictions ``type`` restrictions.Value), unknowns'
 
     /// Parses a type statement
     let parse_type_statement<'a> : Parser<TypeStatement, 'a> =
@@ -295,6 +240,7 @@ module Types =
             <|> do_parse "uint32"
             <|> do_parse "uint64"
             <|> do_parse "decimal64"
+            <|> do_parse "leafref"
             <|> (Identifier.parse_identifier_reference .>> spaces .>>. parse_end_of_unknown_type)
         )
         |>> fun (id, (restriction, unknowns)) -> id, restriction, unknowns
