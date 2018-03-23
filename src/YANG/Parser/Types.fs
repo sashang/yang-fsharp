@@ -62,6 +62,10 @@ module Types =
     /// Logger for this module
     let private _logger = LogManager.GetCurrentClassLogger()
 
+    let private throw fmt =
+        let do_throw message = raise (YangParserException message)
+        Printf.ksprintf do_throw fmt
+
 #if INTERACTIVE
     // The following are used only in interactive (fsi) to help with enabling disabling
     // logging for particular modules.
@@ -163,7 +167,7 @@ module Types =
             ]
 
         if (restrictions.ContainsKey ``type``) = false then
-            raise (YangParserException (sprintf "Restrictions for type %s not implemented yet" ``type``))
+            throw "Restrictions for type %s not implemented yet" ``type``
         else
             restrictions.Item ``type``
 
