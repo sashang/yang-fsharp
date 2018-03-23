@@ -54,6 +54,7 @@ module Leaf =
 
     let parse_leaf_statement<'a> : Parser<LeafStatement, 'a> =
         make_statement_parser_generic "leaf" Identifier.parse_identifier parse_leaf_body_statement
+        |>> LeafStatement
 
 module LeafList =
     open FParsec
@@ -99,3 +100,4 @@ module LeafList =
 
     let parse_leaf_list_statement<'a> : Parser<LeafListStatement, 'a> =
         make_statement_parser_generic "leaf-list" Identifier.parse_identifier parse_leaf_body_statement
+        |>> LeafListStatement

@@ -11,7 +11,7 @@ module RevisionsTests =
         let revision = """revision 2007-06-09;"""
 
         let revision = FParsecHelper.apply parse_revision revision
-        let date, _ = revision
+        let (RevisionStatement (date, _)) = revision
 
         Assert.Equal(2007us,    date.Year)
         Assert.Equal(6uy,       date.Month)
@@ -28,14 +28,14 @@ module RevisionsTests =
 """
 
         let revision = FParsecHelper.apply parse_revision revision
-        let date, _ = revision
+        let (RevisionStatement (date, _)) = revision
 
         Assert.Equal(2007us,    date.Year)
         Assert.Equal(6uy,       date.Month)
         Assert.Equal(9uy,       date.Day)
         Assert.Equal(None,      RevisionStatement.Unknown   revision)
         Assert.Equal(None,      RevisionStatement.Reference revision)
-        Assert.Equal(Some ("Initial revision.", None), RevisionStatement.Description revision)
+        Assert.Equal(Some (DescriptionStatement ("Initial revision.", None)), RevisionStatement.Description revision)
 
     [<Fact>]
     let ``revision info with description with options`` () =
@@ -47,7 +47,7 @@ module RevisionsTests =
 """
 
         let revision = FParsecHelper.apply parse_revision revision
-        let date, _ = revision
+        let (RevisionStatement (date, _)) = revision
 
         Assert.Equal(2007us,    date.Year)
         Assert.Equal(6uy,       date.Month)
@@ -56,14 +56,18 @@ module RevisionsTests =
         Assert.Equal(None,      RevisionStatement.Reference revision)
 
         Assert.Equal(
-            (   "Initial revision.",
-                Some [
-                    Statement.Unknown (
-                        IdentifierWithPrefix.Make "ex:documentation-flag", 
-                        Some "5",
-                        None
-                    )
-                ]
+            (   DescriptionStatement(
+                    "Initial revision.",
+                    Some [
+                        Statement.Unknown (
+                            UnknownStatement (
+                                IdentifierWithPrefix.Make "ex:documentation-flag", 
+                                Some "5",
+                                None
+                            )
+                        )
+                    ]
+                )
             ) |> Option.Some,
             RevisionStatement.Description revision
         )

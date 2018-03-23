@@ -97,21 +97,21 @@ module DefUseResolver =
         let get (path : Path) (statement : Statement) : Node option =
             // printfn "Visiting %A" path
             match statement with
-            | TypeDef (id, _) ->
+            | TypeDef (TypeDefStatement (id, _)) ->
                 if filter statement then
                     let path' = path.Push id
                     Node (path', Some TypeDefinition) |> Some
                 else None
-            | Type (id, _) ->
+            | Type (TypeStatement (id, _)) ->
                 if filter statement then
                     Node (path, Some (TypeUse id)) |> Some
                 else None
-            | Grouping (id, _) ->
+            | Grouping (GroupingStatement (id, _)) ->
                 if filter statement then
                     let path' = path.Push id
                     Node (path', Some GroupingDefinition) |> Some
                 else None
-            | Uses (id, _) ->
+            | Uses (UsesStatement (id, _)) ->
                 if filter statement then
                     Node (path, Some (GroupingUse id)) |> Some
                 else None

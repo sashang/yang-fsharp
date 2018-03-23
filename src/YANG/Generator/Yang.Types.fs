@@ -59,7 +59,7 @@ module Types =
     let internal appendModuleInformation (``module`` : ModuleStatement) =
         SetLogger (Some (fun str -> printfn "%s" str))
 
-        let (version, _), (ns, _), (prefix, _), _ = ``module``.Header
+        let (YangVersionStatement (version, _)), (NamespaceStatement (ns, _)), (PrefixStatement (prefix, _)), _ = ``module``.Header
 
         let header = [
             ProvidedField.Literal ("YangVersion", typeof<Version>, version);
@@ -68,10 +68,10 @@ module Types =
         ]
 
         let map_meta = function
-        | MetaBodyStatement.Organization (org, _)   -> Some (ProvidedField.Literal ("Organization",   typeof<string>, org))
-        | MetaBodyStatement.Contact  (contact, _)   -> Some (ProvidedField.Literal ("Contact",        typeof<string>, contact))
-        | MetaBodyStatement.Description (info, _)   -> Some (ProvidedField.Literal ("Description",    typeof<string>, info))
-        | MetaBodyStatement.Reference    (ref, _)   -> Some (ProvidedField.Literal ("Reference",      typeof<string>, ref))
+        | MetaBodyStatement.Organization (OrganizationStatement (org, _))   -> Some (ProvidedField.Literal ("Organization",   typeof<string>, org))
+        | MetaBodyStatement.Contact      (ContactStatement (contact, _))    -> Some (ProvidedField.Literal ("Contact",        typeof<string>, contact))
+        | MetaBodyStatement.Description  (DescriptionStatement (info, _))   -> Some (ProvidedField.Literal ("Description",    typeof<string>, info))
+        | MetaBodyStatement.Reference    (ReferenceStatement (ref, _))      -> Some (ProvidedField.Literal ("Reference",      typeof<string>, ref))
         | _                                         -> None
 
         let meta = ``module``.Meta |> List.choose map_meta

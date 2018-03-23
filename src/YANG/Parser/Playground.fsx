@@ -65,12 +65,17 @@ let file2 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\
 let file3 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-if-type.yang"
 let file4 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-types.yang"
 let file5 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\standard\interface\bbf-fast-line-performance-body.yang"
+let file6 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\standard\interface\bbf-interfaces-performance-management.yang"
+let filex = @"e:\temp\failed.yang"
 
 Parser.ParseFile file1
 Parser.ParseFile file2
 Parser.ParseFile file3
 Parser.ParseFile file4
 Parser.ParseFile file5
+Parser.ParseFile file6
+
+Parser.ParseFile filex
 
 // TODO: why does the following work?
 apply_parser parse_when_statement """when "../crypto = 'mc:aes'";"""
@@ -95,3 +100,98 @@ let input = """identity bbf-fiber-interface-type {
 
 
 apply_parser parse_identity_statement input
+
+open FParsec
+open Yang.Parser.BodyStatements
+open Yang.Parser
+
+let bad_type_def = """typedef performance-15min-history-interval {
+type performance-15min-interval {
+    range "1..96";
+}
+}"""
+
+let bad_type = """type performance-15min-interval {
+}"""
+apply_parser Types.parse_type_statement bad_type
+
+
+apply_parser (spaces >>. parse_typedef_statement) bad_type_def
+
+
+
+#r @"E:\temp\qe\FSharp.Quotations.Evaluator.1.1.0\lib\net45\FSharp.Quotations.Evaluator.dll"
+#r @"E:\temp\qe\FSharp.Quotations.Evaluator.1.1.0\lib\net45\FSharp.Quotations.Evaluator.Hacks.dll"
+
+open Yang.Model
+
+let mutable generator : System.Type option = None
+let implementations = System.Collections.Generic.Dictionary<System.Type, obj>()
+
+let generic_parser<'a> : GenericParser<'a> =
+    let mutable initialized = false
+    let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
+        createParserForwardedToRef<Statement, 'a>()
+
+    let debug_parser : Parser<Statement, 'a> =
+        printfn "In debug ..."
+
+        if initialized = false then
+            printfn "In here..."
+
+            let key = typeof<'a>
+            if implementations.ContainsKey(key) then
+                printfn "Found type"
+                parse_statement_ref := implementations.[key] :?> Parser<Statement, 'a>
+                initialized <- true
+            elif generator.IsSome then
+                printfn "Constructing type"
+                let ty = generator.Value
+                let generic = ty.GetGenericTypeDefinition()
+                let proper = generic.MakeGenericType(typeof<'a>)
+                let method = proper.GetMethod("Parser")
+                let parser = method.Invoke(null, [| |])
+                implementations.Add(key, parser)
+                parse_statement_ref := parser :?> Parser<Statement, 'a>
+                initialized <- true
+            else
+                printfn "Cannot construct type"
+
+        !parse_statement_ref
+
+    {
+        Parser          = debug_parser
+        Implementation  = parse_statement_ref
+    }
+
+type BigGenerator<'a> =
+    static member Parser() : Parser<Statement, 'a> = generic_yang_statement_implementation
+
+generator <- Some (typeof<BigGenerator<unit>>)
+
+let parse_statement<'a> = generic_parser<'a>.Parser
+let impl = generic_parser<unit>.Implementation
+
+
+apply_parser (!impl) "description 'help';"
+
+apply_parser parse_statement "description 'help';"
+apply_parser (many parse_statement) "description 'help';"
+
+// TODO: should give 1 .. 96
+apply_parser Arguments.parse_range_part "1..96"
+
+
+let un = UnknownStatement (IdentifierWithPrefix.Make "t:h", None, None)
+StatementPrinter.Reset()
+let pr = Printer.YangPrinter ()
+pr.Append un
+pr.ToString()
+
+let unknown = Statement.Unknown (UnknownStatement (IdentifierWithPrefix.Make "t:h", None, None))
+let description = DescriptionStatement ("help", None)
+
+let _ = 
+    let description_as_statement = Statement.Description description
+    ()
+

@@ -17,12 +17,12 @@ module LeafTests =
 
         Assert.Equal("host-name", LeafStatement.IdentifierAsString leaf)
         Assert.Equal(
-            LeafBodyStatement.Type (IdentifierReference.Make "string", None, None) |> Option.Some,
+            LeafBodyStatement.Type (TypeStatement (IdentifierReference.Make "string", None)) |> Option.Some,
             LeafStatement.Type leaf
         )
 
         Assert.Equal(
-            LeafBodyStatement.Description ("Hostname for this system.", None) |> Option.Some,
+            LeafBodyStatement.Description (DescriptionStatement ("Hostname for this system.", None)) |> Option.Some,
             LeafStatement.Description leaf
         )
 

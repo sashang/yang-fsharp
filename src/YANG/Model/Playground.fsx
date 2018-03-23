@@ -18,6 +18,8 @@ open System
 open Yang.Model
 open Generator
 
+let unknown = Statement.Unknown (UnknownStatement (IdentifierWithPrefix.Make "t:h", None, None))
+
 let family =
     mkContainer "family" (
         Some [
@@ -189,8 +191,7 @@ type CSharpGenerator (``namespace`` : string, root : ModuleStatement) =
                 indent()
         )
 
-    member this.Append (statement : ContainerStatement) =
-        let identifier, body = statement
+    member this.Append (ContainerStatement (identifier, body)) =
         nl ()
         indent ()
         Printf.bprintf sb "public class %s" identifier.Value
@@ -210,12 +211,11 @@ type CSharpGenerator (``namespace`` : string, root : ModuleStatement) =
         Printf.bprintf sb "public %s %s;" identifier.Value identifier.Value
         nl ()
 
-    member this.Append (statement : LeafStatement) =
-        let (id, body) = statement
+    member this.Append (LeafStatement (id, body) as statement) =
         let ty = body |> List.map LeafBodyStatement.Translate |> List.choose ``|Type|_|``
         match ty with
         | [] -> failwithf"Cannot find type for leaf %A" statement
-        | [ (td, _, _ ) ] ->
+        | [ (TypeStatement (td, _)) ] ->
             indent ()
             // TODO: search for proper type name here
             Printf.bprintf sb "public %s %s;" td.Value id.Value
@@ -226,13 +226,12 @@ type CSharpGenerator (``namespace`` : string, root : ModuleStatement) =
         let children = StatementHelper.Children (Module statement)
         children |> List.iter this.Append
 
-    member this.Append (statement : TypeDefStatement) =
-        let identifier, body = statement
+    member this.Append (TypeDefStatement (identifier, body)) =
         let ty = body |> List.map TypeDefBodyStatement.Translate |> List.choose ``|Type|_|``
         match ty with
         | []        -> failwithf "Cannot find type for typedef %s" identifier.Value
         | [ ty ]    ->
-            let (using_type, _, _) = ty
+            let (TypeStatement (using_type, _)) = ty
             match using_type with
             | BuildInType resolution -> definitions.Add(identifier, resolution)
             | _     -> failwithf "Don't know how to handle type %s" using_type.Value

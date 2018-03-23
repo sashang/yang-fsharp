@@ -6,12 +6,13 @@ module ExpressionTests =
     open Yang.Model.Identifier
     open Yang.Model.Expressions
     open Yang.Parser.Expressions
+    open Yang.Model.Statements
 
     [<Fact>]
     let ``parse simple if-feature statement with a single term (identifier)`` () =
         // [RFC 7950, page 41]
         let input = "if-feature foo;"
-        let (result, _) = FParsecHelper.apply parse_if_feature_statement input
+        let (IfFeatureStatement (result, _)) = FParsecHelper.apply parse_if_feature_statement input
         Assert.Equal(1, result.Length)
         Assert.Equal(1, result.Head.Length)
         let id = FactorAsIdentifier result.Head.Head
@@ -22,7 +23,7 @@ module ExpressionTests =
     let ``parse simple if-feature statement with a single term (identifier) 2`` () =
         // [RFC 7950, page 129]
         let input = "if-feature local-storage;"
-        let (result, _) = FParsecHelper.apply parse_if_feature_statement input
+        let (IfFeatureStatement (result, _)) = FParsecHelper.apply parse_if_feature_statement input
         Assert.Equal(1, result.Length)
         Assert.Equal(1, result.Head.Length)
         let id = FactorAsIdentifier result.Head.Head
@@ -33,7 +34,7 @@ module ExpressionTests =
     let ``parse if-feature statement with or`` () =
         // [RFC 7950, page 131]
         let input = """if-feature "outbound-tls or outbound-ssh";"""
-        let (result, _) = FParsecHelper.apply parse_if_feature_statement input
+        let (IfFeatureStatement (result, _)) = FParsecHelper.apply parse_if_feature_statement input
         Assert.Equal(2, result.Length)
         Assert.Equal(1, result.Head.Length)
         Assert.Equal(1, result.Tail.Head.Length)
@@ -50,7 +51,7 @@ module ExpressionTests =
     let ``parse if-feature statement with all operators`` () =
         // [RFC 7950, page 131]
         let input = """if-feature "not foo or bar and baz";"""
-        let (result, _) = FParsecHelper.apply parse_if_feature_statement input
+        let (IfFeatureStatement (result, _)) = FParsecHelper.apply parse_if_feature_statement input
         Assert.Equal(2, result.Length)
         Assert.Equal(1, result.Head.Length)
         Assert.Equal(2, result.Tail.Head.Length)
@@ -61,7 +62,7 @@ module ExpressionTests =
     let ``parse if-feature statement with all operators, with parenthesis`` () =
         // [RFC 7950, page 131]
         let input = """if-feature "(not foo) or (bar and baz)";"""
-        let (result, _) = FParsecHelper.apply parse_if_feature_statement input
+        let (IfFeatureStatement (result, _)) = FParsecHelper.apply parse_if_feature_statement input
         Assert.Equal(2, result.Length)
         Assert.Equal(1, result.Head.Length)
         Assert.Equal(1, result.Tail.Length)
@@ -82,7 +83,7 @@ module ExpressionTests =
     let ``parse if-feature statement with and`` () =
         // [RFC 7950, page 131]
         let input = """if-feature 'bar and baz';"""
-        let (result, _) = FParsecHelper.apply parse_if_feature_statement input
+        let (IfFeatureStatement (result, _)) = FParsecHelper.apply parse_if_feature_statement input
         Assert.Equal(1, result.Length)
         Assert.Equal(2, result.Head.Length)
 

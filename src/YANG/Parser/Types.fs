@@ -293,6 +293,7 @@ module Types =
                         if spec.IsNone then id, None
                         else id, Some (TypeBodyStatement.UnknownTypeSpecification spec.Value)
                     )
+                |>> TypeStatement
             )
 
         parse_type_statement_ref := parse_type_statement_implementation

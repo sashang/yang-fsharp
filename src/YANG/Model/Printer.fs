@@ -90,167 +90,216 @@ module Printer =
                 body |> List.iter f
                 eb ()
 
-        member __.Append (statement : ActionStatement) =
-            let id, body = statement
+        // The following definitions need to be defined here, because the compiler
+        // cannot find them when they are used before they are defined as members.
+        // (Not sure why this is happening though)
+
+        let AppendNamespace (NamespaceStatement (uri, extra)) =
+            indent ()
+            Printf.bprintf sb "namespace \"%s\"" (uri.ToString())
+            this.Append extra
+
+        let AppendOrganization (OrganizationStatement (organization, extra)) =
+            indent(); Printf.bprintf sb "organization %s" (ToYangString organization)
+            this.Append extra
+
+        let AppendPrefix (PrefixStatement (prefix, extra)) =
+            indent (); Printf.bprintf sb "prefix %s" (ToYangStringQuoted prefix)
+            this.Append extra
+
+        let AppendReference (ReferenceStatement (reference, extra)) =
+            indent(); Printf.bprintf sb "reference %s" (ToYangString reference)
+            this.Append extra
+
+        let AppendRevision (RevisionStatement (date, body)) =
+            indent (); Printf.bprintf sb "revision %s" (ToYangString date.Value)
+            block_o body (fun s -> this.Append (RevisionBodyStatement.Translate s))
+
+        let AppendRevisionDate (RevisionDateStatement (date, extra)) =
+            indent ()
+            Printf.bprintf sb "revision %s" (ToYangString date.Value)
+            this.Append extra
+
+        let AppendType (TypeStatement (id, arg)) =
+            indent(); Printf.bprintf sb "type %s" id.Value
+
+            if arg.IsNone then Printf.bprintf sb ";"; nl()
+            elif arg.IsNone && (TypeBodyStatement.Length arg.Value) = 0 then Printf.bprintf sb " {}"; nl()
+            else
+                Printf.bprintf sb "{"
+                nl()
+                indent ()
+
+                if arg.IsSome then this.Append(arg.Value)
+
+        let AppendUnknown (UnknownStatement (id, arg, extra)) =
+            Printf.bprintf sb "%s" (id.ToString())
+            if arg.IsSome then Printf.bprintf sb " %s" (ToYangString (arg.Value))
+            this.Append extra
+
+        let AppendYangVersion (YangVersionStatement (version, extra)) =
+            indent (); Printf.bprintf sb "yang-version %d.%d" version.Major version.Minor
+            this.Append extra
+
+        member __.Append (ActionStatement (id, body)) =
             indent (); Printf.bprintf sb "action %s" id.Value
             block_o body (fun s -> this.Append (ActionBodyStatement.Translate s))
 
-        member __.Append (statement : AnyDataStatement) =
-            let id, body = statement
+        member __.Append (AnyDataStatement (id, body)) =
             indent (); Printf.bprintf sb "anydata %s" id.Value
             block_o body (fun s -> this.Append (AnyDataBodyStatement.Translate s))
 
-        member __.Append (statement : AnyXmlStatement) =
-            let id, body = statement
+        member __.Append (AnyXmlStatement (id, body)) =
             indent (); Printf.bprintf sb "anyxml %s" id.Value
             block_o body (fun s -> this.Append (AnyXmlBodyStatement.Translate s))
 
-        member __.Append (statement : ArgumentStatement) =
-            let id, body = statement
+        member __.Append (ArgumentStatement (id, body)) =
             indent (); Printf.bprintf sb "argument %s" id.Value
             block_o body (fun s -> this.Append (ArgumentBodyStatement.Translate s))
 
-        member __.Append (statement : AugmentStatement) =
-            let augment, body = statement
+        member __.Append (AugmentStatement (augment, body)) =
             indent (); Printf.bprintf sb "augment %s" (ToYangStringQuoted augment.Value)
             block body (fun s -> this.Append (AugmentBodyStatement.Translate s))
 
-        member __.Append (statement : BelongsToStatement) =
-            let id, body = statement
+        member __.Append (BelongsToStatement (id, body)) =
             indent (); Printf.bprintf sb "belongs-to %s" id.Value
             block body (fun s -> this.Append (BelongsToBodyStatement.Translate s))
 
-        member __.Append (statement : BaseStatement) =
-            let id, extra = statement
+        member __.Append (BaseStatement (id, extra)) =
             indent (); Printf.bprintf sb "base %s" id.Value
             this.Append extra
 
-        member __.Append (statement : BitStatement) =
-            let id, body = statement
+        member __.Append (BitStatement (id, body)) =
             indent (); Printf.bprintf sb "bit %s" id.Value
             block_o body (fun s -> this.Append (BitBodyStatement.Translate s))
 
         member __.Append (statement : BodyStatement) =
             this.Append (BodyStatement.Translate statement)
 
-        member __.Append (statement : CaseStatement) =
-            let id, body = statement
+        member __.Append (ContactStatement (contact, extra)) =
+            indent (); Printf.bprintf sb "contact %s" (ToYangString contact)
+            this.Append extra
+
+        member __.Append (CaseStatement (id, body)) =
             indent (); Printf.bprintf sb "case %s" id.Value
             block_o body (fun s -> this.Append (CaseBodyStatement.Translate s))
 
-        member __.Append (statement : ChoiceStatement) =
-            let id, body = statement
+        member __.Append (ChoiceStatement (id, body)) =
             indent(); Printf.bprintf sb "choice %s" id.Value
             block_o body (fun s -> this.Append (ChoiceBodyStatement.Translate s))
 
-        member __.Append (statement : ConfigStatement) =
-            let b, extra = statement
+        member __.Append (ConfigStatement (b, extra)) =
             indent (); Printf.bprintf sb "config %s" (if b then "true" else "false")
             this.Append extra
 
-        member __.Append (statement : ContainerStatement) =
-            let id, body = statement
+        member __.Append (ContainerStatement (id, body)) =
             indent(); Printf.bprintf sb "container %s" id.Value
             block_o body (fun s -> this.Append (ContainerBodyStatement.Translate s))
 
-        member __.Append (body : DeviateAddStatement) =
+        member __.Append (DefaultStatement (value, extra)) =
+            indent(); Printf.bprintf sb "default %s" (ToYangString value)
+            this.Append extra
+
+        member __.Append (DescriptionStatement (description, extra)) =
+            indent(); Printf.bprintf sb "description %s" (ToYangString description)
+            this.Append extra
+
+        member __.Append (DeviateAddStatement body) =
             indent(); Printf.bprintf sb "deviate add"
             block_o body (fun s -> this.Append (DeviateAddBodyStatement.Translate s))
 
-        member __.Append (body : DeviateDeleteStatement) =
+        member __.Append (DeviateDeleteStatement body) =
             indent(); Printf.bprintf sb "deviate delete"
             block_o body (fun s -> this.Append (DeviateDeleteBodyStatement.Translate s))
 
-        member __.Append (body : DeviateReplaceStatement) =
+        member __.Append (DeviateNotSupportedStatement extra) =
+            indent(); Printf.bprintf sb "deviate not-supported"
+            this.Append extra
+
+        member __.Append (DeviateReplaceStatement body) =
             indent(); Printf.bprintf sb "deviate replace"
             block_o body (fun s -> this.Append (DeviateReplaceBodyStatement.Translate s))
 
-        member __.Append (statement : DeviationStatement) =
-            let deviation, body = statement
+        member __.Append (DeviationStatement (deviation, body)) =
             indent(); Printf.bprintf sb "deviation %s" (ToYangString deviation.Value)
             block body (fun s -> this.Append (DeviationBodyStatement.Translate s))
 
-        member __.Append (statement : EnumStatement) =
-            let enum, body = statement
+        member __.Append (EnumStatement (enum, body)) =
             indent (); Printf.bprintf sb "enum %s" (ToYangString enum)
             block_o body (fun s -> this.Append (EnumBodyStatement.Translate s))
 
-        member __.Append (statement : ExtensionStatement) =
-            let id, body = statement
+        member __.Append (ErrorAppTagStatement (error, extra)) =
+            indent (); Printf.bprintf sb "error-app-tag %s" (ToYangString error)
+            this.Append extra
+
+        member __.Append (ErrorMessageStatement (error, extra)) =
+            indent (); Printf.bprintf sb "error-message %s" (ToYangString error)
+            this.Append extra
+
+        member __.Append (ExtensionStatement (id, body)) =
             indent(); Printf.bprintf sb "extension %s" id.Value
             block_o body (fun s -> this.Append (ExtensionBodyStatement.Translate s))
 
-        member __.Append (statement : FeatureStatement) =
-            let id, body = statement
+        member __.Append (FeatureStatement (id, body)) =
             indent(); Printf.bprintf sb "feature %s" id.Value
             block_o body (fun s -> this.Append (FeatureBodyStatement.Translate s))
 
-        member __.Append (statement : FractionDigitsStatement) =
-            let fraction, extra = statement
+        member __.Append (FractionDigitsStatement (fraction, extra)) =
             indent(); Printf.bprintf sb "fraction-digits %d" fraction
             this.Append extra
 
-        member __.Append (statement : GroupingStatement) =
-            let id, body = statement
+        member __.Append (GroupingStatement (id, body)) =
             indent(); Printf.bprintf sb "grouping %s" id.Value
             block_o body (fun s -> this.Append (GroupingBodyStatement.Translate s))
 
-        member __.Append (statement : IdentityStatement) =
-            let id, body = statement
+        member __.Append (IdentityStatement (id, body)) =
             indent(); Printf.bprintf sb "identity %s" id.Value
             block_o body (fun s -> this.Append (IdentityBodyStatement.Translate s))
 
-        member __.Append (statement : IfFeatureStatement) =
-            let expression, extra = statement
+        member __.Append (IfFeatureStatement (expression, extra)) =
             indent(); Printf.bprintf sb "if-feature "; (Expressions.PrettyPrint (sb, indentation) expression)
             this.Append extra
 
         member __.Append (statement : ImportBodyStatement) =
              match statement with
              | ImportBodyStatement.Description st   -> this.Append st
-             | ImportBodyStatement.Prefix st        -> this.Append st
-             | ImportBodyStatement.Reference st     -> this.Append st
-             | ImportBodyStatement.RevisionDate st  -> this.Append st
-             | ImportBodyStatement.Unknown st       -> this.Append st
+             | ImportBodyStatement.Prefix st        -> AppendPrefix st
+             | ImportBodyStatement.Reference st     -> AppendReference st
+             | ImportBodyStatement.RevisionDate st  -> AppendRevisionDate st
+             | ImportBodyStatement.Unknown st       -> AppendUnknown st
 
-        member __.Append (statement : ImportStatement) =
-            let id, body = statement
+        member __.Append (ImportStatement (id, body)) =
             indent (); Printf.bprintf sb "import %s" id.Value
             block body (fun s -> this.Append (ImportBodyStatement.Translate s))
 
         member __.Append (statement : IncludeBodyStatement) =
             match statement with
             | IncludeBodyStatement.Description  st  -> this.Append st
-            | IncludeBodyStatement.Reference    st  -> this.Append st
-            | IncludeBodyStatement.RevisionDate st  -> this.Append st
-            | IncludeBodyStatement.Unknown      st  -> this.Append st
+            | IncludeBodyStatement.Reference    st  -> AppendReference st
+            | IncludeBodyStatement.RevisionDate st  -> AppendRevisionDate st
+            | IncludeBodyStatement.Unknown      st  -> AppendUnknown st
 
-        member __.Append (statement : IncludeStatement) =
-            let id, body = statement
+        member __.Append (IncludeStatement (id, body)) =
             indent (); Printf.bprintf sb "include %s" id.Value
             block_o body (fun s -> this.Append (IncludeBodyStatement.Translate s))
 
-        member __.Append (body : InputStatement) =
+        member __.Append (InputStatement body) =
             indent(); Printf.bprintf sb "input"
             block body (fun s -> this.Append (InputBodyStatement.Translate s))
 
-        member __.Append (statement : KeyStatement) =
-            let key, extra = statement
+        member __.Append (KeyStatement (key, extra)) =
             indent(); Printf.bprintf sb "key %s" (ToYangString key.Value)
             this.Append extra
 
-        member __.Append (statement : LeafStatement) =
-            let id, body = statement
+        member __.Append (LeafStatement (id, body)) =
             indent(); Printf.bprintf sb "leaf %s" id.Value
             block body (fun s -> this.Append (LeafBodyStatement.Translate s))
 
-        member __.Append (statement : LeafListStatement) =
-            let id, body = statement
+        member __.Append (LeafListStatement (id, body)) =
             indent(); Printf.bprintf sb "leaf-list %s" id.Value
             block body (fun s -> this.Append (LeafListBodyStatement.Translate s))
 
-        member __.Append (statement : LengthStatement) =
-            let id, body = statement
+        member __.Append (LengthStatement (id, body)) =
             indent(); Printf.bprintf sb "length %s" (ToYangString id.Value)
             block_o body (fun s -> this.Append (LengthBodyStatement.Translate s))
 
@@ -259,13 +308,15 @@ module Printer =
             | Import statement  -> this.Append statement
             | Include statement -> this.Append statement
 
-        member __.Append (statement : ListStatement) =
-            let id, body = statement
+        member __.Append (ListStatement (id, body)) =
             indent(); Printf.bprintf sb "list %s" id.Value
             block body (fun s -> this.Append (ListBodyStatement.Translate s))
 
-        member __.Append (statement : MaxElementsStatement) =
-            let max, extra = statement
+        member __.Append (MandatoryStatement (mandatory, extra)) =
+            indent(); Printf.bprintf sb "mandatory %s" (if mandatory then "true" else "false")
+            this.Append extra
+
+        member __.Append (MaxElementsStatement (max, extra)) =
             indent(); Printf.bprintf sb "max-elements %s" (ToYangString max.Value)
             this.Append extra
 
@@ -273,12 +324,11 @@ module Printer =
             match statement with
             | MetaBodyStatement.Contact st      -> this.Append st
             | MetaBodyStatement.Description st  -> this.Append st
-            | MetaBodyStatement.Organization st -> this.Append st
-            | MetaBodyStatement.Reference   st  -> this.Append st
-            | MetaBodyStatement.Unknown     st  -> this.Append st
+            | MetaBodyStatement.Organization st -> AppendOrganization st
+            | MetaBodyStatement.Reference   st  -> AppendReference st
+            | MetaBodyStatement.Unknown     st  -> AppendUnknown st
 
-        member __.Append (statement : MinElementsStatement) =
-            let min, extra = statement
+        member __.Append (MinElementsStatement (min, extra)) =
             indent(); Printf.bprintf sb "min-elements %s" (ToYangString min.Value)
             this.Append extra
 
@@ -289,9 +339,9 @@ module Printer =
             indentation <- indentation + 1
 
             let version, ns, prefix, unknowns = statement.Header
-            this.Append version
-            this.Append ns
-            this.Append prefix
+            AppendYangVersion version
+            AppendNamespace ns
+            AppendPrefix prefix
             if unknowns.IsSome then indent(); this.Append unknowns
 
             let linkage = statement.Linkage
@@ -308,7 +358,7 @@ module Printer =
             let revision = statement.Revision
             if revision.IsEmpty = false then
                 nl()
-                revision |> List.iter (this.Append)
+                revision |> List.iter AppendRevision
 
             let body = statement.Body
             if body.IsEmpty = false then
@@ -320,92 +370,77 @@ module Printer =
             Printf.bprintf sb "}"
             nl()
 
-        member __.Append (statement : ModifierStatement) =
-            let modifier, extra = statement
+        member __.Append (ModifierStatement (modifier, extra)) =
             indent(); Printf.bprintf sb "modifier %s" (ToYangString modifier.Value)
             this.Append extra
 
-        member __.Append (statement : MustStatement) =
-            let condition, body = statement
+        member __.Append (MustStatement (condition, body)) =
             indent(); Printf.bprintf sb "must %s" (ToYangString condition)
             block_o body (fun s -> this.Append (MustBodyStatement.Translate s))
 
-        member __.Append (statement : NamespaceStatement) =
-            let uri, extra = statement
-            indent ()
-            Printf.bprintf sb "namespace \"%s\"" (uri.ToString())
-            this.Append extra
+        member __.Append (statement : NamespaceStatement) = AppendNamespace statement
 
-        member __.Append (statement : NotificationStatement) =
-            let id, body = statement
+        member __.Append (NotificationStatement (id, body)) =
             indent(); Printf.bprintf sb "notification %s" id.Value
             block_o body (fun s -> this.Append (NotificationBodyStatement.Translate s))
 
-        member __.Append (statement : OrderedByStatement) =
-            let order, extra = statement
+        member __.Append (OrderedByStatement (order, extra)) =
             indent(); Printf.bprintf sb "must %s" (ToYangString order.Value)
             this.Append extra
 
-        member __.Append (body : OutputStatement) =
+        member __.append (statement : OrganizationStatement) = AppendOrganization statement
+
+        member __.Append (OutputStatement body) =
             indent(); Printf.bprintf sb "output"
             block body (fun s -> this.Append (OutputBodyStatement.Translate s))
 
-        member __.Append (statement : PathStatement) =
-            let path, extra = statement
-            indent ()
-            Printf.bprintf sb "path %s" (ToYangString path.Value)
+        member __.Append (PathStatement (path, extra)) =
+            indent (); Printf.bprintf sb "path %s" (ToYangString path.Value)
             this.Append extra
 
-        member __.Append (statement : PatternStatement) =
-            let pattern, body = statement
+        member __.Append (PatternStatement (pattern, body)) =
             indent(); Printf.bprintf sb "pattern %s" (ToYangStringQuoted pattern)
             block_o body (fun s -> this.Append (PatternBodyStatement.Translate s))
 
-        member __.Append (statement : PrefixStatement) =
-            let prefix, extra = statement
-            indent ()
-            Printf.bprintf sb "prefix %s" (ToYangStringQuoted prefix)
+        member __.Append (statement : PrefixStatement) = AppendPrefix statement
+
+        member __.Append (PresenceStatement (presence, extra)) =
+            indent(); Printf.bprintf sb "prefix %s" (ToYangStringQuoted presence)
             this.Append extra
 
-        member __.Append (statement : PositionStatement) =
-            let position, extra = statement
+        member __.Append (PositionStatement (position, extra)) =
             indent(); Printf.bprintf sb "position %d" position
             this.Append extra
 
-        member __.Append (statement : RangeStatement) =
-            let range, body = statement
+        member __.Append (RangeStatement (range, body)) =
             indent(); Printf.bprintf sb "range %s" (ToYangString range.Value)
             block_o body (fun s -> this.Append (RangeBodyStatement.Translate s))
 
-        member __.Append (statement : RefineStatement) =
-            let refine, body = statement
-            indent(); Printf.bprintf sb "range %s" (ToYangString refine.Value)
+        member __.Append (statement : ReferenceStatement) = AppendReference statement
+
+        member __.Append (RefineStatement (refine, body)) =
+            indent(); Printf.bprintf sb "refine %s" (ToYangString refine.Value)
             block_o body (fun s -> this.Append (RefineBodyStatement.Translate s))
+
+        member __.Append (RequireInstanceStatement (require, extra)) =
+            indent(); Printf.bprintf sb "require %s" (if require then "true" else "false")
+            this.Append extra
 
         member __.Append (statement : RevisionBodyStatement) =
             match statement with
             | RevisionBodyStatement.Description st  -> this.Append st
             | RevisionBodyStatement.Reference   st  -> this.Append st
-            | RevisionBodyStatement.Unknown     st  -> this.Append st
+            | RevisionBodyStatement.Unknown     st  -> AppendUnknown st
 
-        member __.Append (statement : RevisionStatement) =
-            let date, body = statement
-            indent (); Printf.bprintf sb "revision %s" (ToYangString date.Value)
-            block_o body (fun s -> this.Append (RevisionBodyStatement.Translate s))
+        member __.Append (statement : RevisionStatement) = AppendRevision statement
 
-        member __.Append (statement : RevisionDateStatement) =
-            let date, extra = statement;
-            indent ()
-            Printf.bprintf sb "revision %s" (ToYangString date.Value)
-            this.Append extra
+        member __.Append (statement : RevisionDateStatement) = AppendRevisionDate statement
 
-        member __.Append (statement : RpcStatement) =
-            let id, body = statement
+        member __.Append (RpcStatement (id, body)) =
             indent(); Printf.bprintf sb "rpc %s" id.Value
             block_o body (fun s -> this.Append (RpcBodyStatement.Translate s))
 
-        member __.Append (statement : StatusStatement) =
-            let status, extra = statement
+        member __.Append (StatusStatement (status, extra)) =
             indent(); Printf.bprintf sb "status %s" (ToYangString status.Value)
             this.Append extra
 
@@ -416,7 +451,7 @@ module Printer =
             indentation <- indentation + 1
 
             let version, belongsTo, unknowns = statement.Header
-            this.Append version
+            AppendYangVersion version
             this.Append belongsTo
             this.Append unknowns
 
@@ -452,7 +487,7 @@ module Printer =
                 fun spec ->
                     match spec with
                     | BinaryBodySpecification.Length    length  -> this.Append length
-                    | BinaryBodySpecification.Unknown   unknown -> this.Append unknown
+                    | BinaryBodySpecification.Unknown   unknown -> AppendUnknown unknown
 
                     nl ()
             )
@@ -463,7 +498,7 @@ module Printer =
                 fun spec ->
                     match spec with
                     | BitsBodySpecification.Bit     bit         -> this.Append bit
-                    | BitsBodySpecification.Unknown unknown     -> this.Append unknown
+                    | BitsBodySpecification.Unknown unknown     -> AppendUnknown unknown
 
                     nl ()
             )
@@ -475,7 +510,7 @@ module Printer =
                     match spec with
                     | Decimal64BodySpecification.FractionDigits fraction    -> this.Append fraction
                     | Decimal64BodySpecification.Range          range       -> this.Append range
-                    | Decimal64BodySpecification.Unknown        unknown     -> this.Append unknown
+                    | Decimal64BodySpecification.Unknown        unknown     -> AppendUnknown unknown
 
                     nl ()
             )
@@ -486,7 +521,7 @@ module Printer =
                 fun spec ->
                     match spec with
                     | EnumBodySpecification.Enum    enum                    -> this.Append enum
-                    | EnumBodySpecification.Unknown unknown                 -> this.Append unknown
+                    | EnumBodySpecification.Unknown unknown                 -> AppendUnknown unknown
 
                     nl()
             )
@@ -497,7 +532,7 @@ module Printer =
                 fun spec ->
                     match spec with
                     | IdentityRefBodySpecification.Base     ``base``        -> this.Append ``base``
-                    | IdentityRefBodySpecification.Unknown  unknown         -> this.Append unknown
+                    | IdentityRefBodySpecification.Unknown  unknown         -> AppendUnknown unknown
 
                     nl()
             )
@@ -508,7 +543,7 @@ module Printer =
                 fun spec ->
                     match spec with
                     | InstanceIdentifierBodySpecification.RequireInstance   require -> this.Append require
-                    | InstanceIdentifierBodySpecification.Unknown           unknown -> this.Append unknown
+                    | InstanceIdentifierBodySpecification.Unknown           unknown -> AppendUnknown unknown
 
                     nl()
             )
@@ -520,7 +555,7 @@ module Printer =
                     match spec with
                     | LeafRefBodySpecification.Path     path                -> this.Append path
                     | LeafRefBodySpecification.Require  require             -> this.Append require
-                    | LeafRefBodySpecification.Unknown  unknown             -> this.Append unknown
+                    | LeafRefBodySpecification.Unknown  unknown             -> AppendUnknown unknown
 
                     nl()
             )
@@ -531,7 +566,7 @@ module Printer =
                 fun spec ->
                     match spec with
                     | NumericalBodyRestrictions.Range   range               -> this.Append range
-                    | NumericalBodyRestrictions.Unknown unknown             -> this.Append unknown
+                    | NumericalBodyRestrictions.Unknown unknown             -> AppendUnknown unknown
 
                     nl()
             )
@@ -543,7 +578,7 @@ module Printer =
                     match spec with
                     | StringBodyRestrictions.Length     length              -> this.Append length
                     | StringBodyRestrictions.Pattern    pattern             -> this.Append pattern
-                    | StringBodyRestrictions.Unknown    unknown             -> this.Append unknown
+                    | StringBodyRestrictions.Unknown    unknown             -> AppendUnknown unknown
 
                     nl()
             )
@@ -553,8 +588,8 @@ module Printer =
             |> List.iter (
                 fun spec ->
                     match spec with
-                    | UnionBodySpecification.Type       ``type``            -> this.Append ``type``
-                    | UnionBodySpecification.Unknown    unknown             -> this.Append unknown
+                    | UnionBodySpecification.Type       ``type``            -> AppendType ``type``
+                    | UnionBodySpecification.Unknown    unknown             -> AppendUnknown unknown
 
                     nl()
             )
@@ -574,53 +609,40 @@ module Printer =
             | TypeBodyStatement.UnknownTypeSpecification        arg ->
                 arg |> List.iter (fun st -> this.Append st; nl())
 
-        member __.Append (statement : TypeStatement) =
-            let id, arg = statement
-            indent(); Printf.bprintf sb "type %s" id.Value
+        member __.Append (statement : TypeStatement) =  AppendType statement
 
-            if arg.IsNone then Printf.bprintf sb ";"; nl()
-            elif arg.IsNone && (TypeBodyStatement.Length arg.Value) = 0 then Printf.bprintf sb " {}"; nl()
-            else
-                Printf.bprintf sb "{"
-                nl()
-                indent ()
-
-                if arg.IsSome then this.Append(arg.Value)
-
-        member __.Append (statement : TypeDefStatement) =
-            let id, body = statement
+        member __.Append (TypeDefStatement (id, body)) =
             indent(); Printf.bprintf sb "typedef %s" id.Value
             block body (fun s -> this.Append (TypeDefBodyStatement.Translate s))
 
-        member __.Append (statement : UniqueStatement) =
-            let unique, extra = statement
+        member __.Append (UnitsStatement (units, extra)) =
+            indent(); Printf.bprintf sb "units %s" (ToYangString units)
+            this.Append extra
+
+        member __.Append (UniqueStatement (unique, extra)) =
             indent(); Printf.bprintf sb "unique %s" (ToYangString unique.Value)
             this.Append extra
 
-        member __.Append (statement : UsesStatement) =
-            let id, body = statement
+        member __.Append (UsesStatement (id, body)) =
             indent(); Printf.bprintf sb "uses %s" id.Value
             block_o body (fun s -> this.Append (UsesBodyStatement.Translate s))
 
-        member __.Append (statement : UsesAugmentStatement) =
-            let augment, body = statement
+        member __.Append (UsesAugmentStatement (augment, body)) =
             indent(); Printf.bprintf sb "augment %s" (ToYangString augment.Value)
             block body (fun s -> this.Append (UsesAugmentBodyStatement.Translate s))
 
-        member __.Append (statement : ValueStatement) =
-            let value, extra = statement
+        member __.Append (ValueStatement (value, extra)) =
             indent(); Printf.bprintf sb "value %d" value
             this.Append extra
 
-        member __.Append (statement : WhenStatement) =
-            let condition, body = statement
+        member __.Append (WhenStatement (condition, body)) =
             indent(); Printf.bprintf sb "when %s" (ToYangString condition)
             block_o body (fun s -> this.Append (WhenBodyStatement.Translate s))
 
-        member __.Append (statement : YangVersionStatement) =
-            let version, extra = statement
-            indent ()
-            Printf.bprintf sb "yang-version %d.%d" version.Major version.Minor
+        member __.Append (statement : YangVersionStatement) = AppendYangVersion statement
+
+        member __.Append (YinElementStatement (yin, extra)) =
+            indent (); Printf.bprintf sb "yin-element %s" (if yin then "true" else "false")
             this.Append extra
 
         member __.Append (statement : Statement) =
@@ -673,35 +695,35 @@ module Printer =
             | Statement.Modifier st             -> this.Append st
             | Statement.Module st               -> this.Append st
             | Statement.Must st                 -> this.Append st
-            | Statement.Namespace st            -> this.Append st
+            | Statement.Namespace st            -> AppendNamespace st
             | Statement.Notification st         -> this.Append st
             | Statement.OrderedBy st            -> this.Append st
-            | Statement.Organization st         -> this.Append st
+            | Statement.Organization st         -> AppendOrganization st
             | Statement.Output st               -> this.Append st
             | Statement.Path st                 -> this.Append st
             | Statement.Pattern st              -> this.Append st
             | Statement.Position st             -> this.Append st
-            | Statement.Prefix st               -> this.Append st
+            | Statement.Prefix st               -> AppendPrefix st
             | Statement.Presence st             -> this.Append st
             | Statement.Range st                -> this.Append st
-            | Statement.Reference st            -> this.Append st
+            | Statement.Reference st            -> AppendReference st
             | Statement.Refine st               -> this.Append st
-            | Statement.Revision st             -> this.Append st
-            | Statement.RevisionDate st         -> this.Append st
+            | Statement.Revision st             -> AppendRevision st
+            | Statement.RevisionDate st         -> AppendRevisionDate st
             | Statement.RequireInstance st      -> this.Append st
             | Statement.Rpc st                  -> this.Append st
             | Statement.Status st               -> this.Append st
             | Statement.Submodule st            -> this.Append st
-            | Statement.Type st                 -> this.Append st
+            | Statement.Type st                 -> AppendType st
             | Statement.TypeDef st              -> this.Append st
             | Statement.Unique st               -> this.Append st
             | Statement.Units st                -> this.Append st
-            | Statement.Unknown st              -> this.Append st
+            | Statement.Unknown st              -> AppendUnknown st
             | Statement.Uses st                 -> this.Append st
             | Statement.UsesAugment st          -> this.Append st
             | Statement.Value st                -> this.Append st
             | Statement.When st                 -> this.Append st
-            | Statement.YangVersion st          -> this.Append st
+            | Statement.YangVersion st          -> AppendYangVersion st
             | Statement.YinElement st           -> this.Append st
 
             if mode._IsSuppressed then mode <- NextSuppress
@@ -722,11 +744,7 @@ module Printer =
                 Printf.bprintf sb "}"
                 nl()
 
-        member __.Append (statement : UnknownStatement) =
-            let id, arg, extra = statement
-            Printf.bprintf sb "%s" (id.ToString())
-            if arg.IsSome then Printf.bprintf sb " %s" (ToYangString (arg.Value))
-            this.Append extra
+        member __.Append (statement : UnknownStatement) = AppendUnknown statement
 
         member __.Append (unknowns : UnknownStatement list option) =
             match unknowns with
@@ -767,3 +785,4 @@ module Printer =
 
     do
         Statements.StatementPrinter.Set StatementToString
+

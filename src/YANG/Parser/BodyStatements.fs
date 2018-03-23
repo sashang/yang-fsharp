@@ -81,10 +81,12 @@ module BodyStatements =
     // TODO: Parsers for list keys
 
     type private BodyParsers<'a> = {
+        Action          : Parser<ActionStatement, 'a>
         Body            : Parser<BodyStatement, 'a>
         DataDefinition  : Parser<BodyStatement, 'a>
         ContainerBody   : Parser<ContainerBodyStatement, 'a>
         Container       : Parser<ContainerStatement, 'a>
+        TypeDef         : Parser<TypeDefStatement, 'a>
     }
 
     /// Create parsers for the high-level constructs of the model (data  types, etc).
@@ -134,6 +136,7 @@ module BodyStatements =
             //                            [reference-stmt]
             //                        "}" stmtsep
             make_statement_parser_generic "typedef" Identifier.parse_identifier parse_typedef_body_statement
+            |>> TypeDefStatement
 
         let parse_notification_body_statement : Parser<NotificationBodyStatement, 'a> =
                 (parse_if_feature_statement     |>> NotificationBodyStatement.IfFeature)
@@ -163,6 +166,7 @@ module BodyStatements =
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality constraints for notification-stmt
             make_statement_parser_optional_generic "notification" Identifier.parse_identifier parse_notification_body_statement
+            |>> NotificationStatement
 
         let parse_grouping_body_statement : Parser<GroupingBodyStatement, 'a> =
                 (parse_status_statement             |>> GroupingBodyStatement.Status)
@@ -191,6 +195,7 @@ module BodyStatements =
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality constraints for grouping-stmt
             make_statement_parser_optional_generic "grouping" Identifier.parse_identifier parse_grouping_body_statement
+            |>> GroupingStatement
 
         let parse_input_body_statement : Parser<InputBodyStatement, 'a> =
                 (parse_must_statement           |>> InputBodyStatement.Must)
@@ -209,6 +214,7 @@ module BodyStatements =
             //                            1*data-def-stmt
             //                        "}" stmtsep
             make_statement_parser_no_argument_generic "input" parse_input_body_statement
+            |>> InputStatement
 
         let parse_list_body_statement : Parser<ListBodyStatement, 'a> =
                 (parse_when_statement           |>> ListBodyStatement.When)
@@ -253,6 +259,7 @@ module BodyStatements =
             //                        "}" stmtsep
             // TODO: Check and enforce cardinality constraints for list-stmt
             make_statement_parser_generic "list" Identifier.parse_identifier parse_list_body_statement
+            |>> ListStatement
 
         let parse_output_body_statement : Parser<OutputBodyStatement, 'a> =
                 (parse_must_statement           |>> OutputBodyStatement.Must)
@@ -271,6 +278,7 @@ module BodyStatements =
             //                            1*data-def-stmt
             //                        "}" stmtsep
             make_statement_parser_no_argument_generic "output" parse_output_body_statement
+            |>> OutputStatement
 
         let parse_rpc_body_statement : Parser<RpcBodyStatement, 'a> =
                 (parse_if_feature_statement         |>> RpcBodyStatement.IfFeature)
@@ -298,6 +306,7 @@ module BodyStatements =
             //                            [output-stmt]
             //                        "}") stmtsep
             make_statement_parser_optional_generic "rpc" Identifier.parse_identifier parse_rpc_body_statement
+            |>> RpcStatement
 
         let parse_action_body_statement : Parser<ActionBodyStatement, 'a> =
                 (parse_if_feature_statement     |>> ActionBodyStatement.IfFeature)
@@ -326,6 +335,7 @@ module BodyStatements =
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality constraints for action-stmt
             make_statement_parser_optional_generic "action" Identifier.parse_identifier parse_action_body_statement
+            |>> ActionStatement
 
         let parse_case_body_statement : Parser<CaseBodyStatement, 'a> =
                 (parse_when_statement           |>> CaseBodyStatement.When)
@@ -351,6 +361,7 @@ module BodyStatements =
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality for case-stmt
             make_statement_parser_optional_generic "case" Identifier.parse_identifier parse_case_body_statement
+            |>> CaseStatement
 
         let parse_augment_body_statement : Parser<AugmentBodyStatement, 'a> =
                 (parse_when_statement           |>> AugmentBodyStatement.When)
@@ -378,6 +389,7 @@ module BodyStatements =
             //                            action-stmt / notification-stmt)
             //                        "}" stmtsep
             make_statement_parser_generic "augment" (pip Strings.parse_string Identifier.parse_schema_node_identifier_absolute) parse_augment_body_statement
+            |>> AugmentStatement
 
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
                 (parse_if_feature_statement     |>> ContainerBodyStatement.IfFeature)
@@ -415,6 +427,7 @@ module BodyStatements =
             //                       "}") stmtsep
             // TODO: Check and enforce cardinality for container-stmt.
             make_statement_parser_optional_generic "container" Identifier.parse_identifier parse_container_body_statement
+            |>> ContainerStatement
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
                 (parse_when_statement           |>> ChoiceBodyStatement.When)
@@ -460,6 +473,7 @@ module BodyStatements =
             //                        anyxml-stmt
             // TODO: Check and enforce cardinality and other constraints for choice-stmt
             make_statement_parser_optional_generic "choice" Identifier.parse_identifier parse_choice_body_statement
+            |>> ChoiceStatement
 
         let parse_uses_augment_body_statement : Parser<UsesAugmentBodyStatement, 'a> =
                 (parse_when_statement           |>> UsesAugmentBodyStatement.When)
@@ -487,6 +501,7 @@ module BodyStatements =
             //                            action-stmt / notification-stmt)
             //                        "}" stmtsep
             make_statement_parser_generic "augment" Identifier.parse_schema_node_identifier_descendant parse_uses_augment_body_statement
+            |>> UsesAugmentStatement
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
             // TODO: fill in missing parsing for UsesBodyStatement
@@ -514,6 +529,8 @@ module BodyStatements =
             //                            *uses-augment-stmt
             //                        "}") stmtsep
             make_statement_parser_optional_generic "uses" Identifier.parse_identifier_reference parse_uses_body_statement
+            |>> UsesStatement
+
         let parse_data_definition_implementation : Parser<BodyStatement, 'a> =
             // TODO: fill in missing parsing for data-def-stmt
                 (parse_container_statement  |>> BodyStatement.Container)
@@ -544,14 +561,19 @@ module BodyStatements =
             <|> (parse_deviation_statement                  |>> BodyStatement.Deviation)
 
         {
+            Action          = parse_action_statement
             Body            = parse_body
             DataDefinition  = parse_data_definition
             ContainerBody   = parse_container_body_statement
             Container       = parse_container_statement
+            TypeDef         = parse_typedef_statement
         }
+
+    let parse_action_statement<'a> : Parser<ActionStatement, 'a> = parsers.Action
 
     let parse_body_statement<'a> : Parser<BodyStatement, 'a> = parsers.Body
     let parse_body_statements<'a> : Parser<BodyStatement list, 'a> = many parsers.Body
 
     let parse_container_body_statement<'a> : Parser<ContainerBodyStatement, 'a> = parsers.ContainerBody
     let parse_container_statement<'a> : Parser<ContainerStatement, 'a> = parsers.Container
+    let parse_typedef_statement<'a> : Parser<TypeDefStatement, 'a> = parsers.TypeDef

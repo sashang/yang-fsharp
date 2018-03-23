@@ -53,6 +53,7 @@ module Deviation =
         //                        "}") stmtsep
         // TODO: Check and enforce cardinality constraints for deviate-add-stmt
         parse_deviate_generic_statement "add" parse_deviate_add_body_statement
+        |>> DeviateAddStatement
 
     let parse_deviate_delete_body_statement<'a> : Parser<DeviateDeleteBodyStatement, 'a> =
             (parse_units_statement          |>> DeviateDeleteBodyStatement.Units)
@@ -74,6 +75,7 @@ module Deviation =
         //                        "}") stmtsep
         // TODO: Check and enforce cardinality constraints for deviate-delete-stmt
         parse_deviate_generic_statement "delete" parse_deviate_delete_body_statement
+        |>> DeviateDeleteStatement
 
     let parse_deviate_replace_body_statement<'a> : Parser<DeviateReplaceBodyStatement, 'a> =
             (Types.parse_type_statement     |>> DeviateReplaceBodyStatement.Type)
@@ -101,13 +103,14 @@ module Deviation =
         //                        "}") stmtsep
         // TODO: Check and enforce cardinality constraints for deviate-replace-stmt
         parse_deviate_generic_statement "replace" parse_deviate_replace_body_statement
+        |>> DeviateReplaceStatement
 
     let parse_deviate_not_supported_statement<'a> : Parser<DeviateNotSupportedStatement, 'a> =
         skipString "deviate" >>. spaces >>.
         skipString "not-supported" >>. spaces >>.
         (
-                (end_of_statement                           |>> (fun _ -> None))
-            <|> (begin_block >>. (block parse_statement)    |>> Some)
+                (end_of_statement                           |>> (fun _ -> DeviateNotSupportedStatement None))
+            <|> (begin_block >>. (block parse_statement)    |>> fun st -> DeviateNotSupportedStatement (Some st))
         )
 
     let parse_deviation_body_statement<'a> : Parser<DeviationBodyStatement, 'a> =
@@ -118,25 +121,25 @@ module Deviation =
                     (       (end_of_statement                                                   |>> (fun _ -> None))
                         <|> (begin_block >>. (block_generic parse_deviate_add_body_statement)   |>> Some)
                     )
-                   |>> DeviationBodyStatement.DeviateAdd)
+                   |>> fun st -> DeviationBodyStatement.DeviateAdd (DeviateAddStatement st))
                 )
             <|> ( (skipString "delete" >>. spaces >>.
                     (       (end_of_statement                                                   |>> (fun _ -> None))
                         <|> (begin_block >>. (block_generic parse_deviate_delete_body_statement)   |>> Some)
                     )
-                   |>> DeviationBodyStatement.DeviateDelete)
+                   |>> fun st -> DeviationBodyStatement.DeviateDelete (DeviateDeleteStatement st))
                 )
             <|> ( (skipString "replace" >>. spaces >>.
                     (       (end_of_statement                                                   |>> (fun _ -> None))
                         <|> (begin_block >>. (block_generic parse_deviate_replace_body_statement)   |>> Some)
                     )
-                   |>> DeviationBodyStatement.DeviateReplace)
+                   |>> fun st -> DeviationBodyStatement.DeviateReplace (DeviateReplaceStatement st))
                 )
             <|> ( (skipString "not-supported" >>. spaces >>.
                     (       (end_of_statement                                                   |>> (fun _ -> None))
                         <|> (begin_block >>. (block_generic parse_statement)   |>> Some)
                     )
-                   |>> DeviationBodyStatement.DeviateNotSupported)
+                   |>> fun st -> DeviationBodyStatement.DeviateNotSupported (DeviateNotSupportedStatement st))
                 )
             )
         <|> (parse_unknown_statement        |>> DeviationBodyStatement.Unknown)
@@ -155,3 +158,4 @@ module Deviation =
         //                                deviate-delete-stmt))
         //                        "}" stmtsep
         make_statement_parser_generic "deviation" Identifier.parse_schema_node_identifier_absolute parse_deviation_body_statement
+        |>> DeviationStatement

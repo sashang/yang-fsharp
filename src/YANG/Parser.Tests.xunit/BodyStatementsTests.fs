@@ -103,7 +103,7 @@ container system {
         Assert.True(BodyStatement.IsContainer t)
 
         match t with
-        | Container (id, body) ->
+        | Container (ContainerStatement (id, body)) ->
             Assert.Equal("system", id.Value)
             Assert.True(body.IsSome)
 

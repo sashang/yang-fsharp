@@ -53,3 +53,4 @@ module Expressions =
             "if-feature"
             (Utilities.pip Strings.parse_string parse_expression)
             parse_statement
+        |>> IfFeatureStatement

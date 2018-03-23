@@ -9,28 +9,25 @@ module TypesTests =
     [<Fact>]
     let ``parse simple string type`` () =
         let input = """type string;"""
-        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(IdentifierReference.Make "string", id)
         Assert.Equal(None, restriction)
-        Assert.Equal(None, unknowns)
 
     [<Fact>]
     let ``parse string type with empty body`` ()=
         let input = """type string {}"""
-        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(IdentifierReference.Make "string", id)
         Assert.Equal(None, restriction)
-        Assert.Equal(None, unknowns)
 
     [<Fact>]
     let ``parse string type with simple length constraint`` () =
         let input = """type string {
                  length "1 .. 128";
                }"""
-        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(IdentifierReference.Make "string", id)
         Assert.NotEqual(None, restriction)
-        Assert.Equal(None, unknowns)
 
     [<Fact>]
     let ``parse string type with custom constraints`` () =
@@ -38,11 +35,13 @@ module TypesTests =
                  junos:posix-pattern "^.{1,64}$";
                  junos:pattern-message "Must be string of 64 characters or less";
                }"""
-        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(Identifier.IdentifierReference.Make "string", id)
-        Assert.Equal(None, restriction)
-        Assert.NotEqual(None, unknowns)
-        Assert.Equal(2, unknowns.Value.Length)
+        Assert.True(restriction.IsSome)
+        let string_restriction = TypeBodyStatement.AsStringRestrictions restriction.Value
+        Assert.True(string_restriction.IsSome)
+        Assert.Equal(2, string_restriction.Value.Length)
+        // TODO: Check that the string restrictions are unknown
 
     [<Fact>]
     let ``type string with type restrictions appear before custom extensions`` () =
@@ -52,11 +51,13 @@ module TypesTests =
              junos:pattern-message "Must be string of 64 characters or less";
            }"""
 
-        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(Identifier.IdentifierReference.Make "string", id)
-        Assert.NotEqual(None, restriction)
-        Assert.NotEqual(None, unknowns)
-        Assert.Equal(2, unknowns.Value.Length)
+        Assert.True(restriction.IsSome)
+        let string_restriction = TypeBodyStatement.AsStringRestrictions restriction.Value
+        Assert.True(string_restriction.IsSome)
+        Assert.Equal(3, string_restriction.Value.Length)
+        // TODO: Check that the string restrictions are correct
 
     [<Fact>]
     let ``parse string type with custom extensions and restrictions`` () =
@@ -65,11 +66,13 @@ module TypesTests =
                  junos:pattern-message "Must be string of 64 characters or less";
                  length "1 .. 128";
                }"""
-        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(Identifier.IdentifierReference.Make "string", id)
-        Assert.NotEqual(None, restriction)
-        Assert.NotEqual(None, unknowns)
-        Assert.Equal(2, unknowns.Value.Length)
+        Assert.True(restriction.IsSome)
+        let string_restriction = TypeBodyStatement.AsStringRestrictions restriction.Value
+        Assert.True(string_restriction.IsSome)
+        Assert.Equal(3, string_restriction.Value.Length)
+        // TODO: Check that the string restrictions are correct
 
     [<Fact>]
     let ``fail when string type length restriction appears twice`` () =
@@ -93,19 +96,13 @@ module TypesTests =
              pattern "^.{1,64}$";
            }"""
 
-        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(Identifier.IdentifierReference.Make "string", id)
-        Assert.NotEqual(None, restriction)
-        Assert.NotEqual(None, unknowns)
-        Assert.Equal(2, unknowns.Value.Length)
-
-        match restriction.Value with
-        | TypeBodyStatement.StringRestrictions ((Some length), pattern) ->
-            Assert.Equal(1, pattern.Length)
-        | TypeBodyStatement.StringRestrictions (restriction, pattern) ->
-            Assert.True(false, sprintf "Expected to find a string length restriction, got None in %A" restriction.Value)
-        | _ ->
-            Assert.True(false, sprintf "Expected to find a string restriction statement; found %A" restriction.Value)
+        Assert.True(restriction.IsSome)
+        let string_restriction = TypeBodyStatement.AsStringRestrictions restriction.Value
+        Assert.True(string_restriction.IsSome)
+        Assert.Equal(4, string_restriction.Value.Length)
+        // TODO: Check that the string restrictions are correct
 
     [<Fact>]
     let ``parse string with three pattern restrictions, length, and unknowns`` () =
@@ -118,15 +115,10 @@ module TypesTests =
              pattern "^.{1,60}$";
            }"""
 
-        let id, restriction, unknowns = FParsecHelper.apply parse_type_statement input
+        let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(Identifier.IdentifierReference.Make "string", id)
-        Assert.NotEqual(None, restriction)
-        Assert.NotEqual(None, unknowns)
-        Assert.Equal(2, unknowns.Value.Length)
-
-        match restriction.Value with
-        | TypeBodyStatement.StringRestrictions (length, pattern) ->
-            Assert.NotEqual(None, length)
-            Assert.Equal(3, pattern.Length)
-        | _ ->
-            Assert.True(false, sprintf "Expected to find a string restriction statement; found %A" restriction.Value)
+        Assert.True(restriction.IsSome)
+        let string_restriction = TypeBodyStatement.AsStringRestrictions restriction.Value
+        Assert.True(string_restriction.IsSome)
+        Assert.Equal(6, string_restriction.Value.Length)
+        // TODO: Check that the string restrictions are correct

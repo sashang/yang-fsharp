@@ -133,7 +133,7 @@ module Statements =
     | Output        of OutputStatement
     | Unknown       of UnknownStatement
     /// Captures the 'action-stmt' statement from [RFC 7950, p. 200]
-    and ActionStatement         = Identifier            * (ActionBodyStatement list option)
+    and ActionStatement         = | ActionStatement of Identifier * (ActionBodyStatement list option)
     and AnyDataBodyStatement    =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -145,7 +145,7 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'anydata-stmt' statement from [RFC 7950, p. 197]
-    and AnyDataStatement        = Identifier            * (AnyDataBodyStatement list option)
+    and AnyDataStatement        = | AnyDataStatement of Identifier * (AnyDataBodyStatement list option)
     and AnyXmlBodyStatement     =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -157,12 +157,12 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'anyxml-stmt' statement from [RFC 7950, p. 197]
-    and AnyXmlStatement         = Identifier            * (AnyXmlBodyStatement list option)
+    and AnyXmlStatement         = | AnyXmlStatement of Identifier * (AnyXmlBodyStatement list option)
     and ArgumentBodyStatement   =
     | YinElement    of YinElementStatement
     | Unknown       of UnknownStatement
     /// Captures the 'argument-stmt' statement from [RFC 7950, p. 187]
-    and ArgumentStatement       = Identifier            * (ArgumentBodyStatement list option)
+    and ArgumentStatement       = | ArgumentStatement of Identifier * (ArgumentBodyStatement list option)
     and AugmentBodyStatement    =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -184,14 +184,14 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the 'augment-stmt' statement from [RFC 7950, p. 199]
-    and AugmentStatement        = Augment               * (AugmentBodyStatement list)
+    and AugmentStatement        = | AugmentStatement of Augment * (AugmentBodyStatement list)
     /// Captures the 'base-stmt' statement from [RFC 7950, p. 187]
-    and BaseStatement           = IdentifierReference   * ExtraStatements
+    and BaseStatement           = | BaseStatement of IdentifierReference * ExtraStatements
     and BelongsToBodyStatement  =
     | Prefix        of PrefixStatement
     | Unknown       of UnknownStatement
     /// Captures the 'belongs-to-stmt' statement from [RFC 7950, p. 186]
-    and BelongsToStatement      = Identifier    * (BelongsToBodyStatement list)
+    and BelongsToStatement      = | BelongsToStatement of Identifier * (BelongsToBodyStatement list)
     and BitBodyStatement        =
     | IfFeature     of IfFeatureStatement
     | Position      of PositionStatement
@@ -200,7 +200,7 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'bit-stmt' statement from [RFC 7950, p. 191]
-    and BitStatement            = Identifier    * (BitBodyStatement list option)
+    and BitStatement            = | BitStatement of Identifier        * (BitBodyStatement list option)
     and CaseBodyStatement       =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -219,7 +219,7 @@ module Statements =
     // End of data-def-stmt
     | Unknown       of UnknownStatement
     /// Captures the 'case-stmt' statement from [RFC 7950, p. 196].
-    and CaseStatement           = Identifier    * (CaseBodyStatement list option)
+    and CaseStatement           = | CaseStatement of Identifier    * (CaseBodyStatement list option)
     and ChoiceBodyStatement     =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -241,11 +241,11 @@ module Statements =
     | Case          of CaseStatement
     | Unknown       of UnknownStatement
     /// Captures the 'choice-stmt' statement from [RFC 7950, p. 196].
-    and ChoiceStatement         = Identifier    * (ChoiceBodyStatement list option)
+    and ChoiceStatement         = | ChoiceStatement     of Identifier    * (ChoiceBodyStatement list option)
     /// Captures the 'config-stmt' statement from [RFC 7950, p. 191]
-    and ConfigStatement         = bool          * ExtraStatements
+    and ConfigStatement         = | ConfigStatement     of bool          * ExtraStatements
     /// Captures the 'contact-stmt' statement from [RFC 7950, p. 186]
-    and ContactStatement        = string        * ExtraStatements
+    and ContactStatement        = | ContactStatement    of string        * ExtraStatements
     and ContainerBodyStatement  =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -271,11 +271,11 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the 'container-stmt' statement from [RFC 7950, p. 193].
-    and ContainerStatement      = Identifier    * (ContainerBodyStatement list option)
+    and ContainerStatement      = | ContainerStatement of Identifier    * (ContainerBodyStatement list option)
     /// Captures the 'default-stmt' statement from [RFC 7950, p. 190]
-    and DefaultStatement        = string        * ExtraStatements
+    and DefaultStatement        = | DefaultStatement        of string        * ExtraStatements
     /// Captures the 'description-stmt' statement from [RFC 7950, p. 186]
-    and DescriptionStatement    = string        * ExtraStatements
+    and DescriptionStatement    = | DescriptionStatement    of string        * ExtraStatements
     and DeviateAddBodyStatement =
     | Units         of UnitsStatement
     | Must          of MustStatement
@@ -287,7 +287,7 @@ module Statements =
     | MaxElements   of MaxElementsStatement
     | Unknown       of UnknownStatement
     /// Captures the 'deviate-add-stmt' statement from [RFC 7950, p. 201].
-    and DeviateAddStatement             = DeviateAddBodyStatement list option
+    and DeviateAddStatement             = | DeviateAddStatement of DeviateAddBodyStatement list option
     /// Captures the 'deviate-not-supported-stmt' statement from [RFC 7950, p. 201]; this statement does not take proper arguments.
     and DeviateDeleteBodyStatement      =
     | Units         of UnitsStatement
@@ -296,7 +296,7 @@ module Statements =
     | Default       of DefaultStatement
     | Unknown       of UnknownStatement
     /// Captures the 'deviate-delete-stmt' statement from [RFC 7950, p. 201].
-    and DeviateDeleteStatement          = DeviateDeleteBodyStatement list option
+    and DeviateDeleteStatement          = | DeviateDeleteStatement of DeviateDeleteBodyStatement list option
     and DeviateReplaceBodyStatement     =
     | Type          of TypeStatement
     | Units         of UnitsStatement
@@ -307,9 +307,9 @@ module Statements =
     | MaxElements   of MaxElementsStatement
     | Unknown       of UnknownStatement
     /// Captures the 'deviate-replace-stmt' statement from [RFC 7950, p. 202].
-    and DeviateReplaceStatement         = DeviateReplaceBodyStatement list option
+    and DeviateReplaceStatement         = | DeviateReplaceStatement of DeviateReplaceBodyStatement list option
     /// Captures the 'deviate-not-supported-stmt' statement from [RFC 7950, p. 201].
-    and DeviateNotSupportedStatement    = ExtraStatements
+    and DeviateNotSupportedStatement    = | DeviateNotSupportedStatement of ExtraStatements
     and DeviationBodyStatement  =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
@@ -319,7 +319,7 @@ module Statements =
     | DeviateDelete         of DeviateDeleteStatement
     | Unknown               of UnknownStatement
     /// Captures the 'deviation-stmt' statement from [RFC 7950, p. 201].
-    and DeviationStatement      = Deviation     * (DeviationBodyStatement list)
+    and DeviationStatement      = | DeviationStatement of Deviation     * (DeviationBodyStatement list)
     and EnumBodyStatement       =
     | IfFeature     of IfFeatureStatement
     | Value         of ValueStatement
@@ -328,11 +328,11 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'enum-stmt' statement from [RFC 7950, p. 190].
-    and EnumStatement           = string        * (EnumBodyStatement list option)
+    and EnumStatement           = | EnumStatement of string * (EnumBodyStatement list option)
     /// Captures the 'error-app-tag-stmt' statement from [RFC 7950, p. 192].
-    and ErrorAppTagStatement    = string        * ExtraStatements
+    and ErrorAppTagStatement    = | ErrorAppTagStatement of string * ExtraStatements
     /// Captures the 'error-message-stmt' statement from [RFC 7950, p. 192].
-    and ErrorMessageStatement   = string        * ExtraStatements
+    and ErrorMessageStatement   = | ErrorMessageStatement of string * ExtraStatements
     and ExtensionBodyStatement  =
     | Argument      of ArgumentStatement
     | Status        of StatusStatement
@@ -340,7 +340,7 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'extension-stmt' statement from [RFC 7950, p. 192].
-    and ExtensionStatement      = Identifier            * (ExtensionBodyStatement list option)
+    and ExtensionStatement      = | ExtensionStatement of Identifier * (ExtensionBodyStatement list option)
     and FeatureBodyStatement    =
     | IfFeature     of IfFeatureStatement
     | Status        of StatusStatement
@@ -348,9 +348,9 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'feature-stmt' statement from [RFC 7950, p. 187].
-    and FeatureStatement        = Identifier            * (FeatureBodyStatement list option)
+    and FeatureStatement        = | FeatureStatement of Identifier * (FeatureBodyStatement list option)
     /// Captures the 'fraction-digits-stmt' statement from [RFC 7950, p. 189].
-    and FractionDigitsStatement = byte                  * ExtraStatements
+    and FractionDigitsStatement = | FractionDigitsStatement of byte * ExtraStatements
     and GroupingBodyStatement =
     | Status        of StatusStatement
     | Description   of DescriptionStatement
@@ -371,7 +371,7 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the 'grouping-stmt' statement from [RFC 7950, p. 193]
-    and GroupingStatement       = Identifier            * (GroupingBodyStatement list option)
+    and GroupingStatement       = | GroupingStatement of Identifier * (GroupingBodyStatement list option)
     and IdentityBodyStatement   =
     | IfFeature     of IfFeatureStatement
     | Base          of BaseStatement
@@ -379,21 +379,21 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and IdentityStatement       = Identifier            * (IdentityBodyStatement list option)
-    and IfFeatureStatement      = Expression            * ExtraStatements
+    and IdentityStatement       = | IdentityStatement of Identifier * (IdentityBodyStatement list option)
+    and IfFeatureStatement      = | IfFeatureStatement of Expression * ExtraStatements
     and ImportBodyStatement     =
     | Prefix        of PrefixStatement
     | RevisionDate  of RevisionDateStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and ImportStatement         = Identifier * (ImportBodyStatement list)
+    and ImportStatement         = | ImportStatement of Identifier * (ImportBodyStatement list)
     and IncludeBodyStatement    =
     | RevisionDate  of RevisionDateStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and IncludeStatement        = Identifier    * (IncludeBodyStatement list option)
+    and IncludeStatement        = | IncludeStatement of Identifier * (IncludeBodyStatement list option)
     and InputBodyStatement      =
     | Must          of MustStatement
     | TypeDef       of TypeDefStatement
@@ -410,8 +410,8 @@ module Statements =
     // End of data-def-stmt
     | Unknown       of UnknownStatement
     /// Captures the 'input-stmt' statement from [RFC 7950, p. 200]
-    and InputStatement          = InputBodyStatement list
-    and KeyStatement            = Key           * ExtraStatements
+    and InputStatement          = | InputStatement of InputBodyStatement list
+    and KeyStatement            = | KeyStatement of Key * ExtraStatements
     and LeafBodyStatement       =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -425,7 +425,7 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and LeafStatement           = Identifier    * (LeafBodyStatement list)
+    and LeafStatement           = | LeafStatement of Identifier    * (LeafBodyStatement list)
     and LeafListBodyStatement   =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -441,14 +441,14 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and LeafListStatement       = Identifier    * (LeafListBodyStatement list)
+    and LeafListStatement       = | LeafListStatement of Identifier * (LeafListBodyStatement list)
     and LengthBodyStatement     =
     | ErrorMessage  of ErrorMessageStatement
     | ErrorAppTag   of ErrorAppTagStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and LengthStatement         = Length        * (LengthBodyStatement list option)
+    and LengthStatement         = | LengthStatement of Length * (LengthBodyStatement list option)
     and ListBodyStatement       =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -478,19 +478,19 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the 'list-stmt' statement from [RFC 7950, p. 195]
-    and ListStatement           = Identifier    * (ListBodyStatement list)
-    and MandatoryStatement      = bool          * ExtraStatements
-    and MaxElementsStatement    = MaxValue      * ExtraStatements
-    and MinElementsStatement    = MinValue      * ExtraStatements
-    and ModifierStatement       = Modifier      * ExtraStatements
+    and ListStatement           = | ListStatement           of Identifier   * (ListBodyStatement list)
+    and MandatoryStatement      = | MandatoryStatement      of bool         * ExtraStatements
+    and MaxElementsStatement    = | MaxElementsStatement    of MaxValue     * ExtraStatements
+    and MinElementsStatement    = | MinElementsStatement    of MinValue     * ExtraStatements
+    and ModifierStatement       = | ModifierStatement       of Modifier     * ExtraStatements
     and MustBodyStatement       =
     | ErrorMessage  of ErrorMessageStatement
     | ErrorAppTag   of ErrorAppTagStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and MustStatement           = string        * (MustBodyStatement list option)
-    and NamespaceStatement      = Uri           * ExtraStatements
+    and MustStatement           = | MustStatement       of string        * (MustBodyStatement list option)
+    and NamespaceStatement      = | NamespaceStatement  of Uri           * ExtraStatements
     and NotificationBodyStatement =
     | IfFeature     of IfFeatureStatement
     | Must          of MustStatement
@@ -511,9 +511,9 @@ module Statements =
     // End of data-def-stmt
     | Unknown       of UnknownStatement
     /// Captures the 'notification-stmt' statement from [RFC 7950, p. 200]
-    and NotificationStatement   = Identifier    * (NotificationBodyStatement list option)
-    and OrderedByStatement      = OrderedBy     * ExtraStatements
-    and OrganizationStatement   = string        * ExtraStatements
+    and NotificationStatement   = | NotificationStatement   of Identifier    * (NotificationBodyStatement list option)
+    and OrderedByStatement      = | OrderedByStatement      of OrderedBy     * ExtraStatements
+    and OrganizationStatement   = | OrganizationStatement   of string        * ExtraStatements
     and OutputBodyStatement     =
     | Must          of MustStatement
     | TypeDef       of TypeDefStatement
@@ -530,8 +530,8 @@ module Statements =
     // End of data-def-stmt
     | Unknown       of UnknownStatement
     /// Captures the 'output-stmt' statement from [RFC 7950, p. 200]
-    and OutputStatement         = OutputBodyStatement list
-    and PathStatement           = Path          * ExtraStatements
+    and OutputStatement         = | OutputStatement of OutputBodyStatement list
+    and PathStatement           = | PathStatement   of Path          * ExtraStatements
     and PatternBodyStatement    =
     | Modifier      of ModifierStatement
     | ErrorMessage  of ErrorMessageStatement
@@ -539,10 +539,10 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and PatternStatement        = string        * (PatternBodyStatement list option)
-    and PositionStatement       = uint32        * ExtraStatements
-    and PrefixStatement         = string        * ExtraStatements
-    and PresenceStatement       = string        * ExtraStatements
+    and PatternStatement        = | PatternStatement    of string        * (PatternBodyStatement list option)
+    and PositionStatement       = | PositionStatement   of uint32        * ExtraStatements
+    and PrefixStatement         = | PrefixStatement     of string        * ExtraStatements
+    and PresenceStatement       = | PresenceStatement   of string        * ExtraStatements
     and RangeBodyStatement      =
     | ErrorMessage  of ErrorMessageStatement
     | ErrorAppTag   of ErrorAppTagStatement
@@ -550,8 +550,8 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'range-stmt' statement from [RFC 7950, p. 189]
-    and RangeStatement          = Range     * (RangeBodyStatement list option)
-    and ReferenceStatement      = string    * ExtraStatements
+    and RangeStatement          = | RangeStatement      of Range     * (RangeBodyStatement list option)
+    and ReferenceStatement      = | ReferenceStatement  of string    * ExtraStatements
     and RefineBodyStatement     =
     | IfFeature     of IfFeatureStatement
     | Must          of MustStatement
@@ -565,14 +565,14 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'refine-stmt' statement from [RFC 7950, p. 198]
-    and RefineStatement         = Refine    * (RefineBodyStatement list option)
+    and RefineStatement         = | RefineStatement of Refine    * (RefineBodyStatement list option)
     and RevisionBodyStatement   =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and RevisionStatement       = Arguments.Date    * (RevisionBodyStatement list option)
-    and RevisionDateStatement   = Arguments.Date    * ExtraStatements
-    and RequireInstanceStatement = bool             * ExtraStatements
+    and RevisionStatement       = | RevisionStatement           of Arguments.Date   * (RevisionBodyStatement list option)
+    and RevisionDateStatement   = | RevisionDateStatement       of Arguments.Date   * ExtraStatements
+    and RequireInstanceStatement = | RequireInstanceStatement   of bool             * ExtraStatements
     and RpcBodyStatement        =
     | IfFeature     of IfFeatureStatement
     | Status        of StatusStatement
@@ -584,8 +584,8 @@ module Statements =
     | Output        of OutputStatement
     | Unknown       of UnknownStatement
     /// Captures the 'rpc-stmt' statement from [RFC 7950, p. 199]
-    and RpcStatement            = Identifier        * (RpcBodyStatement list option)
-    and StatusStatement         = Status            * ExtraStatements
+    and RpcStatement            = | RpcStatement of Identifier        * (RpcBodyStatement list option)
+    and StatusStatement         = | StatusStatement  of Status            * ExtraStatements
     and TypeBodyStatement       =
     | NumericalRestrictions             of NumericalRestrictions
     | Decimal64Specification            of Decimal64Specification
@@ -601,7 +601,7 @@ module Statements =
     /// Captures the 'type-stmt' statement from [RFC 7950, p. 188].
     /// The definition assumes a number of unknown statements (from the stmtsep),
     /// followed by zero or one type-body-stmts.
-    and TypeStatement           = IdentifierReference   * (TypeBodyStatement option)
+    and TypeStatement           = | TypeStatement of IdentifierReference   * (TypeBodyStatement option)
     and TypeDefBodyStatement    =
     | Type          of TypeStatement
     | Units         of UnitsStatement
@@ -611,11 +611,11 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'typedef-stmt' statement from [RFC 7950, p. 188].
-    and TypeDefStatement        = Identifier        * (TypeDefBodyStatement list)
+    and TypeDefStatement        = | TypeDefStatement of Identifier        * (TypeDefBodyStatement list)
     /// Captures the type-stmt [RFC 7950, p.188]. If there are unknown statements, then they precede the TypeBodyStatement
-    and UniqueStatement         = Unique            * ExtraStatements
+    and UniqueStatement         = | UniqueStatement of Unique            * ExtraStatements
     // TODO: Expand the Units type to map to standard units provided by F#
-    and UnitsStatement          = string            * ExtraStatements
+    and UnitsStatement          = | UnitsStatement of string            * ExtraStatements
     and UsesBodyStatement       =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -626,7 +626,7 @@ module Statements =
     | UsesAugment   of UsesAugmentStatement
     | Unknown       of UnknownStatement
     /// Captures the uses-stmt [RFC 7950, p.197].
-    and UsesStatement           = IdentifierReference   * (UsesBodyStatement list option)
+    and UsesStatement           = | UsesStatement of IdentifierReference   * (UsesBodyStatement list option)
     and UsesAugmentBodyStatement =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -648,15 +648,15 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the uses-augment-stmt [RFC 7950, p.198].
-    and UsesAugmentStatement    = UsesAugment       * (UsesAugmentBodyStatement list)
-    and ValueStatement          = int64             * ExtraStatements
+    and UsesAugmentStatement    = | UsesAugmentStatement    of UsesAugment       * (UsesAugmentBodyStatement list)
+    and ValueStatement          = | ValueStatement          of int64             * ExtraStatements
     and WhenBodyStatement       =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and WhenStatement           = string            * (WhenBodyStatement list option)
-    and YangVersionStatement    = Version           * ExtraStatements
-    and YinElementStatement     = bool              * ExtraStatements
+    and WhenStatement           = | WhenStatement           of string            * (WhenBodyStatement list option)
+    and YangVersionStatement    = | YangVersionStatement    of Version           * ExtraStatements
+    and YinElementStatement     = | YinElementStatement     of bool              * ExtraStatements
 
     (* DataDef should be replaced by the following:
     // data-def-stmt
@@ -696,7 +696,7 @@ module Statements =
      *)
 
     /// This captures all user defined statements; [RFC 7950, p. 202]
-    and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
+    and UnknownStatement        = | UnknownStatement of IdentifierWithPrefix * (string option) * ExtraStatements
 
     // The following types are used in the definition of the module and sub-module statements
 
@@ -1029,8 +1029,7 @@ module Statements =
     /// Helper methods for the ConfigStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module ConfigStatement =
-        let ValueAsString (this : ConfigStatement) =
-            let (v, _) = this
+        let ValueAsString (ConfigStatement (v, _)) =
             if v then "true" else "false"
 
     /// Helper methods for the ContainerBodyStatement type
@@ -1350,17 +1349,15 @@ module Statements =
     /// Helper methods for the LeafListBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module LeafListStatement =
-        let private try_find filter (this : LeafListStatement) =
-            let _, statements = this
+        let private try_find filter (LeafListStatement (_, statements)) =
             statements |> List.tryFind filter
             
         let Description = try_find LeafListBodyStatement.IsDescription
         let Type = try_find LeafListBodyStatement.IsType
 
-        let Identifier (this : LeafListStatement) = let (id, _) = this in id
-        let IdentifierAsString (this : LeafListStatement) = let (id, _) = this in id.Value
-
-        let Statements (this : LeafListStatement) = let (_, st) = this in st
+        let Identifier (LeafListStatement (id, _))          = id
+        let IdentifierAsString (LeafListStatement (id, _))  = id.Value
+        let Statements (LeafListStatement (_, st))          = st
 
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module LeafRefBodySpecification =
@@ -1372,17 +1369,15 @@ module Statements =
     /// Helper methods for the LeafStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module LeafStatement =
-        let private try_find filter (this : LeafStatement) =
-            let _, statements = this
+        let private try_find filter (LeafStatement (_, statements)) =
             statements |> List.tryFind filter
-            
+
         let Description = try_find LeafBodyStatement.IsDescription
         let Type = try_find LeafBodyStatement.IsType
 
-        let Identifier (this : LeafStatement) = let (id, _) = this in id
-        let IdentifierAsString (this : LeafStatement) = let (id, _) = this in id.Value
-
-        let Statements (this : LeafStatement) = let (_, st) = this in st
+        let Identifier (LeafStatement (id, _))          = id
+        let IdentifierAsString (LeafStatement (id, _))  = id.Value
+        let Statements (LeafStatement (_, st))          = st
 
 
     /// Helper methods for the LengthBodyStatement type
@@ -1668,27 +1663,27 @@ module Statements =
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module RevisionStatement =
         let private try_find filter = function
-        | _, Some statements    -> statements |> List.tryFind filter
-        | _, _                  -> None
+        | Some statements    -> statements |> List.tryFind filter
+        | _                  -> None
 
         let private try_find_all filter = function
-        | _, Some statements    ->
+        | Some statements    ->
             let statements' = statements |> List.filter filter
             if statements'.Length = 0 then None else Some statements'
-        | _, _                  -> None
+        | _                  -> None
 
-        let Version (this : RevisionStatement) = let (v, _) = this in v
+        let Version (RevisionStatement (v, _)) = v
 
-        let Description (this : RevisionStatement) =
-            try_find RevisionBodyStatement.IsDescription this
+        let Description (RevisionStatement (_, body)) =
+            try_find RevisionBodyStatement.IsDescription body
             |> Option.bind (fun o -> match o with | RevisionBodyStatement.Description d -> Some d | _ -> None)
 
-        let Reference   (this : RevisionStatement) =
-            try_find RevisionBodyStatement.IsReference this
+        let Reference   (RevisionStatement (_, body)) =
+            try_find RevisionBodyStatement.IsReference body
             |> Option.bind (fun o -> match o with | RevisionBodyStatement.Reference r -> Some r | _ -> None)
 
-        let Unknown     (this : RevisionStatement) =
-            try_find_all RevisionBodyStatement.IsUnknown this
+        let Unknown     (RevisionStatement (_, body)) =
+            try_find_all RevisionBodyStatement.IsUnknown body
             |> Option.map (List.choose (fun o -> match o with | RevisionBodyStatement.Unknown u -> Some u | _ -> None))
 
     /// Helper methods for the RpcBodyStatement type
@@ -1757,6 +1752,18 @@ module Statements =
         | TypeBodyStatement.UnionSpecification              spec    -> spec |> List.map UnionBodySpecification.Translate
         | TypeBodyStatement.BinarySpecification             spec    -> spec |> List.map BinaryBodySpecification.Translate
         | TypeBodyStatement.UnknownTypeSpecification        spec    -> spec
+
+        let AsStringRestrictions = function
+        | TypeBodyStatement.StringRestrictions spec -> Some spec
+        | _                                         -> None
+
+        let AsNumericalRestrictions = function
+        | TypeBodyStatement.NumericalRestrictions spec -> Some spec
+        | _                                         -> None
+
+        let AsDecimal64Specification = function
+        | TypeBodyStatement.Decimal64Specification spec -> Some spec
+        | _                                             -> None
 
 
     /// Helper methods for the TypeDefBodyStatement type
@@ -1844,81 +1851,81 @@ module Statements =
         /// and the caller will need to apply per-statement processing to retrieve those statements.
         let Options (this : Statement) =
             match this with
-            | Statement.Base                (_, options)
-            | Statement.Config              (_, options)
-            | Statement.Contact             (_, options)
-            | Statement.Default             (_, options)
-            | Statement.Description         (_, options)
-            | Statement.DeviateNotSupported options
-            | Statement.ErrorAppTag         (_, options)
-            | Statement.ErrorMessage        (_, options)
-            | Statement.FractionDigits      (_, options)
-            | Statement.IfFeature           (_, options)
-            | Statement.Key                 (_, options)
-            | Statement.Mandatory           (_, options)
-            | Statement.MaxElements         (_, options)
-            | Statement.MinElements         (_, options)
-            | Statement.Modifier            (_, options)
-            | Statement.Namespace           (_, options)
-            | Statement.OrderedBy           (_, options)
-            | Statement.Organization        (_, options)
-            | Statement.Path                (_, options)
-            | Statement.Position            (_, options)
-            | Statement.Prefix              (_, options)
-            | Statement.Presence            (_, options)
-            | Statement.Reference           (_, options)
-            | Statement.RevisionDate        (_, options)
-            | Statement.RequireInstance     (_, options)
-            | Statement.Status              (_, options)
-            | Statement.Units               (_, options)
-            | Statement.Unique              (_, options)
-            | Statement.Value               (_, options)
-            | Statement.YangVersion         (_, options)
-            | Statement.YinElement          (_, options)
+            | Statement.Base                (BaseStatement (_, options))
+            | Statement.Config              (ConfigStatement (_, options))
+            | Statement.Contact             (ContactStatement (_, options))
+            | Statement.Default             (DefaultStatement (_, options))
+            | Statement.Description         (DescriptionStatement (_, options))
+            | Statement.DeviateNotSupported (DeviateNotSupportedStatement options)
+            | Statement.ErrorAppTag         (ErrorAppTagStatement (_, options))
+            | Statement.ErrorMessage        (ErrorMessageStatement (_, options))
+            | Statement.FractionDigits      (FractionDigitsStatement (_, options))
+            | Statement.IfFeature           (IfFeatureStatement (_, options))
+            | Statement.Key                 (KeyStatement (_, options))
+            | Statement.Mandatory           (MandatoryStatement (_, options))
+            | Statement.MaxElements         (MaxElementsStatement (_, options))
+            | Statement.MinElements         (MinElementsStatement (_, options))
+            | Statement.Modifier            (ModifierStatement (_, options))
+            | Statement.Namespace           (NamespaceStatement (_, options))
+            | Statement.OrderedBy           (OrderedByStatement (_, options))
+            | Statement.Organization        (OrganizationStatement (_, options))
+            | Statement.Path                (PathStatement (_, options))
+            | Statement.Position            (PositionStatement (_, options))
+            | Statement.Prefix              (PrefixStatement (_, options))
+            | Statement.Presence            (PresenceStatement (_, options))
+            | Statement.Reference           (ReferenceStatement (_, options))
+            | Statement.RevisionDate        (RevisionDateStatement (_, options))
+            | Statement.RequireInstance     (RequireInstanceStatement (_, options))
+            | Statement.Status              (StatusStatement (_, options))
+            | Statement.Units               (UnitsStatement (_, options))
+            | Statement.Unique              (UniqueStatement (_, options))
+            | Statement.Value               (ValueStatement (_, options))
+            | Statement.YangVersion         (YangVersionStatement (_, options))
+            | Statement.YinElement          (YinElementStatement (_, options))
                 -> options
 
             // The following have custom options; the caller need to treat them specially
-            | Statement.Action              (_, _)
-            | Statement.AnyData             (_, _)
-            | Statement.AnyXml              (_, _)
-            | Statement.Augment             (_, _)
-            | Statement.Argument            (_, _)
-            | Statement.BelongsTo           (_, _)
-            | Statement.Bit                 (_, _)
-            | Statement.Case                (_, _)
-            | Statement.Choice              (_, _)
-            | Statement.Container           (_, _)
+            | Statement.Action              _
+            | Statement.AnyData             _
+            | Statement.AnyXml              _
+            | Statement.Augment             _
+            | Statement.Argument            _
+            | Statement.BelongsTo           _
+            | Statement.Bit                 _
+            | Statement.Case                _
+            | Statement.Choice              _
+            | Statement.Container           _
             | Statement.DeviateAdd          _
             | Statement.DeviateDelete       _
             | Statement.DeviateReplace      _
-            | Statement.Deviation           (_, _)
-            | Statement.Enum                (_, _)
-            | Statement.Extension           (_, _)
-            | Statement.Feature             (_, _)
-            | Statement.Grouping            (_, _)
-            | Statement.Identity            (_, _)
-            | Statement.Import              (_, _)
-            | Statement.Include             (_, _)
+            | Statement.Deviation           _
+            | Statement.Enum                _
+            | Statement.Extension           _
+            | Statement.Feature             _
+            | Statement.Grouping            _
+            | Statement.Identity            _
+            | Statement.Import              _
+            | Statement.Include             _
             | Statement.Input               _
-            | Statement.Leaf                (_, _)
-            | Statement.LeafList            (_, _)
-            | Statement.Length              (_, _)
-            | Statement.List                (_, _)
+            | Statement.Leaf                _
+            | Statement.LeafList            _
+            | Statement.Length              _
+            | Statement.List                _
             | Statement.Module              _
-            | Statement.Must                (_, _)
-            | Statement.Notification        (_, _)
+            | Statement.Must                _
+            | Statement.Notification        _
             | Statement.Output              _
-            | Statement.Pattern             (_, _)
-            | Statement.Range               (_, _)
-            | Statement.Rpc                 (_, _)
-            | Statement.Refine              (_, _)
-            | Statement.Revision            (_, _)
+            | Statement.Pattern             _
+            | Statement.Range               _
+            | Statement.Rpc                 _
+            | Statement.Refine              _
+            | Statement.Revision            _
             | Statement.Submodule           _
-            | Statement.Type                (_, _)
-            | Statement.TypeDef             (_, _)
-            | Statement.Uses                (_, _)
-            | Statement.UsesAugment         (_, _)
-            | Statement.When                (_, _)
+            | Statement.Type                _
+            | Statement.TypeDef             _
+            | Statement.Uses                _
+            | Statement.UsesAugment         _
+            | Statement.When                _
                 -> None
 
             | Statement.Unknown _   -> None
@@ -1999,4 +2006,4 @@ module Statements =
             | Statement.When _                  -> "when"
             | Statement.YangVersion _           -> "yang-version"
             | Statement.YinElement _            -> "yin-element"
-            | Statement.Unknown (id, _, _)      -> id.ToString()
+            | Statement.Unknown (UnknownStatement (id, _, _))   -> id.ToString()

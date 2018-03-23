@@ -71,14 +71,15 @@ module Header =
             | (vs, ns, ps, None), Unknown e     -> vs, ns, ps, Some [e]
             | (vs, ns, ps, Some us),  Unknown e -> vs, ns, ps, Some (us @ [e])
 
-        let result state =
+        let result state  : ModuleHeaderStatements =
             match state with
-            | Some vs, Some ns, Some ps, us -> vs, ns, ps, us
+            | Some vs, Some ns, Some ps, us ->
+                vs, ns, ps, us
             | None,    Some ns, Some ps, us ->
                 // Special case: the yang-version statement must appear, but there are cases where it is omitted.
                 // So we will generate it.
                 _logger.Warn("Module missing yang-version statement; will assume 1.1")
-                let vs = Version(1, 1), None
+                let vs = YangVersionStatement (Version(1, 1), None)
                 vs, ns, ps, us
             | _                             ->
                 let sb = StringBuilder("Failed to find all mandatory header statements for module; missing:")
@@ -145,7 +146,7 @@ module Header =
                 // Special case: the yang-version statement must appear, but there are cases where it is omitted.
                 // So we will generate it.
                 _logger.Warn("Module missing yang-version statement; will assume 1.1")
-                let vs = Version(1, 1), None
+                let vs = YangVersionStatement (Version(1, 1), None)
                 vs, bt, un
             | _                             ->
                 let sb = StringBuilder("Failed to find all mandatory header statements for submodule; missing:")

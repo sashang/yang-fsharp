@@ -68,6 +68,7 @@ module Revisions =
         (     (skipChar ';' .>> wse |>> (fun _ -> None))
           <|> (skipChar '{' .>> wse >>. (parse_revision_body |>> Some) .>> wse .>> skipChar '}' .>> wse)
         )
+        |>> RevisionStatement
 
     /// Parses all revision statements
     let parse_revision_list<'a> : Parser<RevisionStatement list, 'a> =

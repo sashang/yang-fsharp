@@ -12,78 +12,78 @@ module StatementHelper =
         statements |> List.map map
 
     let Children : Statement -> Statement list = function
-    | Statement.Base                (_, options)
-    | Statement.Config              (_, options)
-    | Statement.Contact             (_, options)
-    | Statement.Default             (_, options)
-    | Statement.Description         (_, options)
-    | Statement.DeviateNotSupported options
-    | Statement.ErrorAppTag         (_, options)
-    | Statement.ErrorMessage        (_, options)
-    | Statement.FractionDigits      (_, options)
-    | Statement.IfFeature           (_, options)
-    | Statement.Key                 (_, options)
-    | Statement.Mandatory           (_, options)
-    | Statement.MaxElements         (_, options)
-    | Statement.MinElements         (_, options)
-    | Statement.Modifier            (_, options)
-    | Statement.Namespace           (_, options)
-    | Statement.OrderedBy           (_, options)
-    | Statement.Organization        (_, options)
-    | Statement.Path                (_, options)
-    | Statement.Position            (_, options)
-    | Statement.Prefix              (_, options)
-    | Statement.Presence            (_, options)
-    | Statement.Reference           (_, options)
-    | Statement.RevisionDate        (_, options)
-    | Statement.RequireInstance     (_, options)
-    | Statement.Status              (_, options)
-    | Statement.Units               (_, options)
-    | Statement.Unique              (_, options)
-    | Statement.Value               (_, options)
-    | Statement.YangVersion         (_, options)
-    | Statement.YinElement          (_, options)
+    | Statement.Base                (BaseStatement          (_, options))
+    | Statement.Config              (ConfigStatement        (_, options))
+    | Statement.Contact             (ContactStatement       (_, options))
+    | Statement.Default             (DefaultStatement       (_, options))
+    | Statement.Description         (DescriptionStatement   (_, options))
+    | Statement.DeviateNotSupported (DeviateNotSupportedStatement options)
+    | Statement.ErrorAppTag         (ErrorAppTagStatement   (_, options))
+    | Statement.ErrorMessage        (ErrorMessageStatement  (_, options))
+    | Statement.FractionDigits      (FractionDigitsStatement(_, options))
+    | Statement.IfFeature           (IfFeatureStatement     (_, options))
+    | Statement.Key                 (KeyStatement           (_, options))
+    | Statement.Mandatory           (MandatoryStatement     (_, options))
+    | Statement.MaxElements         (MaxElementsStatement   (_, options))
+    | Statement.MinElements         (MinElementsStatement   (_, options))
+    | Statement.Modifier            (ModifierStatement      (_, options))
+    | Statement.Namespace           (NamespaceStatement     (_, options))
+    | Statement.OrderedBy           (OrderedByStatement     (_, options))
+    | Statement.Organization        (OrganizationStatement  (_, options))
+    | Statement.Path                (PathStatement          (_, options))
+    | Statement.Position            (PositionStatement      (_, options))
+    | Statement.Prefix              (PrefixStatement        (_, options))
+    | Statement.Presence            (PresenceStatement      (_, options))
+    | Statement.Reference           (ReferenceStatement     (_, options))
+    | Statement.RevisionDate        (RevisionDateStatement  (_, options))
+    | Statement.RequireInstance     (RequireInstanceStatement (_, options))
+    | Statement.Status              (StatusStatement        (_, options))
+    | Statement.Units               (UnitsStatement         (_, options))
+    | Statement.Unique              (UniqueStatement        (_, options))
+    | Statement.Value               (ValueStatement         (_, options))
+    | Statement.YangVersion         (YangVersionStatement   (_, options))
+    | Statement.YinElement          (YinElementStatement    (_, options))
         -> if options.IsSome then options.Value else []
 
-    | Statement.Action              (_, body)   -> get_inner_optional body ActionBodyStatement.Translate
-    | Statement.AnyData             (_, body)   -> get_inner_optional body AnyDataBodyStatement.Translate
-    | Statement.AnyXml              (_, body)   -> get_inner_optional body AnyXmlBodyStatement.Translate
-    | Statement.Augment             (_, body)   -> get_inner          body AugmentBodyStatement.Translate
-    | Statement.Argument            (_, body)   -> get_inner_optional body ArgumentBodyStatement.Translate
-    | Statement.BelongsTo           (_, body)   -> get_inner          body BelongsToBodyStatement.Translate
-    | Statement.Bit                 (_, body)   -> get_inner_optional body BitBodyStatement.Translate
-    | Statement.Case                (_, body)   -> get_inner_optional body CaseBodyStatement.Translate
-    | Statement.Choice              (_, body)   -> get_inner_optional body ChoiceBodyStatement.Translate
-    | Statement.Container           (_, body)   -> get_inner_optional body ContainerBodyStatement.Translate
-    | Statement.DeviateAdd          body        -> get_inner_optional body DeviateAddBodyStatement.Translate
-    | Statement.DeviateDelete       body        -> get_inner_optional body DeviateDeleteBodyStatement.Translate
-    | Statement.DeviateReplace      body        -> get_inner_optional body DeviateReplaceBodyStatement.Translate
-    | Statement.Deviation           (_, body)   -> get_inner          body DeviationBodyStatement.Translate
-    | Statement.Enum                (_, body)   -> get_inner_optional body EnumBodyStatement.Translate
-    | Statement.Extension           (_, body)   -> get_inner_optional body ExtensionBodyStatement.Translate
-    | Statement.Feature             (_, body)   -> get_inner_optional body FeatureBodyStatement.Translate
-    | Statement.Grouping            (_, body)   -> get_inner_optional body GroupingBodyStatement.Translate
-    | Statement.Identity            (_, body)   -> get_inner_optional body IdentityBodyStatement.Translate
-    | Statement.Import              (_, body)   -> get_inner          body ImportBodyStatement.Translate
-    | Statement.Include             (_, body)   -> get_inner_optional body IncludeBodyStatement.Translate
-    | Statement.Input               body        -> get_inner          body InputBodyStatement.Translate
-    | Statement.Leaf                (_, body)   -> get_inner          body LeafBodyStatement.Translate
-    | Statement.LeafList            (_, body)   -> get_inner          body LeafListBodyStatement.Translate
-    | Statement.Length              (_, body)   -> get_inner_optional body LengthBodyStatement.Translate
-    | Statement.List                (_, body)   -> get_inner          body ListBodyStatement.Translate
-    | Statement.Must                (_, body)   -> get_inner_optional body MustBodyStatement.Translate
-    | Statement.Notification        (_, body)   -> get_inner_optional body NotificationBodyStatement.Translate
-    | Statement.Output              body        -> get_inner          body OutputBodyStatement.Translate
-    | Statement.Pattern             (_, body)   -> get_inner_optional body PatternBodyStatement.Translate
-    | Statement.Range               (_, body)   -> get_inner_optional body RangeBodyStatement.Translate
-    | Statement.Rpc                 (_, body)   -> get_inner_optional body RpcBodyStatement.Translate
-    | Statement.Refine              (_, body)   -> get_inner_optional body RefineBodyStatement.Translate
-    | Statement.Revision            (_, body)   -> get_inner_optional body RevisionBodyStatement.Translate
-    | Statement.TypeDef             (_, body)   -> get_inner          body TypeDefBodyStatement.Translate
-    | Statement.Uses                (_, body)   -> get_inner_optional body UsesBodyStatement.Translate
-    | Statement.UsesAugment         (_, body)   -> get_inner          body UsesAugmentBodyStatement.Translate
-    | Statement.When                (_, body)   -> get_inner_optional body WhenBodyStatement.Translate
-    | Statement.Unknown          (_, _, body)   -> if body.IsSome then body.Value else []
+    | Statement.Action          (ActionStatement        (_, body))   -> get_inner_optional body ActionBodyStatement.Translate
+    | Statement.AnyData         (AnyDataStatement       (_, body))   -> get_inner_optional body AnyDataBodyStatement.Translate
+    | Statement.AnyXml          (AnyXmlStatement        (_, body))   -> get_inner_optional body AnyXmlBodyStatement.Translate
+    | Statement.Augment         (AugmentStatement       (_, body))   -> get_inner          body AugmentBodyStatement.Translate
+    | Statement.Argument        (ArgumentStatement      (_, body))   -> get_inner_optional body ArgumentBodyStatement.Translate
+    | Statement.BelongsTo       (BelongsToStatement     (_, body))   -> get_inner          body BelongsToBodyStatement.Translate
+    | Statement.Bit             (BitStatement           (_, body))   -> get_inner_optional body BitBodyStatement.Translate
+    | Statement.Case            (CaseStatement          (_, body))   -> get_inner_optional body CaseBodyStatement.Translate
+    | Statement.Choice          (ChoiceStatement        (_, body))   -> get_inner_optional body ChoiceBodyStatement.Translate
+    | Statement.Container       (ContainerStatement     (_, body))   -> get_inner_optional body ContainerBodyStatement.Translate
+    | Statement.DeviateAdd      (DeviateAddStatement        body)    -> get_inner_optional body DeviateAddBodyStatement.Translate
+    | Statement.DeviateDelete   (DeviateDeleteStatement     body)    -> get_inner_optional body DeviateDeleteBodyStatement.Translate
+    | Statement.DeviateReplace  (DeviateReplaceStatement    body)    -> get_inner_optional body DeviateReplaceBodyStatement.Translate
+    | Statement.Deviation       (DeviationStatement     (_, body))   -> get_inner          body DeviationBodyStatement.Translate
+    | Statement.Enum            (EnumStatement          (_, body))   -> get_inner_optional body EnumBodyStatement.Translate
+    | Statement.Extension       (ExtensionStatement     (_, body))   -> get_inner_optional body ExtensionBodyStatement.Translate
+    | Statement.Feature         (FeatureStatement       (_, body))   -> get_inner_optional body FeatureBodyStatement.Translate
+    | Statement.Grouping        (GroupingStatement      (_, body))   -> get_inner_optional body GroupingBodyStatement.Translate
+    | Statement.Identity        (IdentityStatement      (_, body))   -> get_inner_optional body IdentityBodyStatement.Translate
+    | Statement.Import          (ImportStatement        (_, body))   -> get_inner          body ImportBodyStatement.Translate
+    | Statement.Include         (IncludeStatement       (_, body))   -> get_inner_optional body IncludeBodyStatement.Translate
+    | Statement.Input           (InputStatement             body)    -> get_inner          body InputBodyStatement.Translate
+    | Statement.Leaf            (LeafStatement          (_, body))   -> get_inner          body LeafBodyStatement.Translate
+    | Statement.LeafList        (LeafListStatement      (_, body))   -> get_inner          body LeafListBodyStatement.Translate
+    | Statement.Length          (LengthStatement        (_, body))   -> get_inner_optional body LengthBodyStatement.Translate
+    | Statement.List            (ListStatement          (_, body))   -> get_inner          body ListBodyStatement.Translate
+    | Statement.Must            (MustStatement          (_, body))   -> get_inner_optional body MustBodyStatement.Translate
+    | Statement.Notification    (NotificationStatement  (_, body))   -> get_inner_optional body NotificationBodyStatement.Translate
+    | Statement.Output          (OutputStatement            body)    -> get_inner          body OutputBodyStatement.Translate
+    | Statement.Pattern         (PatternStatement       (_, body))   -> get_inner_optional body PatternBodyStatement.Translate
+    | Statement.Range           (RangeStatement         (_, body))   -> get_inner_optional body RangeBodyStatement.Translate
+    | Statement.Rpc             (RpcStatement           (_, body))   -> get_inner_optional body RpcBodyStatement.Translate
+    | Statement.Refine          (RefineStatement        (_, body))   -> get_inner_optional body RefineBodyStatement.Translate
+    | Statement.Revision        (RevisionStatement      (_, body))   -> get_inner_optional body RevisionBodyStatement.Translate
+    | Statement.TypeDef         (TypeDefStatement       (_, body))   -> get_inner          body TypeDefBodyStatement.Translate
+    | Statement.Uses            (UsesStatement          (_, body))   -> get_inner_optional body UsesBodyStatement.Translate
+    | Statement.UsesAugment     (UsesAugmentStatement   (_, body))   -> get_inner          body UsesAugmentBodyStatement.Translate
+    | Statement.When            (WhenStatement          (_, body))   -> get_inner_optional body WhenBodyStatement.Translate
+    | Statement.Unknown         (UnknownStatement    (_, _, body))   -> if body.IsSome then body.Value else []
 
     | Statement.Module              body ->
         let version, ns, prefix, unknown   = body.Header
@@ -96,7 +96,7 @@ module StatementHelper =
 
         (Statement.YangVersion version) :: (Statement.Namespace ns) :: (Statement.Prefix prefix) :: unknown' @ linkage @ meta @ revision @ body'
 
-    | Statement.Type                (_, extra) ->
+    | Statement.Type                (TypeStatement (_, extra)) ->
         // TODO: Do we need to surface the type restrictions in the list of children of a node?
         if extra.IsSome then TypeBodyStatement.Translate extra.Value else []
 
@@ -112,27 +112,27 @@ module StatementHelper =
         (Statement.YangVersion version) :: (Statement.BelongsTo belongs_to) :: unknown' @ linkage @ meta @ revision @ body'
 
     let GetIdentifier : Statement -> Identifier option = function
-    | Statement.Action              (id, _)
-    | Statement.AnyData             (id, _)
-    | Statement.AnyXml              (id, _)
-    | Statement.Argument            (id, _)
-    | Statement.BelongsTo           (id, _)
-    | Statement.Bit                 (id, _)
-    | Statement.Case                (id, _)
-    | Statement.Choice              (id, _)
-    | Statement.Container           (id, _)
-    | Statement.Extension           (id, _)
-    | Statement.Feature             (id, _)
-    | Statement.Grouping            (id, _)
-    | Statement.Identity            (id, _)
-    | Statement.Import              (id, _)
-    | Statement.Include             (id, _)
-    | Statement.Leaf                (id, _)
-    | Statement.LeafList            (id, _)
-    | Statement.List                (id, _)
-    | Statement.Notification        (id, _)
-    | Statement.Rpc                 (id, _)
-    | Statement.TypeDef             (id, _)
+    | Statement.Action              (ActionStatement    (id, _))
+    | Statement.AnyData             (AnyDataStatement   (id, _))
+    | Statement.AnyXml              (AnyXmlStatement    (id, _))
+    | Statement.Argument            (ArgumentStatement  (id, _))
+    | Statement.BelongsTo           (BelongsToStatement (id, _))
+    | Statement.Bit                 (BitStatement       (id, _))
+    | Statement.Case                (CaseStatement      (id, _))
+    | Statement.Choice              (ChoiceStatement    (id, _))
+    | Statement.Container           (ContainerStatement (id, _))
+    | Statement.Extension           (ExtensionStatement (id, _))
+    | Statement.Feature             (FeatureStatement   (id, _))
+    | Statement.Grouping            (GroupingStatement  (id, _))
+    | Statement.Identity            (IdentityStatement  (id, _))
+    | Statement.Import              (ImportStatement    (id, _))
+    | Statement.Include             (IncludeStatement   (id, _))
+    | Statement.Leaf                (LeafStatement      (id, _))
+    | Statement.LeafList            (LeafListStatement  (id, _))
+    | Statement.List                (ListStatement      (id, _))
+    | Statement.Notification        (NotificationStatement (id, _))
+    | Statement.Rpc                 (RpcStatement       (id, _))
+    | Statement.TypeDef             (TypeDefStatement   (id, _))
         -> Some id
 
     | Statement.Module              m
@@ -195,27 +195,27 @@ module StatementHelper =
         -> None
 
     let GetReferenceIdentifier : Statement -> IdentifierReference option = function
-    | Statement.Action              (id, _)
-    | Statement.AnyData             (id, _)
-    | Statement.AnyXml              (id, _)
-    | Statement.Argument            (id, _)
-    | Statement.BelongsTo           (id, _)
-    | Statement.Bit                 (id, _)
-    | Statement.Case                (id, _)
-    | Statement.Choice              (id, _)
-    | Statement.Container           (id, _)
-    | Statement.Extension           (id, _)
-    | Statement.Feature             (id, _)
-    | Statement.Grouping            (id, _)
-    | Statement.Identity            (id, _)
-    | Statement.Import              (id, _)
-    | Statement.Include             (id, _)
-    | Statement.Leaf                (id, _)
-    | Statement.LeafList            (id, _)
-    | Statement.List                (id, _)
-    | Statement.Notification        (id, _)
-    | Statement.Rpc                 (id, _)
-    | Statement.TypeDef             (id, _)
+    | Statement.Action              (ActionStatement        (id, _))
+    | Statement.AnyData             (AnyDataStatement       (id, _))
+    | Statement.AnyXml              (AnyXmlStatement        (id, _))
+    | Statement.Argument            (ArgumentStatement      (id, _))
+    | Statement.BelongsTo           (BelongsToStatement     (id, _))
+    | Statement.Bit                 (BitStatement           (id, _))
+    | Statement.Case                (CaseStatement          (id, _))
+    | Statement.Choice              (ChoiceStatement        (id, _))
+    | Statement.Container           (ContainerStatement     (id, _))
+    | Statement.Extension           (ExtensionStatement     (id, _))
+    | Statement.Feature             (FeatureStatement       (id, _))
+    | Statement.Grouping            (GroupingStatement      (id, _))
+    | Statement.Identity            (IdentityStatement      (id, _))
+    | Statement.Import              (ImportStatement        (id, _))
+    | Statement.Include             (IncludeStatement       (id, _))
+    | Statement.Leaf                (LeafStatement          (id, _))
+    | Statement.LeafList            (LeafListStatement      (id, _))
+    | Statement.List                (ListStatement          (id, _))
+    | Statement.Notification        (NotificationStatement  (id, _))
+    | Statement.Rpc                 (RpcStatement           (id, _))
+    | Statement.TypeDef             (TypeDefStatement       (id, _))
         -> Some (IdentifierReference.Simple id)
 
     | Statement.Module              m
@@ -223,12 +223,12 @@ module StatementHelper =
     | Statement.Submodule           m
         -> Some (IdentifierReference.Simple m.Name)
 
-    | Statement.Base                (id, _)
-    | Statement.Type                (id, _)
-    | Statement.Uses                (id, _)
+    | Statement.Base                (BaseStatement (id, _))
+    | Statement.Type                (TypeStatement (id, _))
+    | Statement.Uses                (UsesStatement (id, _))
         -> Some id
 
-    | Statement.Unknown             (id, _, _)
+    | Statement.Unknown             (UnknownStatement (id, _, _))
         -> Some (IdentifierReference.Custom id)
 
     | Statement.Augment             _
@@ -347,6 +347,6 @@ module StatementHelper =
         if descriptions.Length = 0 then None
         else
             descriptions
-            |> Seq.map (fun (description, _) -> description)
+            |> Seq.map (fun (DescriptionStatement (description, _)) -> description)
             |> String.concat "\n"
             |> Some

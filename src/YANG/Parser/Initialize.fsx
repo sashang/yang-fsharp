@@ -29,6 +29,7 @@
 #load "Leaf.fs"
 #load "BodyStatements.fs"
 #load "Module.fs"
+#load "GenericParser.fs"
 #load "Parser.fs"
 
 [<AutoOpen>]

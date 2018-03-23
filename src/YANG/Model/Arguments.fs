@@ -7,7 +7,7 @@ module Arguments =
     open System
     open NLog
 
-        /// Logger for this module
+    /// Logger for this module
     let private _logger = LogManager.GetCurrentClassLogger()
 
     let private throw fmt =
