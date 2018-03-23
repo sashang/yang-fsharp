@@ -170,10 +170,7 @@ type BigGenerator<'a> =
 generator <- Some (typeof<BigGenerator<unit>>)
 
 let parse_statement<'a> = generic_parser<'a>.Parser
-let impl = generic_parser<unit>.Implementation
 
-
-apply_parser (!impl) "description 'help';"
 
 apply_parser parse_statement "description 'help';"
 apply_parser (many parse_statement) "description 'help';"
@@ -188,10 +185,29 @@ let pr = Printer.YangPrinter ()
 pr.Append un
 pr.ToString()
 
-let unknown = Statement.Unknown (UnknownStatement (IdentifierWithPrefix.Make "t:h", None, None))
+
+open Yang.Model
+StatementPrinter.Reset()
+
+let unknown = Statement.Unknown (UnknownStatement.UnknownStatement (IdentifierWithPrefix.Make "t:h", None, None))
 let description = DescriptionStatement ("help", None)
+
+pr.Append unknown
+pr.ToString()
+
+let description_as_statement = Statement.Description description
 
 let _ = 
     let description_as_statement = Statement.Description description
     ()
 
+
+
+// TODO: Fix printing
+
+type XX = | XX of int
+let xx = typeof<XX>.GetMethod("ToString")
+xx.Module
+
+let oo = typeof<obj>.GetMethod("ToString")
+oo.Invoke(description, [| |])

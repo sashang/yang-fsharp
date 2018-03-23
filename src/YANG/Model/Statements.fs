@@ -40,7 +40,7 @@ module Statements =
      // TODO: Remove/fix pretty printing functionality from this file; use other version.
 
     /// Available Yang statement definitions
-    [<StructuredFormatDisplay("{PrettyPrint}")>]
+    // TODO: Fix printing: [<StructuredFormatDisplay("{PrettyPrint}")>]
     type Statement =
     | Action        of ActionStatement
     | AnyData       of AnyDataStatement
@@ -115,9 +115,10 @@ module Statements =
     | YangVersion   of YangVersionStatement
     | YinElement    of YinElementStatement
     | Unknown       of UnknownStatement
-    with
-        member this.PrettyPrint     = StatementPrinter.Print this
-        override this.ToString()    = this.PrettyPrint
+    // TODO: Fix pretty printing of Statement
+    //with
+    //    member this.PrettyPrint     = StatementPrinter.Print this
+    //    override this.ToString()    = this.PrettyPrint
 
     /// Short name for the extra statements that may appear
     and ExtraStatements         = Statement list option
@@ -756,11 +757,13 @@ module Statements =
     and StatementPrinter ()         =
         class
             static let mutable StatementPrinterImplementation : (Statement -> string) option = None
+            static let default_printer = typeof<obj>.GetMethod("ToString")
+            static member IsCustomPrinterAvailable = StatementPrinterImplementation.IsSome
             static member Set (printer : Statement -> string) = StatementPrinterImplementation <- Some printer
             static member Reset () = StatementPrinterImplementation <- None
             static member Print (st : Statement) =
                 match StatementPrinterImplementation with
-                | None          -> sprintf "%A" st
+                | None          -> default_printer.Invoke(st, [| |]) :?> string
                 | Some printer  -> printer st
         end
 
