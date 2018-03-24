@@ -191,5 +191,5 @@ module ExtraStatements =
         //                            [reference-stmt]
         //                        "}" stmtsep
         // TODO: Check and enforce cardinality for refine-stmt
-        make_statement_parser_optional_generic "refine" Identifier.parse_schema_node_identifier_descendant parse_refine_body_statement
+        make_statement_parser_optional_generic "refine" (pip Strings.parse_string Identifier.parse_schema_node_identifier_descendant) parse_refine_body_statement
         |>> RefineStatement

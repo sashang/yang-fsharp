@@ -32,4 +32,6 @@ module Parser =
 
     let ParseFile (filename : string) =
         let content = ReadAndClean filename
-        apply_parser Module.parse_module_or_submodule content
+        // TODO: Do we need to call the generic statement initializer here?
+        GenericParser.initialize()
+        apply_parser (wse >>. Module.parse_module_or_submodule) content

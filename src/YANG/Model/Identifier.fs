@@ -161,6 +161,19 @@ module Identifier =
         /// <param name="id">The input identifier</param>
         static member Make (id : IdentifierWithPrefix)  = Custom id
 
+        member this._IsSimple = match this with | Simple _ -> true | _ -> false
+        member this._IsCustom = match this with | Custom _ -> true | _ -> false
+
+        member this.AsSimple =
+            match this with
+            | Simple id     -> Some id
+            | _             -> None
+
+        member this.AsCustom =
+            match this with
+            | Custom id     -> Some id
+            | _id           -> None
+
         /// <summary>
         /// Get the string representation of the identifier
         /// </summary>

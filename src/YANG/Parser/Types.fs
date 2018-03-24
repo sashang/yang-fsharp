@@ -211,7 +211,8 @@ module Types =
 
         /// Parses a specific string and also returns it in the parser output
         let force_type_name (``type`` : string) : Parser<IdentifierReference, 'a> =
-            pstring ``type`` .>> spaces
+            // The type name should end with whitespace of 
+            pstring ``type`` .>> (spaces1 <|> (followedBy (skipChar ';')))
             |>> fun v -> Yang.Model.Identifier.IdentifierReference.Make ``type``
 
         /// Resolve the parser for the type specific restriction statements

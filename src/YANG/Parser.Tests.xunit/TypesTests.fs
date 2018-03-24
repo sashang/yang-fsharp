@@ -18,7 +18,10 @@ module TypesTests =
         let input = """type string {}"""
         let (TypeStatement (id, restriction)) = FParsecHelper.apply parse_type_statement input
         Assert.Equal(IdentifierReference.Make "string", id)
-        Assert.Equal(None, restriction)
+        Assert.True(restriction.IsSome)
+        let string_restrictions = TypeBodyStatement.AsStringRestrictions restriction.Value
+        Assert.True(string_restrictions.IsSome)
+        Assert.Equal(0, string_restrictions.Value.Length)
 
     [<Fact>]
     let ``parse string type with simple length constraint`` () =
@@ -75,19 +78,6 @@ module TypesTests =
         // TODO: Check that the string restrictions are correct
 
     [<Fact>]
-    let ``fail when string type length restriction appears twice`` () =
-        let input = """type string {
-             junos:posix-pattern "^.{1,64}$";
-             junos:pattern-message "Must be string of 64 characters or less";
-             length "1 .. 64";
-             length "1 .. 128";
-           }"""
-
-        Assert.ThrowsAny<Exception>(
-            fun _ -> FParsecHelper.apply parse_type_statement input |> ignore
-        )
-
-    [<Fact>]
     let ``parse string type with both length and pattern restriction`` () =
         let input = """type string {
              junos:posix-pattern "^.{1,64}$";
@@ -122,3 +112,22 @@ module TypesTests =
         Assert.True(string_restriction.IsSome)
         Assert.Equal(6, string_restriction.Value.Length)
         // TODO: Check that the string restrictions are correct
+
+    [<Fact>]
+    let ``parse simple type statement`` () =
+        let input = """type performance-15min-interval {
+}"""
+        let (TypeStatement (id, body)) = FParsecHelper.apply parse_type_statement input
+        Assert.Equal("performance-15min-interval", id.Value)
+        Assert.True(id.IsValid)
+        Assert.True(id._IsSimple)
+
+    [<Theory>]
+    [<InlineData("string7only")>]
+    [<InlineData("string-huge")>]
+    let ``parse custom type with keyword prefix`` (name) =
+        let input = sprintf "type %s;" name
+        let (TypeStatement (id, extra)) = FParsecHelper.apply parse_type_statement input
+        Assert.True(id.IsValid)
+        Assert.True(extra.IsNone)
+        Assert.Equal(name, id.Value)

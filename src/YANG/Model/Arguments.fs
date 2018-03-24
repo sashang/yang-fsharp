@@ -5,6 +5,7 @@ namespace Yang.Model
 
 module Arguments =
     open System
+    open System.Numerics
     open NLog
 
     /// Logger for this module
@@ -120,6 +121,15 @@ module Arguments =
                 | Max       -> "max"
                 | Number v  -> sprintf "%d" v
 
+            member this._IsMin = match this with | Min -> true | _ -> false
+            member this._IsMax = match this with | Max -> true | _ -> false
+            member this._IsNumber = match this with | Number _ -> true | _ -> false
+
+            member this.AsNumber =
+                match this with
+                | Number number     -> Some number
+                | _                 -> None
+
             override this.ToString() = this.Value
 
         [<StructuredFormatDisplay("{Value}")>]
@@ -140,6 +150,19 @@ module Arguments =
                 | Range (left, right)   -> sprintf "%s .. %s" left.Value right.Value
 
             override this.ToString() = this.Value
+
+            member this._IsSingle = match this with | Single _ -> true | _ -> false
+            member this._IsRange  = match this with | Range _  -> true | _ -> false
+
+            member this.AsSingle =
+                match this with
+                | Single boundary   -> Some boundary
+                | _                 -> None
+
+            member this.AsRange =
+                match this with
+                | Range (left, right)   -> Some (left, right)
+                | _                     -> None
 
             member this.IsInRange value =
                 match this with
@@ -392,25 +415,28 @@ module Arguments =
     /// Definition of Range ([RFC 7950, p. 204])
     [<AutoOpen>]
     module Range =
+        open System.Windows.Markup
 
         [<StructuredFormatDisplay("{Value}")>]
         [<CustomEquality; CustomComparison>]
         type RangeBoundary =
         | Min
         | Max
-        | Integer of int64
+        | Integer of BigInteger
         | Decimal of System.Decimal
         with
-            static member Make (value : int64) = Integer value
-            static member Make (value : int32) = Integer (int64 value)
+            static member Make (value : int64) = Integer (BigInteger value)
+            static member Make (value : int32) = Integer (BigInteger value)
+            static member Make (value : uint64) = Integer (BigInteger value)
+            static member Make (value : uint32) = Integer (BigInteger value)
             static member Make (value : System.Decimal) = Decimal value
 
             member this.Value =
                 match this with
-                | Min       -> "min"
-                | Max       -> "max"
-                | Integer v -> sprintf "%d" v
-                | Decimal v -> sprintf "%f" v
+                | Min           -> "min"
+                | Max           -> "max"
+                | Integer v     -> sprintf "%s" (v.ToString())
+                | Decimal v     -> sprintf "%f" v
 
             override this.ToString() = this.Value
 
@@ -420,6 +446,26 @@ module Arguments =
             member this._IsDecimal = match this with | Decimal _ -> true | _ -> false
 
             member this.AsInteger =
+                match this with
+                | Integer value ->
+                    if value > (BigInteger System.Int64.MaxValue) then
+                        throw "Conversion to int64 failed; value too big"
+                    elif value < (BigInteger System.Int64.MinValue) then
+                        throw "Conversion to int64 failed; value too small"
+                    else Some (int64 value)
+                | _             -> None
+
+            member this.AsUnsignedInteger =
+                match this with
+                | Integer value ->
+                    if value > (BigInteger System.UInt64.MaxValue) then
+                        throw "Conversion to int64 failed; value too big"
+                    elif value < (BigInteger 0) then
+                        throw "Cannot convert negative value to uint64"
+                    else Some (uint64 value)
+                | _             -> None
+
+            member this.AsBigInteger =
                 match this with
                 | Integer value -> Some value
                 | _             -> None
@@ -445,8 +491,11 @@ module Arguments =
                     | Integer v1, Integer v2    -> v1 = v2
                     | Decimal v1, Decimal v2    -> v1 = v2
                     | Integer v1, Decimal v2
-                    | Decimal v2, Integer v1
-                        -> (System.Decimal v1) = v2
+                    | Decimal v2, Integer v1    ->
+                        if    v1 > (BigInteger Decimal.MaxValue)
+                           || v1 < (BigInteger Decimal.MinValue)
+                        then false
+                        else v2 = (decimal v1)
 
             interface IComparable<RangeBoundary> with
                 member this.CompareTo(other : RangeBoundary) =
@@ -465,9 +514,19 @@ module Arguments =
 
                     | Integer v1, Integer v2    -> v1.CompareTo(v2)
                     | Decimal v1, Decimal v2    -> v1.CompareTo(v2)
-                    | Integer v1, Decimal v2
-                    | Decimal v2, Integer v1
-                        -> (System.Decimal v1).CompareTo(v2)
+
+                    | Integer v1, Decimal v2 ->
+                        if v1 > (BigInteger Decimal.MaxValue) then 1
+                        elif v1 < (BigInteger Decimal.MinValue) then -1
+                        else
+                            (decimal v1).CompareTo(v2)
+
+                    | Decimal v2, Integer v1 ->
+                        if v1 > (BigInteger Decimal.MaxValue) then -1
+                        elif v1 < (BigInteger Decimal.MinValue) then 1
+                        else
+                            v2.CompareTo(decimal v1)
+
 
         [<StructuredFormatDisplay("{Value}")>]
         type RangePart =
@@ -521,31 +580,33 @@ module Arguments =
                 | Region (left, right)  -> Some (left, right)
 
             member this.IsInRange (value : int64) =
+                let value' = BigInteger value
+
                 match this with
                 | Single Min
                 | Single Max    -> false
-                | Single (Integer v)    -> value = v
+                | Single (Integer v)    -> value' = v
                 | Single (Decimal v)    -> (System.Decimal value) = v
                 | Region (_, Min)
                 | Region (Max, _)       -> throw "Invalid range-part: %A" this
                 | Region (Min, Max)     ->
                     _logger.Warn("Detected trivial range part (min .. max)")
                     true
-                | Region (Min, Integer v)   -> value <= v
+                | Region (Min, Integer v)   -> value' <= v
                 | Region (Min, Decimal v)   -> (System.Decimal value) <= v
-                | Region (Integer v, Max)   -> v <= value
+                | Region (Integer v, Max)   -> v <= value'
                 | Region (Decimal v, Max)   -> v <= (System.Decimal value)
                 | Region (Integer left, Integer right) ->
-                    left <= value && value <= right
+                    left <= value' && value' <= right
                 | Region (Decimal left, Decimal right) ->
                     let value' = System.Decimal value
                     left <= value' && value' <= right
                 | Region (Integer left, Decimal right) ->
-                    let value' = System.Decimal value
-                    left <= value && value' <= right
+                    let value'' = System.Decimal value
+                    left <= value' && value'' <= right
                 | Region (Decimal left, Integer right) ->
-                    let value' = System.Decimal value
-                    left <= value' && value <= right
+                    let value'' = System.Decimal value
+                    left <= value'' && value' <= right
 
             member this.IsInRange (value : int32) = this.IsInRange (int64 value)
 
@@ -553,25 +614,41 @@ module Arguments =
                 match this with
                 | Single Min
                 | Single Max    -> false
-                | Single (Integer v)    -> value = (System.Decimal v)
+                | Single (Integer v)    ->
+                    if    v > (BigInteger Decimal.MaxValue)
+                       || v < (BigInteger Decimal.MinValue)
+                    then false
+                    else value = (decimal v)
                 | Single (Decimal v)    -> value = v
                 | Region (_, Min)
                 | Region (Max, _)       -> throw "Invalid range-part: %A" this
                 | Region (Min, Max)     ->
                     _logger.Warn("Detected trivial range part (min .. max)")
                     true
-                | Region (Min, Integer v)   -> value <= (System.Decimal v)
+                | Region (Min, Integer v)   ->
+                    if v > (BigInteger Decimal.MaxValue) then true
+                    else value <= (decimal v)
                 | Region (Min, Decimal v)   -> value <= v
-                | Region (Integer v, Max)   -> (System.Decimal v) <= value
+                | Region (Integer v, Max)   ->
+                    if v > (BigInteger Decimal.MaxValue) then false
+                    else (decimal v) <= value
                 | Region (Decimal v, Max)   -> v <= value
                 | Region (Integer left, Integer right) ->
-                    (System.Decimal left) <= value && value <= (System.Decimal right)
+                    if    left > (BigInteger Decimal.MaxValue)
+                       || right < (BigInteger Decimal.MinValue)
+                    then false
+                    else
+                        (decimal left) <= value && value <= (decimal right)
                 | Region (Decimal left, Decimal right) ->
                     left <= value && value <= right
                 | Region (Integer left, Decimal right) ->
-                    (System.Decimal left) <= value && value <= right
+                    // We assume that left <= right
+                    if left < (BigInteger Decimal.MinValue) then true
+                    else (decimal left) <= value && value <= right
                 | Region (Decimal left, Integer right) ->
-                    left <= value && value <= (System.Decimal right)
+                    // We assume that left <= right
+                    if right > (BigInteger Decimal.MaxValue) then true
+                    else left <= value && value <= (decimal right)
 
             member this.IsValid =
                 match this with
@@ -584,19 +661,18 @@ module Arguments =
         [<StructuredFormatDisplay("{Value}")>]
         type Range = | Range of RangePart list
         with
-            static member Make (left : int64, right : int64) =
-                if left > right then throw "Left region cannot be larger than right (%d .. %d)" left right
+            static member Make (left : BigInteger, right : BigInteger) =
+                if left > right then throw "Left region cannot be larger than right (%s .. %s)" (left.ToString()) (right.ToString())
                 if left = right then
                     Range [ Single (Integer left) ]
                 else
                     Range [ Region (Integer left, Integer right) ]
 
+            static member Make (left : int64, right : int64) =
+                Range.Make (BigInteger left, BigInteger right)
+
             static member Make (left : int32, right : int32) =
-                if left > right then throw "Left region cannot be larger than right (%d .. %d)" left right
-                if left = right then
-                    Range [ Single (Integer (int64 left)) ]
-                else
-                    Range [ Region (Integer (int64 left), Integer (int64 right)) ]
+                Range.Make (BigInteger left, BigInteger right)
 
             static member Make (left : System.Decimal, right : System.Decimal) =
                 if left > right then throw "Left region cannot be larger than right (%f .. %f)" left right

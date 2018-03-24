@@ -1,5 +1,8 @@
 ﻿namespace Yang.Parser.Tests
 
+open Xunit
+
+[<Collection("Yang Parser")>]
 module RevisionsTests =
     open Xunit
     open Yang.Model
@@ -10,7 +13,7 @@ module RevisionsTests =
     let ``revision info with no description`` () =
         let revision = """revision 2007-06-09;"""
 
-        let revision = FParsecHelper.apply parse_revision revision
+        let revision = FParsecHelper.apply parse_revision_statement revision
         let (RevisionStatement (date, _)) = revision
 
         Assert.Equal(2007us,    date.Year)
@@ -27,7 +30,7 @@ module RevisionsTests =
         }
 """
 
-        let revision = FParsecHelper.apply parse_revision revision
+        let revision = FParsecHelper.apply parse_revision_statement revision
         let (RevisionStatement (date, _)) = revision
 
         Assert.Equal(2007us,    date.Year)
@@ -46,7 +49,7 @@ module RevisionsTests =
 }
 """
 
-        let revision = FParsecHelper.apply parse_revision revision
+        let revision = FParsecHelper.apply parse_revision_statement revision
         let (RevisionStatement (date, _)) = revision
 
         Assert.Equal(2007us,    date.Year)
@@ -71,6 +74,32 @@ module RevisionsTests =
             ) |> Option.Some,
             RevisionStatement.Description revision
         )
+
+    [<Fact>]
+    let ``revision in quotes`` () =
+        let revision = """revision "2015-09-11";"""
+        let (RevisionStatement (date, extra)) = FParsecHelper.apply parse_revision_statement revision
+        Assert.Equal(2015us,    date.Year)
+        Assert.Equal(9uy,       date.Month)
+        Assert.Equal(11uy,      date.Day)
+        Assert.True(extra.IsNone)
+
+    [<Fact>]
+    let ``revision in quotes with extra statement`` () =
+        let revision = """revision "2015-09-11" {
+                            description
+                                "IOS XR 5.3.1 revision.";
+                          }"""
+        let (RevisionStatement (date, extra)) = FParsecHelper.apply parse_revision_statement revision
+        Assert.Equal(2015us,    date.Year)
+        Assert.Equal(9uy,       date.Month)
+        Assert.Equal(11uy,      date.Day)
+        Assert.True(extra.IsSome)
+        let extras = extra.Value
+        Assert.Equal(1, extras.Length)
+        let description = extras.Head
+        Assert.True(RevisionBodyStatement.IsDescription description)
+
 
     // TODO: Add unit test for revision with non-empty reference
     // TODO: Add unit test for revision with unknown statements

@@ -38,6 +38,7 @@ module Statements =
      *)
 
      // TODO: Remove/fix pretty printing functionality from this file; use other version.
+     // TODO: Name items of *Statement definitions. Use the new syntax as well.
 
     /// Available Yang statement definitions
     // TODO: Fix printing: [<StructuredFormatDisplay("{PrettyPrint}")>]

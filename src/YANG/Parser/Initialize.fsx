@@ -32,6 +32,8 @@
 #load "GenericParser.fs"
 #load "Parser.fs"
 
+Yang.Parser.GenericParser.initialize ()
+
 [<AutoOpen>]
 module MyEnvironment =
     open System

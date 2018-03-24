@@ -5,6 +5,7 @@ namespace Yang.Parser
 [<AutoOpen>]
 module Statements =
     open System
+    open System.Collections.Generic
     open FParsec
     open NLog
     open Identifier
@@ -186,18 +187,36 @@ module Statements =
         member this.Set (implementation : Parser<Statement, 'a>) =
             this.Implementation := implementation
 
+    let mutable generic_parser_generator : Type option = None
+    let generic_parser_implementations = Dictionary<System.Type, obj>()
+
     let generic_parser<'a> : GenericParser<'a> =
+        let mutable initialized = false
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
 
         let debug_parser : Parser<Statement, 'a> =
-            try
-                // debug "Using generic parser for %A" typeof<'a>.FullName
-                parse_statement
-            with
-            | e ->
-                error "No implementation of forward generic parser for type argument: %A" typeof<'a>
-                raise e
+            if initialized = false then
+                let key = typeof<'a>
+                if generic_parser_implementations.ContainsKey(key) then
+                    parse_statement_ref := generic_parser_implementations.[key] :?> Parser<Statement, 'a>
+                    initialized <- true
+                elif generic_parser_generator.IsSome then
+                    debug "Constructing generator for %s" key.FullName
+                    let ty = generic_parser_generator.Value
+                    let generic = ty.GetGenericTypeDefinition()
+                    let proper = generic.MakeGenericType(key)
+                    let method = proper.GetMethod("Parser")
+                    let parser = method.Invoke(null, [| |])
+                    generic_parser_implementations.Add(key, parser)
+                    parse_statement_ref := parser :?> Parser<Statement, 'a>
+                    initialized <- true
+                else
+                    error "Cannot find generic parser for type %s and do not know how to construct it" key.FullName
+                    // The call will fail, the user will get the error that the parser is not implemented
+
+            !parse_statement_ref
+
 
         {
             Parser          = debug_parser
@@ -349,7 +368,7 @@ module Statements =
         //modifier-arg-str    = < a string that matches the rule >
         //                        < modifier-arg >
         //modifier-arg        = invert-match-keyword
-        make_statement_parser_optional "modifier" Arguments.parse_modifier parse_statement
+        make_statement_parser_optional "modifier" (pip Strings.parse_string Arguments.parse_modifier) parse_statement
         |>> ModifierStatement
 
     /// Parses a reference statement
@@ -427,22 +446,6 @@ module Statements =
         make_statement_parser_optional "require-instance" (pip Strings.parse_string Arguments.parse_boolean) parse_statement
         |>> RequireInstanceStatement
 
-    let parse_revision_body_statement<'a> : Parser<RevisionBodyStatement, 'a> =
-            (parse_description_statement        |>> RevisionBodyStatement.Description)
-        <|> (parse_reference_statement          |>> RevisionBodyStatement.Reference)
-
-    let parse_revision_statement<'a> : Parser<RevisionStatement, 'a> =
-        // [RFC 7950, p. 186]
-        //revision-stmt       = revision-keyword sep revision-date optsep
-        //                        (";" /
-        //                        "{" stmtsep
-        //                            ;; these stmts can appear in any order
-        //                            [description-stmt]
-        //                            [reference-stmt]
-        //                        "}") stmtsep
-        make_statement_parser_optional_generic "revision" Arguments.parse_date parse_revision_body_statement
-        |>> RevisionStatement
-
     let parse_revision_date_statement<'a> : Parser<RevisionDateStatement, 'a> =
         // [RFC 7950, p. 186]
         // revision-date-stmt  = revision-date-keyword sep revision-date stmtend
@@ -476,7 +479,15 @@ module Statements =
         //yang-version-arg-str = < a string that matches the rule >
         //                          < yang-version-arg >
         //yang-version-arg    = "1.1"        skipString "reference" >>. spaces >>.
-        make_statement_parser_optional "yang-version" (Strings.parse_string |>> Version.Parse) parse_statement
+
+        let do_parse_version (input : string) : Version =
+            // Correcting version 1, which is typicall given as 1, instead of 1.0
+            let input' =
+                if input.Contains(".") = false then sprintf "%s.0" input
+                else input
+            Version.Parse input'
+
+        make_statement_parser_optional "yang-version" (Strings.parse_string |>> do_parse_version) parse_statement
         |>> YangVersionStatement
 
     let parse_yin_element_statement<'a> : Parser<YinElementStatement, 'a> =
@@ -503,9 +514,10 @@ module Statements =
         .>>. ((end_of_statement_or_block parse_statement
                 |>> (fun body            -> None, body))
                 <|>
-                (read_keyword .>>. end_of_statement_or_block parse_statement
+                (Strings.parse_string .>>
+                 spaces .>>. end_of_statement_or_block parse_statement
                 |>> (fun (argument, body)    -> Some argument, body))
-                )
+             )
         |>> (fun (identifier, (argument, body)) -> UnknownStatement (identifier, argument, body))
 
     let parse_value_statement<'a> : Parser<ValueStatement, 'a> =
@@ -531,7 +543,7 @@ module Statements =
         //                        "{" stmtsep
         //                            [yin-element-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "argument" Identifier.parse_identifier parse_argument_body_statement
+        make_statement_parser_optional_generic "argument" (pip Strings.parse_string Identifier.parse_identifier) parse_argument_body_statement
         |>> ArgumentStatement
 
     let parse_belongs_to_body_statement<'a> : Parser<BelongsToBodyStatement, 'a> =
@@ -588,7 +600,7 @@ module Statements =
         //                            [reference-stmt]
         //                        "}") stmtsep
         // TODO: Check and enforce cardinality constraints for length-stmt
-        make_statement_parser_optional_generic "length" Arguments.parse_length parse_length_body_statement
+        make_statement_parser_optional_generic "length" (pip Strings.parse_string Arguments.parse_length) parse_length_body_statement
         |>> LengthStatement
 
     let parse_must_body_statement<'a> : Parser<MustBodyStatement, 'a> =
@@ -655,7 +667,7 @@ module Statements =
         //                        "}") stmtsep
 
         // TODO: Unit tests for range statement
-        make_statement_parser_optional_generic "range" Arguments.parse_range parse_range_body_statement
+        make_statement_parser_optional_generic "range" (pip Strings.parse_string Arguments.parse_range) parse_range_body_statement
         |>> RangeStatement
 
     let parse_when_body_statement<'a> : Parser<WhenBodyStatement, 'a> =
@@ -672,5 +684,8 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
+        // TODO: Check and enforce cardinality constraints for when-stmt
+        // TODO: Often the when-stmt contain xpath conditions on the schema; provide support for parsing them.
+        //       E.g. when "../crypto = 'mc:aes'";
         make_statement_parser_optional_generic "when" Strings.parse_string parse_when_body_statement
         |>> WhenStatement

@@ -1,6 +1,7 @@
 ﻿namespace Yang.Parser.Tests
 
 module ArgumentsTests =
+    open System.Numerics
     open Xunit
     open Yang.Model.Arguments
     open Yang.Parser.Arguments
@@ -22,12 +23,6 @@ module ArgumentsTests =
         let input = "15"
         let result = FParsecHelper.apply parse_length input
         Assert.Equal(Length [ (LengthPart.Single (LengthBoundary.Number 15uL)) ], result)
-
-    [<Fact>]
-    let ``parse length of range values`` () =
-        let input = "'15 .. 20'"
-        let result = FParsecHelper.apply parse_length input
-        Assert.Equal(Length [ (LengthPart.Range (LengthBoundary.Number 15uL, LengthBoundary.Number 20uL)) ], result)
 
     // TODO: Add more tests for length-arg parser
 
@@ -103,7 +98,7 @@ module ArgumentsTests =
 
     [<Fact>]
     let ``parse range of set of values`` () =
-        let input = "'15 .. 20'"
+        let input = "15 .. 20"
         let (Range result) = FParsecHelper.apply parse_range input
         Assert.Equal(1, result.Length)
         let region = result.Head
@@ -119,5 +114,39 @@ module ArgumentsTests =
         Assert.True(ri.IsSome)
         Assert.Equal(15L, li.Value)
         Assert.Equal(20L, ri.Value)
+
+    [<Fact>]
+    let ``parse range with big range`` () =
+        let input = "1 .. 18446744073709551615"
+        let result = FParsecHelper.apply parse_range_part input
+        Assert.True(result._IsRegion)
+        let region = result.AsRegion
+        Assert.True(region.IsSome)
+        let (left, right) = region.Value
+        Assert.True(left._IsInteger)
+        Assert.True(right._IsInteger)
+        let lefti = left.AsInteger
+        let righti = right.AsBigInteger
+        Assert.True(lefti.IsSome)
+        Assert.True(righti.IsSome)
+        Assert.Equal(1L, lefti.Value)
+        Assert.Equal(BigInteger.Parse("18446744073709551615"), righti.Value)
+
+    [<Fact>]
+    let ``parse range with no space`` () =
+        let input = "1..96"
+        let result = FParsecHelper.apply parse_range_part input
+        Assert.True(result._IsRegion)
+        let region = result.AsRegion
+        Assert.True(region.IsSome)
+        let (left, right) = region.Value
+        Assert.True(left._IsInteger)
+        Assert.True(right._IsInteger)
+        let lefti = left.AsInteger
+        let righti = right.AsInteger
+        Assert.True(lefti.IsSome)
+        Assert.True(righti.IsSome)
+        Assert.Equal(1L, lefti.Value)
+        Assert.Equal(96L, righti.Value)
 
     // TODO: Add more tests for range-arg parser

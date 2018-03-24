@@ -71,7 +71,7 @@ module Arguments =
         //length-boundary     = min-keyword / max-keyword /
         //                        non-negative-integer-value
         // TODO: Proper parsing of length
-        pip Strings.parse_string (sepBy1 parse_length_part (spaces >>. skipChar '|' .>> spaces)) |>> (fun s -> Length s)
+        (sepBy1 parse_length_part (spaces >>. skipChar '|' .>> spaces)) |>> (fun s -> Length s)
         .>> spaces
 
     let parse_max_value<'a> : Parser<MaxValue, 'a> =
@@ -97,7 +97,7 @@ module Arguments =
         //modifier-arg-str    = < a string that matches the rule >
         //                        < modifier-arg >
         //modifier-arg        = invert-match-keyword
-        pip Strings.parse_string (skipString "invert-match" |>> (fun _-> Modifier.InvertMatch)) .>>
+        (skipString "invert-match" |>> (fun _-> Modifier.InvertMatch)) .>>
         spaces
 
     let parse_ordered_by<'a> : Parser<OrderedBy, 'a> =
@@ -116,8 +116,10 @@ module Arguments =
         (skipString "min"   |>> fun _ -> RangeBoundary.Min)
         <|> (skipString "max"   |>> fun _ -> RangeBoundary.Max)
         <|> (numberLiteral numberFormat "range boundary"
-             |>> fun v -> if v.HasFraction then RangeBoundary.Decimal (System.Decimal.Parse(v.String))
-                                           else RangeBoundary.Integer (System.Int64.Parse(v.String)))
+             |>> fun v ->
+                    if v.HasFraction then RangeBoundary.Decimal (System.Decimal.Parse(v.String))
+                    else RangeBoundary.Integer (System.Numerics.BigInteger.Parse v.String)
+            )
         .>> spaces
 
     let parse_range_part<'a> : Parser<RangePart, 'a> =
@@ -139,7 +141,7 @@ module Arguments =
         //                        [optsep ".." optsep range-boundary]
         //range-boundary      = min-keyword / max-keyword /
         //                        integer-value / decimal-value
-        pip Strings.parse_string (sepBy1 parse_range_part (spaces >>. skipChar '|' .>> spaces))
+        sepBy1 parse_range_part (spaces >>. skipChar '|' .>> spaces)
         |>> Range
         .>> spaces
 

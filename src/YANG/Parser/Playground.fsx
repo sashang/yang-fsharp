@@ -39,25 +39,6 @@ printfn "Length: %d" juniper_def_use.Length
 // File:Models-External\Juniper\17.4\17.4R1\junos\conf\junos-conf-class-of-service@2017-01-01.yang      Line: 1168, 1201, 1234
 
 
-let configuration = """container configuration {
-     uses juniper-config;
-     list groups {
-     }
-   }"""
-
-let _ = apply_parser BodyStatements.parse_container_statement configuration
-let _ = apply_parser BodyStatements.parse_body_statement configuration
-
-
-apply_parser Arguments.parse_length "'1 .. 128'"
-apply_parser parse_length_statement """length "1 .. 128";"""
-
-apply_parser parse_unknown_statement """junos:posix-pattern "^.{1,64}$";"""
-
-
-
-apply_parser parse_length_statement """length "8";"""
-
 apply_parser (pip Strings.parse_string Identifier.parse_schema_node_identifier_absolute) "'/if:interfaces/if:interface'"
 
 let file1 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-base.yang"
@@ -66,7 +47,18 @@ let file3 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\
 let file4 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\draft\interface\bbf-fiber-types.yang"
 let file5 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\standard\interface\bbf-fast-line-performance-body.yang"
 let file6 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\BroadbandForum\standard\interface\bbf-interfaces-performance-management.yang"
-let filex = @"e:\temp\failed.yang"
+let file7 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\Juniper\16.1\junos-extension.yang"
+let file8 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\Juniper\17.4\17.4R1\junos-qfx\rpc\junos-qfx-rpc-clear@2017-01-01.yang"
+let file9 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\YangModels\vendor\huawei\network-router\8.9.10\huawei\huawei-qos-hqos.yang"
+let file10 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\YangModels\vendor\huawei\network-router\8.9.10\huawei\huawei-system.yang"
+let file11 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\YangModels\vendor\cisco\xr\611\Cisco-IOS-XR-infra-alarm-logger-oper.yang"
+
+MyLog.myLog.AddTrace(Statements._name)
+MyLog.myLog.AddTrace(GenericParser._name)
+
+Statements.generic_parser_generator.IsSome
+Statements.generic_parser_implementations
+GenericParser.initialize ()
 
 Parser.ParseFile file1
 Parser.ParseFile file2
@@ -74,11 +66,11 @@ Parser.ParseFile file3
 Parser.ParseFile file4
 Parser.ParseFile file5
 Parser.ParseFile file6
-
-Parser.ParseFile filex
-
-// TODO: why does the following work?
-apply_parser parse_when_statement """when "../crypto = 'mc:aes'";"""
+Parser.ParseFile file7
+Parser.ParseFile file8
+Parser.ParseFile file9
+Parser.ParseFile file10
+Parser.ParseFile file11
 
 (*
 How do we parse examples from p.169?
@@ -89,125 +81,19 @@ apply_parser Identifier.parse_schema_node_identifier "/ex:system/ex:server[ex:ip
 apply_parser Identifier.parse_schema_node_identifier 
 *)
 
-
-let input = """identity bbf-fiber-interface-type {
-    base if:interface-type;
-    description
-      "This identity is used as a base for all xPON interface types
-       defined by the BBF that are not in the 'ifType definitions'
-       registry maintained by IANA.";
-  }"""
-
-
-apply_parser parse_identity_statement input
-
 open FParsec
 open Yang.Parser.BodyStatements
-open Yang.Parser
-
-let bad_type_def = """typedef performance-15min-history-interval {
-type performance-15min-interval {
-    range "1..96";
-}
-}"""
-
-let bad_type = """type performance-15min-interval {
-}"""
-apply_parser Types.parse_type_statement bad_type
-
-
-apply_parser (spaces >>. parse_typedef_statement) bad_type_def
-
-
-
-#r @"E:\temp\qe\FSharp.Quotations.Evaluator.1.1.0\lib\net45\FSharp.Quotations.Evaluator.dll"
-#r @"E:\temp\qe\FSharp.Quotations.Evaluator.1.1.0\lib\net45\FSharp.Quotations.Evaluator.Hacks.dll"
-
-open Yang.Model
-
-let mutable generator : System.Type option = None
-let implementations = System.Collections.Generic.Dictionary<System.Type, obj>()
-
-let generic_parser<'a> : GenericParser<'a> =
-    let mutable initialized = false
-    let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
-        createParserForwardedToRef<Statement, 'a>()
-
-    let debug_parser : Parser<Statement, 'a> =
-        printfn "In debug ..."
-
-        if initialized = false then
-            printfn "In here..."
-
-            let key = typeof<'a>
-            if implementations.ContainsKey(key) then
-                printfn "Found type"
-                parse_statement_ref := implementations.[key] :?> Parser<Statement, 'a>
-                initialized <- true
-            elif generator.IsSome then
-                printfn "Constructing type"
-                let ty = generator.Value
-                let generic = ty.GetGenericTypeDefinition()
-                let proper = generic.MakeGenericType(typeof<'a>)
-                let method = proper.GetMethod("Parser")
-                let parser = method.Invoke(null, [| |])
-                implementations.Add(key, parser)
-                parse_statement_ref := parser :?> Parser<Statement, 'a>
-                initialized <- true
-            else
-                printfn "Cannot construct type"
-
-        !parse_statement_ref
-
-    {
-        Parser          = debug_parser
-        Implementation  = parse_statement_ref
-    }
-
-type BigGenerator<'a> =
-    static member Parser() : Parser<Statement, 'a> = generic_yang_statement_implementation
-
-generator <- Some (typeof<BigGenerator<unit>>)
-
-let parse_statement<'a> = generic_parser<'a>.Parser
-
-
-apply_parser parse_statement "description 'help';"
-apply_parser (many parse_statement) "description 'help';"
 
 // TODO: should give 1 .. 96
 apply_parser Arguments.parse_range_part "1..96"
 
 
-let un = UnknownStatement (IdentifierWithPrefix.Make "t:h", None, None)
-StatementPrinter.Reset()
-let pr = Printer.YangPrinter ()
-pr.Append un
-pr.ToString()
+
+open Yang.Parser.Types
+let type1 = """type string7only;"""
+apply_parser parse_type_statement type1
+
+let type2 = """type string-huge;"""
+apply_parser parse_type_statement type2
 
 
-open Yang.Model
-StatementPrinter.Reset()
-
-let unknown = Statement.Unknown (UnknownStatement.UnknownStatement (IdentifierWithPrefix.Make "t:h", None, None))
-let description = DescriptionStatement ("help", None)
-
-pr.Append unknown
-pr.ToString()
-
-let description_as_statement = Statement.Description description
-
-let _ = 
-    let description_as_statement = Statement.Description description
-    ()
-
-
-
-// TODO: Fix printing
-
-type XX = | XX of int
-let xx = typeof<XX>.GetMethod("ToString")
-xx.Module
-
-let oo = typeof<obj>.GetMethod("ToString")
-oo.Invoke(description, [| |])

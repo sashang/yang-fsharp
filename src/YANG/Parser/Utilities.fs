@@ -36,6 +36,7 @@ module Utilities =
     let pip<'a, 'b> (outer : Parser<string, 'a>) (inner : Parser<'b, 'a>) =
         // TODO: Proper testing of parser-in-parser
         // TODO: Do we need to backtrace in parser-in-parser when failure to parse? If so, where?
+        // TODO: Make sure that the inside parser in pip consumes the entire input provided by the first parser.
         fun (stream : CharStream<'a>)->
             let state = stream.State
             let input = outer stream

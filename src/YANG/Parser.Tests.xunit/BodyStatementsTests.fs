@@ -1,5 +1,8 @@
 ﻿namespace Yang.Parser.Tests
 
+open Xunit
+
+[<Collection("Yang Parser")>]
 module DataDefinitionsTests =
     open Xunit
     open FParsec
@@ -62,6 +65,18 @@ leaf-list domain-search {
         | _ -> failwith "Internal error: unit test should not have reached this point"
 
     [<Fact>]
+    let ``parse container statement`` () =
+        let input = """container hqosShareShape {
+            when "not(../../prioritymodefq='is4cos' or ../../prioritymodefq='ispriority') or ../../prioritymodefq='notpriority'";
+            description
+              "Share-Shaping.";}"""
+        let (ContainerStatement (id, body)) = FParsecHelper.apply parse_container_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("hqosShareShape", id.Value)
+        Assert.True(body.IsSome)
+        Assert.Equal(2, body.Value.Length)
+
+    [<Fact>]
     let ``parse container with embedded container`` () =
         let body ="""
 container system {
@@ -119,5 +134,16 @@ container system {
 
             | _ -> failwith "Internal error: unit test should not have reached this point"
         | _ -> failwith "Internal error: unit test should not have reached this point"
+
+    [<Fact>]
+    let ``parse typedef statement simple`` () =
+        let input = """typedef performance-15min-history-interval {
+type performance-15min-interval {
+}
+}"""
+        let (TypeDefStatement (id, body)) = FParsecHelper.apply parse_typedef_statement input
+        Assert.Equal("performance-15min-history-interval", id.Value)
+        Assert.True(id.IsValid)
+        Assert.Equal(1, body.Length)
 
     // TODO: More extensive unit testing of BodyStatements

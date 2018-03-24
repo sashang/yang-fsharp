@@ -392,7 +392,8 @@ module BodyStatements =
             |>> AugmentStatement
 
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
-                (parse_if_feature_statement     |>> ContainerBodyStatement.IfFeature)
+                (parse_when_statement           |>> ContainerBodyStatement.When)
+            <|> (parse_if_feature_statement     |>> ContainerBodyStatement.IfFeature)
             <|> (parse_must_statement           |>> ContainerBodyStatement.Must)
             <|> (parse_presence_statement       |>> ContainerBodyStatement.Presence)
             <|> (parse_config_statement         |>> ContainerBodyStatement.Config)

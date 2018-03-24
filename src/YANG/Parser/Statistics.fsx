@@ -327,13 +327,30 @@ Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("contai
 // Parsing of all modules
 //
 
+open FParsec
+
+GenericParser.initialize()
+
+let mutable total = 0
+let mutable correct = 0
+
+#time
 let _ =
     // It would be good to avoid parsing identical files many times,
     try_for_all_models ignore_known_incorrect_models (
         fun filename ->
+            total <- total + 1
             let model = get_external_model filename
-            let root = apply_parser Module.parse_module_or_submodule model
+            let root = apply_parser (wse >>. Module.parse_module_or_submodule) model
+            correct <- correct + 1
             root
     )
     |> Seq.choose id
     |> Seq.toList
+
+
+printfn "Total: %05d, Correct: %05d, Success: %4.3f" total correct ((float correct) / (float total))
+
+// 2018-03-23
+// Real: 00:33:00.883, CPU: 00:32:16.703, GC gen0: 56193, gen1: 14103, gen2: 71
+// Total: 12367, Correct: 04024, Success: 0.325
