@@ -40,6 +40,13 @@ module StatementsTests =
         Assert.True(body.IsNone)
 
     [<Fact>]
+    let ``parse base statement with quotes in name`` () =
+        let input = """base "lsp-role";"""
+        let (BaseStatement (id, body)) = FParsecHelper.apply parse_base_statement input
+        Assert.Equal("lsp-role", id.Value)
+        Assert.True(body.IsNone)
+
+    [<Fact>]
     let ``parse belongs-to statement simple`` () =
         let input = """belongs-to "openconfig-mpls" {
     prefix "mpls";

@@ -77,6 +77,20 @@ leaf-list domain-search {
         Assert.Equal(2, body.Value.Length)
 
     [<Fact>]
+    let ``parse container statement with long name`` () =
+        let input = """container "optical-logical-interface-logical-channel"+
+          "-assignments" {
+          description
+            "The operational attributes for a particular
+            interface";
+}"""
+        let (ContainerStatement (id, body)) = FParsecHelper.apply parse_container_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("optical-logical-interface-logical-channel-assignments", id.Value)
+        Assert.True(body.IsSome)
+        Assert.Equal(1, body.Value.Length)
+
+    [<Fact>]
     let ``parse container with embedded container`` () =
         let body ="""
 container system {
@@ -134,6 +148,39 @@ container system {
 
             | _ -> failwith "Internal error: unit test should not have reached this point"
         | _ -> failwith "Internal error: unit test should not have reached this point"
+
+    [<Fact>]
+    let ``parse grouping statement simple`` () =
+        let input = """grouping mpls-rsvp-session-state {
+    list session {
+      key "source-port destination-port
+       source-address destination-address";
+    }
+  }"""
+        let (GroupingStatement (id, body)) = FParsecHelper.apply parse_grouping_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("mpls-rsvp-session-state", id.Value)
+        Assert.True(body.IsSome)
+        Assert.Equal(1, body.Value.Length)
+
+    [<Fact>]
+    let ``parse list statement with long name`` () =
+        let input = """list "optical-logical-interface-logical-channel"+
+            "-assignment" {
+            key "index";
+
+            container "optical-logical-interface-logical-channel"+
+              "-assignment-attr" {
+              uses LOGICAL-CHANNEL-ASSIGNMENT;
+            }
+            leaf index {
+              type int32;
+            }
+          }"""
+        let (ListStatement (id, body)) = FParsecHelper.apply parse_list_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("optical-logical-interface-logical-channel-assignment", id.Value)
+        Assert.Equal(3, body.Length)
 
     [<Fact>]
     let ``parse typedef statement simple`` () =

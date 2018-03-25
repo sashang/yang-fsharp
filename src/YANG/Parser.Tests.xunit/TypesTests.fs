@@ -1,5 +1,8 @@
 ﻿namespace Yang.Parser.Tests
 
+open Xunit
+
+[<Collection("Yang Parser")>]
 module TypesTests =
     open System
     open Xunit

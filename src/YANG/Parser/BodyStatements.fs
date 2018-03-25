@@ -83,9 +83,11 @@ module BodyStatements =
     type private BodyParsers<'a> = {
         Action          : Parser<ActionStatement, 'a>
         Body            : Parser<BodyStatement, 'a>
-        DataDefinition  : Parser<BodyStatement, 'a>
-        ContainerBody   : Parser<ContainerBodyStatement, 'a>
         Container       : Parser<ContainerStatement, 'a>
+        ContainerBody   : Parser<ContainerBodyStatement, 'a>
+        DataDefinition  : Parser<BodyStatement, 'a>
+        Grouping        : Parser<GroupingStatement, 'a>
+        List            : Parser<ListStatement, 'a>
         TypeDef         : Parser<TypeDefStatement, 'a>
     }
 
@@ -258,7 +260,7 @@ module BodyStatements =
             //                            *notification-stmt
             //                        "}" stmtsep
             // TODO: Check and enforce cardinality constraints for list-stmt
-            make_statement_parser_generic "list" Identifier.parse_identifier parse_list_body_statement
+            make_statement_parser_generic "list" (pip Strings.parse_string Identifier.parse_identifier) parse_list_body_statement
             |>> ListStatement
 
         let parse_output_body_statement : Parser<OutputBodyStatement, 'a> =
@@ -427,7 +429,7 @@ module BodyStatements =
             //                           *notification-stmt
             //                       "}") stmtsep
             // TODO: Check and enforce cardinality for container-stmt.
-            make_statement_parser_optional_generic "container" Identifier.parse_identifier parse_container_body_statement
+            make_statement_parser_optional_generic "container" (pip Strings.parse_string Identifier.parse_identifier) parse_container_body_statement
             |>> ContainerStatement
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
@@ -564,9 +566,11 @@ module BodyStatements =
         {
             Action          = parse_action_statement
             Body            = parse_body
-            DataDefinition  = parse_data_definition
-            ContainerBody   = parse_container_body_statement
             Container       = parse_container_statement
+            ContainerBody   = parse_container_body_statement
+            DataDefinition  = parse_data_definition
+            Grouping        = parse_grouping_statement
+            List            = parse_list_statement
             TypeDef         = parse_typedef_statement
         }
 
@@ -577,4 +581,6 @@ module BodyStatements =
 
     let parse_container_body_statement<'a> : Parser<ContainerBodyStatement, 'a> = parsers.ContainerBody
     let parse_container_statement<'a> : Parser<ContainerStatement, 'a> = parsers.Container
+    let parse_grouping_statement<'a> : Parser<GroupingStatement, 'a> = parsers.Grouping
+    let parse_list_statement<'a> : Parser<ListStatement, 'a> = parsers.List
     let parse_typedef_statement<'a> : Parser<TypeDefStatement, 'a> = parsers.TypeDef

@@ -237,7 +237,7 @@ module Statements =
         // [RFC 7950, p. 187]
         //base-stmt           = base-keyword sep identifier-ref-arg-str
         //                        stmtend
-        make_statement_parser_optional "base" Identifier.parse_identifier_reference parse_statement
+        make_statement_parser_optional "base" (pip Strings.parse_string Identifier.parse_identifier_reference) parse_statement
         |>> BaseStatement
 
     /// Parses a config statement

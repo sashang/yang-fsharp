@@ -53,7 +53,7 @@ module Leaf =
         <|> (parse_unknown_statement        |>> LeafBodyStatement.Unknown)
 
     let parse_leaf_statement<'a> : Parser<LeafStatement, 'a> =
-        make_statement_parser_generic "leaf" Identifier.parse_identifier parse_leaf_body_statement
+        make_statement_parser_generic "leaf" (pip Strings.parse_string Identifier.parse_identifier) parse_leaf_body_statement
         |>> LeafStatement
 
 module LeafList =

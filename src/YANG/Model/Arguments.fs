@@ -94,7 +94,7 @@ module Arguments =
     with
         static member Make (keys : string) =
             if String.IsNullOrWhiteSpace(keys) then invalidArg "keys" "keys cannot be null or whitespace"
-            let keys = keys.Split([| ' '; '\t'; '\r'; '\t' |], StringSplitOptions.RemoveEmptyEntries)
+            let keys = keys.Split([| ' '; '\t'; '\r'; '\n' |], StringSplitOptions.RemoveEmptyEntries)
                        |> Array.map (fun key -> key.Trim())
                        |> Array.toList
             Key (keys |> List.map (IdentifierReference.Make))
