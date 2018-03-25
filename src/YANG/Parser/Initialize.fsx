@@ -63,7 +63,19 @@ module MyEnvironment =
         ReadAndClean full_path
 
     let get_all_external_models = lazy (
-        Directory.EnumerateFiles(external_modules_dir, "*.yang", SearchOption.AllDirectories)
+        let index_file = Path.Combine(external_modules_dir, "all_yang_models.txt")
+        if File.Exists(index_file) then
+            File.ReadAllLines(index_file)
+            |> Seq.map (
+                fun filename ->
+                    let filename =
+                        if filename.StartsWith("\\") then
+                            filename.TrimStart([| '\\'; '/' |])
+                        else filename
+                    Path.Combine(external_modules_dir, filename)
+            )
+        else
+            Directory.EnumerateFiles(external_modules_dir, "*.yang", SearchOption.AllDirectories)
     )
 
     let fold_on_all_models<'T> (filter : string -> bool) (initial : unit -> 'T) (apply : 'T -> string -> 'T) =

@@ -10,6 +10,7 @@ module GenericParser =
     open Yang.Model
     open Yang.Parser.BodyStatements
     open Yang.Parser.Expressions
+    open Yang.Parser.Leaf
     open Yang.Parser.LeafList
     open Yang.Parser.Linkage
     open Yang.Parser.Module
@@ -43,11 +44,12 @@ module GenericParser =
         <|> (parse_any_data_statement           |>> Statement.AnyData)
         <|> (parse_any_xml_statement            |>> Statement.AnyXml)
         <|> (parse_argument_statement           |>> Statement.Argument)
-
+        <|> (parse_augment_statement            |>> Statement.Augment)
         <|> (parse_base_statement               |>> Statement.Base)
         <|> (parse_belongs_to_statement         |>> Statement.BelongsTo)
         <|> (parse_bit_statement                |>> Statement.Bit)
-
+        <|> (parse_case_statement               |>> Statement.Case)
+        <|> (parse_choice_statement             |>> Statement.Choice)
         <|> (parse_config_statement             |>> Statement.Config)
         <|> (parse_contact_statement            |>> Statement.Contact)
         <|> (parse_container_statement          |>> Statement.Container)
@@ -60,17 +62,17 @@ module GenericParser =
         <|> (parse_extension_statement          |>> Statement.Extension)
         <|> (parse_feature_statement            |>> Statement.Feature)
         <|> (parse_fraction_digits_statement    |>> Statement.FractionDigits)
-
+        <|> (parse_grouping_statement           |>> Statement.Grouping)
         <|> (parse_identity_statement           |>> Statement.Identity)
         <|> (parse_if_feature_statement         |>> Statement.IfFeature)
         <|> (parse_import_statement             |>> Statement.Import)
         <|> (parse_include_statement            |>> Statement.Include)
-
+        <|> (parse_input_statement              |>> Statement.Input)
         <|> (parse_key_statement                |>> Statement.Key)
         <|> (parse_leaf_list_statement          |>> Statement.LeafList)
-
+        <|> (parse_leaf_statement               |>> Statement.Leaf)
         <|> (parse_length_statement             |>> Statement.Length)
-
+        <|> (parse_list_statement               |>> Statement.List)
         <|> (parse_mandatory_statement          |>> Statement.Mandatory)
         <|> (parse_max_elements_statement       |>> Statement.MaxElements)
         <|> (parse_min_elements_statement       |>> Statement.MinElements)
@@ -78,7 +80,7 @@ module GenericParser =
         <|> (parse_module                       |>> Statement.Module)
         <|> (parse_must_statement               |>> Statement.Must)
         <|> (parse_namespace_statement          |>> Statement.Namespace)
-
+        <|> (parse_notification_statement       |>> Statement.Notification)
         <|> (parse_ordered_by_statement         |>> Statement.OrderedBy)
         <|> (parse_organization_statement       |>> Statement.Organization)
 

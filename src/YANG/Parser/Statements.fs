@@ -416,7 +416,7 @@ module Statements =
         // revision-date-stmt  = revision-date-keyword sep revision-date stmtend
         // [RFC 7950, p.207]
         // revision-date-keyword    = %s"revision-date"
-        make_statement_parser_optional "revision-date" Arguments.parse_date parse_statement
+        make_statement_parser_optional "revision-date" (pip Strings.parse_string Arguments.parse_date) parse_statement
         |>> RevisionDateStatement
 
     let parse_status_statement<'a> : Parser<StatusStatement, 'a> =

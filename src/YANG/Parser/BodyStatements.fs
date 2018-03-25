@@ -82,12 +82,19 @@ module BodyStatements =
 
     type private BodyParsers<'a> = {
         Action          : Parser<ActionStatement, 'a>
+        Augment         : Parser<AugmentStatement, 'a>
         Body            : Parser<BodyStatement, 'a>
+        Case            : Parser<CaseStatement, 'a>
+        Choice          : Parser<ChoiceStatement, 'a>
         Container       : Parser<ContainerStatement, 'a>
         ContainerBody   : Parser<ContainerBodyStatement, 'a>
         DataDefinition  : Parser<BodyStatement, 'a>
         Grouping        : Parser<GroupingStatement, 'a>
+        Input           : Parser<InputStatement, 'a>
         List            : Parser<ListStatement, 'a>
+        Notification    : Parser<NotificationStatement, 'a>
+        Output          : Parser<OutputStatement, 'a>
+        Rpc             : Parser<RpcStatement, 'a>
         TypeDef         : Parser<TypeDefStatement, 'a>
     }
 
@@ -565,22 +572,34 @@ module BodyStatements =
 
         {
             Action          = parse_action_statement
+            Augment         = parse_augment_statement
             Body            = parse_body
+            Case            = parse_case_statement
+            Choice          = parse_choice_statement
             Container       = parse_container_statement
             ContainerBody   = parse_container_body_statement
             DataDefinition  = parse_data_definition
             Grouping        = parse_grouping_statement
+            Input           = parse_input_statement
             List            = parse_list_statement
+            Notification    = parse_notification_statement
+            Output          = parse_output_statement
+            Rpc             = parse_rpc_statement
             TypeDef         = parse_typedef_statement
         }
 
-    let parse_action_statement<'a> : Parser<ActionStatement, 'a> = parsers.Action
-
-    let parse_body_statement<'a> : Parser<BodyStatement, 'a> = parsers.Body
-    let parse_body_statements<'a> : Parser<BodyStatement list, 'a> = many parsers.Body
-
-    let parse_container_body_statement<'a> : Parser<ContainerBodyStatement, 'a> = parsers.ContainerBody
-    let parse_container_statement<'a> : Parser<ContainerStatement, 'a> = parsers.Container
-    let parse_grouping_statement<'a> : Parser<GroupingStatement, 'a> = parsers.Grouping
-    let parse_list_statement<'a> : Parser<ListStatement, 'a> = parsers.List
-    let parse_typedef_statement<'a> : Parser<TypeDefStatement, 'a> = parsers.TypeDef
+    let parse_action_statement<'a>          : Parser<ActionStatement, 'a>           = parsers.Action
+    let parse_augment_statement<'a>         : Parser<AugmentStatement, 'a>          = parsers.Augment
+    let parse_body_statement<'a>            : Parser<BodyStatement, 'a>             = parsers.Body
+    let parse_body_statements<'a>           : Parser<BodyStatement list, 'a>        = many parsers.Body
+    let parse_case_statement<'a>            : Parser<CaseStatement, 'a>             = parsers.Case
+    let parse_choice_statement<'a>          : Parser<ChoiceStatement, 'a>           = parsers.Choice
+    let parse_container_body_statement<'a>  : Parser<ContainerBodyStatement, 'a>    = parsers.ContainerBody
+    let parse_container_statement<'a>       : Parser<ContainerStatement, 'a>        = parsers.Container
+    let parse_grouping_statement<'a>        : Parser<GroupingStatement, 'a>         = parsers.Grouping
+    let parse_input_statement<'a>           : Parser<InputStatement, 'a>            = parsers.Input
+    let parse_list_statement<'a>            : Parser<ListStatement, 'a>             = parsers.List
+    let parse_notification_statement<'a>    : Parser<NotificationStatement, 'a>     = parsers.Notification
+    let parse_output_statement<'a>          : Parser<OutputStatement, 'a>           = parsers.Output
+    let parse_rpc_statement<'a>             : Parser<RpcStatement, 'a>              = parsers.Rpc
+    let parse_typedef_statement<'a>         : Parser<TypeDefStatement, 'a>          = parsers.TypeDef
