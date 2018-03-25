@@ -522,7 +522,7 @@ module Statements =
         //                        "{" stmtsep
         //                            prefix-stmt
         //                        "}" stmtsep
-        make_statement_parser_generic "belongs-to" Identifier.parse_identifier parse_belongs_to_body_statement
+        make_statement_parser_generic "belongs-to" (pip Strings.parse_string Identifier.parse_identifier) parse_belongs_to_body_statement
         |>> BelongsToStatement
 
     let parse_extension_body_statement<'a> : Parser<ExtensionBodyStatement, 'a> =

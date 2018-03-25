@@ -912,6 +912,22 @@ module Statements =
         | BelongsToBodyStatement.Prefix     st -> Statement.Prefix      st
         | BelongsToBodyStatement.Unknown    st -> Statement.Unknown     st
 
+        let IsPrefix = function
+        | BelongsToBodyStatement.Prefix _   -> true
+        | _                                 -> false
+
+        let IsUnknown = function
+        | BelongsToBodyStatement.Unknown _  -> true
+        | _                                 -> false
+
+        let AsPrefix = function
+        | BelongsToBodyStatement.Prefix prefix  -> Some prefix
+        | _                                     -> None
+
+        let AsUnknown = function
+        | BelongsToBodyStatement.Unknown unknown    -> Some unknown
+        | _                                         -> None
+
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module BinaryBodySpecification =
         let Translate = function

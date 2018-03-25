@@ -25,6 +25,9 @@ let juniper = apply_parser (spaces >>. Module.parse_module) big_model
 #time
 // Typical statistics: Real: 00:00:14.234, CPU: 00:00:14.203, GC gen0: 1231, gen1: 1160, gen2: 0
 let juniper_def_use = Yang.Model.DefUseResolver.VisitDefinitions (fun _ -> true) (Yang.Model.Statements.Module juniper)
+
+open Yang.Parser
+
 printfn "Length: %d" juniper_def_use.Length
 
 

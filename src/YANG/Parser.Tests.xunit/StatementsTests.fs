@@ -40,6 +40,23 @@ module StatementsTests =
         Assert.True(body.IsNone)
 
     [<Fact>]
+    let ``parse belongs-to statement simple`` () =
+        let input = """belongs-to "openconfig-mpls" {
+    prefix "mpls";
+  }"""
+        let (BelongsToStatement (id, body)) = FParsecHelper.apply parse_belongs_to_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("openconfig-mpls", id.Value)
+        Assert.Equal(1, body.Length)
+        let prefix = body.Head
+        Assert.True(BelongsToBodyStatement.IsPrefix prefix)
+        let p = BelongsToBodyStatement.AsPrefix prefix
+        Assert.True(p.IsSome)
+        let (PrefixStatement (pp, extra)) = p.Value
+        Assert.Equal("mpls", pp)
+        Assert.True(extra.IsNone)
+
+    [<Fact>]
     let ``parse description statement 1`` () =
         let input = """description
     "Share-Shaping.";"""
@@ -84,6 +101,18 @@ module StatementsTests =
         Assert.Equal("parse_identity_statement", id.Value)
         Assert.True(body.IsSome)
         Assert.Equal(2, body.Value.Length)
+
+    [<Fact>]
+    let ``parse key statement that spans two lines`` () =
+        let input = """key "source-port destination-port
+               source-address destination-address";"""
+        let (KeyStatement (Arguments.Key key, extra)) = FParsecHelper.apply parse_key_statement input
+        Assert.Equal(4, key.Length)
+        Assert.Equal("source-port",         key.Item(0).Value)
+        Assert.Equal("destination-port",    key.Item(1).Value)
+        Assert.Equal("source-address",      key.Item(2).Value)
+        Assert.Equal("destination-address", key.Item(3).Value)
+        Assert.True(extra.IsNone)
 
     [<Fact>]
     let ``parse length statement value simple`` () =
