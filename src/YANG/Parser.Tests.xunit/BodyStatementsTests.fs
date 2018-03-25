@@ -147,3 +147,19 @@ type performance-15min-interval {
         Assert.Equal(1, body.Length)
 
     // TODO: More extensive unit testing of BodyStatements
+
+    [<Fact>]
+    let ``parse unknown statement simple`` () =
+        let input = """smiv2:alias "ciscoQosPIBMIB" {
+    smiv2:oid "1.3.6.1.4.1.9.18.2.1";
+  }"""
+        let statement = FParsecHelper.apply parse_body_statement input
+        Assert.True(BodyStatement.IsUnknown statement)
+        let unknown = BodyStatement.AsUnknown statement
+        Assert.True(unknown.IsSome)
+        let (UnknownStatement (id, label, body)) = unknown.Value
+        Assert.True(id.IsValid)
+        Assert.True(label.IsSome)
+        Assert.Equal("ciscoQosPIBMIB", label.Value)
+        Assert.True(body.IsSome)
+        Assert.Equal(1, body.Value.Length)

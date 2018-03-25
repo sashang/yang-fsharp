@@ -226,41 +226,6 @@ module Statements =
     /// Parses a yang-stmt [RFC 7950, p. 202].
     /// It should be used for parsing rules with no constraints, e.g.
     // inside unknown-statement rules.
-    //let inline parse_statement<'a> : Parser<Statement, 'a> =
-    //    // This parser accepts any type of statement. Typically, it should be used for statements
-    //    // in unknown statements that have no constraints. Because, of their generality they can
-    //    // be applied recursively.
-
-    //    // TODO: parse_statement implementation needs to move after all statement parsers.
-    //    //       It should be after almost all project files.
-
-    //    let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
-    //        createParserForwardedToRef<Statement, 'a>()
-
-    //    let inline parse_statement_implementation (input : CharStream<'a>) : Reply<Statement> =
-    //        let parser =
-    //                yang_keyword_string_statement (
-    //                    "yang-version",
-    //                    (fun (version, options) ->
-    //                        let version' = Version.Parse version
-    //                        YangVersion (version', options)
-    //                    )) parse_statement
-    //            <|> yang_keyword_string_statement ("contact", Statement.Contact)            parse_statement
-    //            <|> yang_keyword_string_statement ("description", Statement.Description)    parse_statement
-    //            <|> yang_keyword_string_statement ("error-app-tag", Statement.ErrorMessage) parse_statement
-    //            <|> yang_keyword_string_statement ("error-message", Statement.ErrorMessage) parse_statement
-    //            <|> yang_keyword_uri_statement    ("namespace", Statement.Namespace)        parse_statement
-    //            <|> yang_keyword_string_statement ("organization", Statement.Organization)  parse_statement
-    //            <|> yang_keyword_string_statement ("prefix", Statement.Prefix)              parse_statement
-    //            <|> yang_keyword_string_statement ("presence", Statement.Presence)          parse_statement
-    //            <|> yang_keyword_string_statement ("reference", Statement.Reference)        parse_statement
-    //            <|> unknown_statement parse_statement
-
-    //        parser input
-
-    //    parse_statement_ref := parse_statement_implementation
-    //    parse_statement
-
     let parse_statement<'a> = generic_parser<'a>.Parser
 
     /// Parses the rest of statements.

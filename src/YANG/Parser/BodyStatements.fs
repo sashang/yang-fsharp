@@ -549,7 +549,6 @@ module BodyStatements =
         parse_choice_statement_ref      := parse_choice_statement_implementation
 
         let parse_body : Parser<BodyStatement, 'a> =
-            // TODO: fill in missing parsing for body-stmt
                 (parse_extension_statement                  |>> BodyStatement.Extension)
             <|> (parse_feature_statement                    |>> BodyStatement.Feature)
             <|> (parse_identity_statement                   |>> BodyStatement.Identity)
@@ -560,6 +559,7 @@ module BodyStatements =
             <|> (parse_rpc_statement                        |>> BodyStatement.Rpc)
             <|> (parse_notification_statement               |>> BodyStatement.Notification)
             <|> (parse_deviation_statement                  |>> BodyStatement.Deviation)
+            <|> (parse_unknown_statement                    |>> BodyStatement.Unknown)
 
         {
             Action          = parse_action_statement

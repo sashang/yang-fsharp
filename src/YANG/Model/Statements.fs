@@ -975,6 +975,16 @@ module Statements =
             | BodyStatement.LeafList    _   -> true
             | _                             -> false
 
+        let IsUnknown (this : BodyStatement) =
+            match this with
+            | BodyStatement.Unknown     _   -> true
+            | _                             -> false
+
+        let AsUnknown (this : BodyStatement) =
+            match this with
+            | BodyStatement.Unknown unknown -> Some unknown
+            | _                             -> None
+
 
     /// Helper methods for the CaseBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

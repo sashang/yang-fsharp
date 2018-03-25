@@ -329,8 +329,6 @@ Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("contai
 
 open FParsec
 
-GenericParser.initialize()
-
 let mutable total = 0
 let mutable correct = 0
 
@@ -354,3 +352,7 @@ printfn "Total: %05d, Correct: %05d, Success: %4.3f" total correct ((float corre
 // 2018-03-23
 // Real: 00:33:00.883, CPU: 00:32:16.703, GC gen0: 56193, gen1: 14103, gen2: 71
 // Total: 12367, Correct: 04024, Success: 0.325
+//
+// 2018-03-25
+// Real: 00:30:28.246, CPU: 00:29:48.656, GC gen0: 52212, gen1: 14207, gen2: 45
+// Total: 12367, Correct: 11562, Success: 0.935

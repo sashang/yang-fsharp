@@ -72,6 +72,12 @@ Parser.ParseFile file9
 Parser.ParseFile file10
 Parser.ParseFile file11
 
+let input = """smiv2:alias "ciscoQosPIBMIB" {
+    smiv2:oid "1.3.6.1.4.1.9.18.2.1";
+  }"""
+
+apply_parser parse_statement input
+
 (*
 How do we parse examples from p.169?
 apply_parser Identifier.parse_schema_node_identifier "/ex:system/ex:services/ex:ssh"
@@ -86,8 +92,6 @@ open Yang.Parser.BodyStatements
 
 // TODO: should give 1 .. 96
 apply_parser Arguments.parse_range_part "1..96"
-
-
 
 open Yang.Parser.Types
 let type1 = """type string7only;"""
