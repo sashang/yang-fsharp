@@ -329,13 +329,19 @@ Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("contai
 
 open FParsec
 
+let ignore_juniper (filename : string) = if filename.Contains("Juniper") then false else true
+let fand<'T> (fn1 : 'T -> bool) (fn2 : 'T -> bool) = fun (v : 'T) -> (fn1 v) && (fn2 v)
+
+// let filter = ignore_known_incorrect_models
+let filter = fand ignore_known_incorrect_models ignore_juniper
+
 let mutable total = 0
 let mutable correct = 0
 
 #time
 let _ =
     // It would be good to avoid parsing identical files many times,
-    try_for_all_models ignore_known_incorrect_models (
+    try_for_all_models filter (
         fun filename ->
             total <- total + 1
             let model = get_external_model filename

@@ -1033,6 +1033,36 @@ module Statements =
         | BodyStatement.Uses          st -> CaseBodyStatement.Uses         st
         | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
 
+        let IsWhen          = function | CaseBodyStatement.When _           -> true | _ -> false
+        let IsIfFeature     = function | CaseBodyStatement.IfFeature _      -> true | _ -> false
+        let IsStatus        = function | CaseBodyStatement.Status _         -> true | _ -> false
+        let IsDescription   = function | CaseBodyStatement.Description _    -> true | _ -> false
+        let IsReference     = function | CaseBodyStatement.Reference _      -> true | _ -> false
+        let IsContainer     = function | CaseBodyStatement.Container _      -> true | _ -> false
+        let IsLeaf          = function | CaseBodyStatement.Leaf _           -> true | _ -> false
+        let IsLeafList      = function | CaseBodyStatement.LeafList _       -> true | _ -> false
+        let IsList          = function | CaseBodyStatement.List _           -> true | _ -> false
+        let IsChoice        = function | CaseBodyStatement.Choice _         -> true | _ -> false
+        let IsAnyData       = function | CaseBodyStatement.AnyData _        -> true | _ -> false
+        let IsAnyXml        = function | CaseBodyStatement.AnyXml _         -> true | _ -> false
+        let IsUses          = function | CaseBodyStatement.Uses _           -> true | _ -> false
+        let IsUnknown       = function | CaseBodyStatement.Unknown _        -> true | _ -> false
+
+        let AsWhen          = function | CaseBodyStatement.When v           -> Some v | _ -> None
+        let AsIfFeature     = function | CaseBodyStatement.IfFeature v      -> Some v | _ -> None
+        let AsStatus        = function | CaseBodyStatement.Status v         -> Some v | _ -> None
+        let AsDescription   = function | CaseBodyStatement.Description v    -> Some v | _ -> None
+        let AsReference     = function | CaseBodyStatement.Reference v      -> Some v | _ -> None
+        let AsContainer     = function | CaseBodyStatement.Container v      -> Some v | _ -> None
+        let AsLeaf          = function | CaseBodyStatement.Leaf v           -> Some v | _ -> None
+        let AsLeafLAst      = function | CaseBodyStatement.LeafList v       -> Some v | _ -> None
+        let AsLAst          = function | CaseBodyStatement.List v           -> Some v | _ -> None
+        let AsChoice        = function | CaseBodyStatement.Choice v         -> Some v | _ -> None
+        let AsAnyData       = function | CaseBodyStatement.AnyData v        -> Some v | _ -> None
+        let AsAnyXml        = function | CaseBodyStatement.AnyXml v         -> Some v | _ -> None
+        let AsUses          = function | CaseBodyStatement.Uses v           -> Some v | _ -> None
+        let AsUnknown       = function | CaseBodyStatement.Unknown v        -> Some v | _ -> None
+
     /// Helper methods for the ChoiceBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module ChoiceBodyStatement =
@@ -1203,6 +1233,19 @@ module Statements =
         | ExtensionBodyStatement.Description   st -> Statement.Description  st
         | ExtensionBodyStatement.Reference     st -> Statement.Reference    st
         | ExtensionBodyStatement.Unknown       st -> Statement.Unknown      st
+
+        let IsArgument      = function | ExtensionBodyStatement.Argument    _ -> true | _ -> false
+        let IsStatus        = function | ExtensionBodyStatement.Status      _ -> true | _ -> false
+        let IsDescription   = function | ExtensionBodyStatement.Description _ -> true | _ -> false
+        let IsReference     = function | ExtensionBodyStatement.Reference   _ -> true | _ -> false
+        let IsUnknown       = function | ExtensionBodyStatement.Unknown     _ -> true | _ -> false
+
+        let AsArgument      = function | ExtensionBodyStatement.Argument    v -> Some v | _ -> None
+        let AsStatus        = function | ExtensionBodyStatement.Status      v -> Some v | _ -> None
+        let AsDescription   = function | ExtensionBodyStatement.Description v -> Some v | _ -> None
+        let AsReference     = function | ExtensionBodyStatement.Reference   v -> Some v | _ -> None
+        let AsUnknown       = function | ExtensionBodyStatement.Unknown     v -> Some v | _ -> None
+
 
     /// Helper methods for the FeatureBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -2037,3 +2080,9 @@ module Statements =
             | Statement.YangVersion _           -> "yang-version"
             | Statement.YinElement _            -> "yin-element"
             | Statement.Unknown (UnknownStatement (id, _, _))   -> id.ToString()
+
+        let IsDeviateNotSupported = function | Statement.DeviateNotSupported _ -> true   | _ -> false
+        let AsDeviateNotSupported = function | Statement.DeviateNotSupported v -> Some v | _ -> None
+
+        let IsUnknown = function | Statement.Unknown _ -> true   | _ -> false
+        let AsUnknown = function | Statement.Unknown v -> Some v | _ -> None

@@ -5,6 +5,7 @@ namespace Yang.Parser
 [<AutoOpen>]
 module Deviation =
     open FParsec
+    open NLog
     open Yang.Model
     open Expressions
 
@@ -13,13 +14,35 @@ module Deviation =
     // Parsing differs slightly than the rest of the statements, because the deviate-[add|delete|replace]-stmt use the same keyword
     //
 
-    // TODO: For the strings below (add/delete/replace) we may want to use the parser-in-parser
+    /// Logger for this module
+    let private _logger = LogManager.GetCurrentClassLogger()
+
+    let private throw fmt =
+        let do_throw (message : string) =
+            _logger.Error message
+            raise (YangParserException message)
+        Printf.ksprintf do_throw fmt
+
+    let private warn fmt = Printf.ksprintf _logger.Warn fmt
+    let private debug fmt = Printf.ksprintf _logger.Debug fmt
+    let private trace fmt = Printf.ksprintf _logger.Trace fmt
+    let private error fmt = Printf.ksprintf _logger.Error fmt
+
+#if INTERACTIVE
+    // The following are used only in interactive (fsi) to help with enabling disabling
+    // logging for particular modules.
+
+    type internal Marker = interface end
+    let _full_name = typeof<Marker>.DeclaringType.FullName
+    let _name = typeof<Marker>.DeclaringType.Name
+#endif
 
     let private parse_deviate_generic_statement<'a, 'b>
         (keyword    : string)
         (body       : Parser<'b, 'a>) : Parser<('b list option), 'a>
         =
-            skipString "deviate" >>. spaces >>. skipString keyword >>. spaces >>.
+            attempt (skipString "deviate" >>. spaces >>. (pip Strings.parse_string (skipString keyword)) >>.
+                     (spaces1 <|> (followedBy (skipChar ';')))) >>.
             (
                     (end_of_statement                       |>> (fun _ -> None))
                 <|> (begin_block >>. (block_generic body)   |>> Some)
@@ -106,43 +129,21 @@ module Deviation =
         |>> DeviateReplaceStatement
 
     let parse_deviate_not_supported_statement<'a> : Parser<DeviateNotSupportedStatement, 'a> =
-        skipString "deviate" >>. spaces >>.
-        skipString "not-supported" >>. spaces >>.
-        (
-                (end_of_statement                           |>> (fun _ -> DeviateNotSupportedStatement None))
-            <|> (begin_block >>. (block parse_statement)    |>> fun st -> DeviateNotSupportedStatement (Some st))
-        )
+        // [RFC 7950, p. 201]
+       //deviate-not-supported-stmt =
+       //                      deviate-keyword sep
+       //                      not-supported-keyword-str stmtend
+       parse_deviate_generic_statement "not-supported" parse_statement
+       |>> DeviateNotSupportedStatement
 
     let parse_deviation_body_statement<'a> : Parser<DeviationBodyStatement, 'a> =
-            (parse_description_statement        |>> DeviationBodyStatement.Description)
-        <|> (parse_reference_statement          |>> DeviationBodyStatement.Reference)
-        <|> (skipString "deviate" >>. spaces >>.
-                ( (skipString "add" >>. spaces >>.
-                    (       (end_of_statement                                                   |>> (fun _ -> None))
-                        <|> (begin_block >>. (block_generic parse_deviate_add_body_statement)   |>> Some)
-                    )
-                   |>> fun st -> DeviationBodyStatement.DeviateAdd (DeviateAddStatement st))
-                )
-            <|> ( (skipString "delete" >>. spaces >>.
-                    (       (end_of_statement                                                   |>> (fun _ -> None))
-                        <|> (begin_block >>. (block_generic parse_deviate_delete_body_statement)   |>> Some)
-                    )
-                   |>> fun st -> DeviationBodyStatement.DeviateDelete (DeviateDeleteStatement st))
-                )
-            <|> ( (skipString "replace" >>. spaces >>.
-                    (       (end_of_statement                                                   |>> (fun _ -> None))
-                        <|> (begin_block >>. (block_generic parse_deviate_replace_body_statement)   |>> Some)
-                    )
-                   |>> fun st -> DeviationBodyStatement.DeviateReplace (DeviateReplaceStatement st))
-                )
-            <|> ( (skipString "not-supported" >>. spaces >>.
-                    (       (end_of_statement                                                   |>> (fun _ -> None))
-                        <|> (begin_block >>. (block_generic parse_statement)   |>> Some)
-                    )
-                   |>> fun st -> DeviationBodyStatement.DeviateNotSupported (DeviateNotSupportedStatement st))
-                )
-            )
-        <|> (parse_unknown_statement        |>> DeviationBodyStatement.Unknown)
+            (parse_description_statement            |>> DeviationBodyStatement.Description)
+        <|> (parse_reference_statement              |>> DeviationBodyStatement.Reference)
+        <|> (parse_deviate_add_statement            |>> DeviationBodyStatement.DeviateAdd)
+        <|> (parse_deviate_replace_statement        |>> DeviationBodyStatement.DeviateReplace)
+        <|> (parse_deviate_delete_statement         |>> DeviationBodyStatement.DeviateDelete)
+        <|> (parse_deviate_not_supported_statement  |>> DeviationBodyStatement.DeviateNotSupported)
+        <|> (parse_unknown_statement                |>> DeviationBodyStatement.Unknown)
 
     let parse_deviation_statement<'a> : Parser<DeviationStatement, 'a> =
         // [RFC 7950, p. 201]
@@ -157,5 +158,19 @@ module Deviation =
         //                                deviate-replace-stmt /
         //                                deviate-delete-stmt))
         //                        "}" stmtsep
-        make_statement_parser_generic "deviation" Identifier.parse_schema_node_identifier_absolute parse_deviation_body_statement
+        let transform_invalid_absolute_path (input : string) =
+            if input.StartsWith "/" then input
+            elif input.Contains(":/") then
+                // HACK: The argument to the deviation-stmt does not start with '/', but maybe we need to transform it to make it valid
+                //       This issue exists in some models, e.g. from Cisco Models-External\YangModels\vendor\cisco\nx\7.0-3-I7-3\cisco-nx-openconfig-bgp-deviations.yang
+                //       It seems to be invalid syntax according to the spec, but the intensions are rather clear.
+                warn "Detected invalid input in deviation-arg; will attempt to correct and try again"
+                sprintf "/%s" (input.Replace(":/", ":"))
+            else
+                warn "Detected invalid input in deviation-arg; will attempt to correct and try again"
+                sprintf "/%s" input
+
+        make_statement_parser_generic "deviation" (
+            pipt Strings.parse_string transform_invalid_absolute_path Identifier.parse_schema_node_identifier_absolute
+        ) parse_deviation_body_statement
         |>> DeviationStatement

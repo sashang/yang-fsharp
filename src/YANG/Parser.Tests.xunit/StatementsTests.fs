@@ -96,6 +96,30 @@ module StatementsTests =
             failwithf "Expected Statement.Description, got %A" result
 
     [<Fact>]
+    let ``parse extension statement with unknown extension`` () =
+        let input = """extension junos-val-as-xml-tag {
+    tailf:use-in "leaf";
+    description
+      "Internal extension to handle non-YANG JUNOS data models.
+      Use only for key enumeration leafs.";
+  }"""
+        let (ExtensionStatement (id, body)) = FParsecHelper.apply parse_extension_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("junos-val-as-xml-tag", id.Value)
+        Assert.True(body.IsSome)
+        Assert.Equal(2, body.Value.Length)
+        let unknown = body.Value.Head
+        Assert.True(ExtensionBodyStatement.IsUnknown unknown)
+        let s1 = ExtensionBodyStatement.AsUnknown unknown
+        Assert.True(s1.IsSome)
+        let (UnknownStatement (id, label, body2)) = s1.Value
+        Assert.Equal("tailf:use-in", id.Value)
+        Assert.True(label.IsSome)
+        Assert.Equal("leaf", label.Value)
+        Assert.True(body2.IsNone)
+        Assert.True(ExtensionBodyStatement.IsDescription (body.Value.Item 1))
+
+    [<Fact>]
     let ``parse identity statement`` () =
         let input = """identity parse_identity_statement {
     base if:interface-type;
@@ -183,6 +207,23 @@ module StatementsTests =
         Assert.True(body.IsSome)
         Assert.Equal(1, body.Value.Length)
         // TODO: All test that the body statement is of type position
+
+    [<Fact>]
+    let ``parse unknown statement with keyword prefix`` () =
+        let input = """config:required-identity sal:dom-data-store;"""
+        let statement =
+            FParsecHelper.apply (
+                    (parse_config_statement  |>> Statement.Config)
+                <|> (parse_unknown_statement |>> Statement.Unknown)) input
+        Assert.True(Statement.IsUnknown statement)
+        let unknown = Statement.AsUnknown statement
+        Assert.True(unknown.IsSome)
+        let (UnknownStatement (id, label, extra)) = unknown.Value
+        Assert.True(id.IsValid)
+        Assert.Equal("config:required-identity", id.Value)
+        Assert.True(label.IsSome)
+        Assert.Equal("sal:dom-data-store", label.Value)
+        Assert.True(extra.IsNone)
 
     [<Fact>]
     let ``parse when statement`` () =

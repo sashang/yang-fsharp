@@ -55,7 +55,11 @@ module GenericParser =
         <|> (parse_container_statement          |>> Statement.Container)
         <|> (parse_default_statement            |>> Statement.Default)
         <|> (parse_description_statement        |>> Statement.Description)
-
+        <|> (parse_deviate_add_statement        |>> Statement.DeviateAdd)
+        <|> (parse_deviate_delete_statement     |>> Statement.DeviateDelete)
+        <|> (parse_deviate_not_supported_statement  |>> Statement.DeviateNotSupported)
+        <|> (parse_deviate_replace_statement    |>> Statement.DeviateReplace)
+        <|> (parse_deviation_statement          |>> Statement.Deviation)
         <|> (parse_enum_statement               |>> Statement.Enum)
         <|> (parse_error_app_tag_statement      |>> Statement.ErrorAppTag)
         <|> (parse_error_message_statement      |>> Statement.ErrorMessage)
@@ -83,7 +87,7 @@ module GenericParser =
         <|> (parse_notification_statement       |>> Statement.Notification)
         <|> (parse_ordered_by_statement         |>> Statement.OrderedBy)
         <|> (parse_organization_statement       |>> Statement.Organization)
-
+        <|> (parse_output_statement             |>> Statement.Output)
         <|> (parse_path_statement               |>> Statement.Path)
         <|> (parse_pattern_statement            |>> Statement.Pattern)
         <|> (parse_position_statement           |>> Statement.Position)
@@ -95,7 +99,7 @@ module GenericParser =
         <|> (parse_require_instance_statement   |>> Statement.RequireInstance)
         <|> (parse_revision_date_statement      |>> Statement.RevisionDate)
         <|> (parse_revision_statement           |>> Statement.Revision)
-
+        <|> (parse_rpc_statement                |>> Statement.Rpc)
         <|> (parse_status_statement             |>> Statement.Status)
         <|> (parse_submodule                    |>> Statement.Submodule)
         <|> (parse_typedef_statement            |>> Statement.TypeDef)

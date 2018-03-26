@@ -35,9 +35,9 @@ module Utilities =
     /// parser on the string read.
     let pip<'a, 'b> (outer : Parser<string, 'a>) (inner : Parser<'b, 'a>) =
         // TODO: Proper testing of parser-in-parser
-        // TODO: Do we need to backtrace in parser-in-parser when failure to parse? If so, where?
+        // TODO: Do we need to back-trace in parser-in-parser when failure to parse? If so, where?
         // TODO: Make sure that the inside parser in pip consumes the entire input provided by the first parser.
-        fun (stream : CharStream<'a>)->
+        fun (stream : CharStream<'a>) ->
             let state = stream.State
             let input = outer stream
             if input.Status = Ok then
@@ -49,6 +49,47 @@ module Utilities =
                 else
                     stream.BacktrackTo(state)
                     Reply(Error, output.Error)
+            else
+                stream.BacktrackTo(state)
+                Reply (Error, input.Error)
+
+    /// Parser-in-parser and transform: read a string with a string parser, transform it,
+    /// and apply the transformed string to a second parser.
+    let pipt<'a, 'b> (outer : Parser<string, 'a>) (transform : string -> string) (inner : Parser<'b, 'a>) =
+        // TODO: Proper testing of pipt
+        // TODO: Do we need to back-trace in pipt when failure to parse? If so, where?
+        // TODO: Make sure that the inside parser in pipt consumes the entire input provided by the first parser.
+        fun (stream : CharStream<'a>) ->
+            let state = stream.State
+            let input = outer stream
+            if input.Status = Ok then
+                let str = transform input.Result
+                let cs  = new CharStream<'a>(str, 0, str.Length)
+                let output = inner cs
+                if output.Status = Ok then
+                    Reply output.Result
+                else
+                    stream.BacktrackTo(state)
+                    Reply(Error, output.Error)
+            else
+                stream.BacktrackTo(state)
+                Reply (Error, input.Error)
+
+    /// Parses the next YANG string and checks whether it matches an expected value.
+    /// It is similar to pstring, but works on YANG strings
+    let pip_pstring<'a, 'b> (outer : Parser<string, 'a>) (expected : string) =
+        // TODO: Proper testing of pip_pstring
+        // TODO: Do we need to back-trace in pipt when failure to parse? If so, where?
+        // TODO: Make sure that the inside parser in pipt consumes the entire input provided by the first parser.
+        fun (stream : CharStream<'a>) ->
+            let state = stream.State
+            let input = outer stream
+            if input.Status = Ok then
+                let str = input.Result
+                if str = expected then
+                    Reply expected
+                else
+                    Reply (Error, ErrorMessageList (ErrorMessage.Expected expected))
             else
                 stream.BacktrackTo(state)
                 Reply (Error, input.Error)

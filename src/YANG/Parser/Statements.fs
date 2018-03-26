@@ -108,8 +108,7 @@ module Statements =
     /// Parser for statements that define the structure of their child block, which is optional
     /// (i.e. it may not exist).
     let inline make_statement_parser_optional keyword argument body =
-        skipString keyword >>. spaces >>.
-        argument .>> spaces .>>.
+        attempt (skipString keyword >>. spaces >>. argument .>> spaces) .>>.
         (
                 (end_of_statement                   |>> (fun _ -> None))
             <|> (begin_block >>. (block body)       |>> Some)
@@ -121,8 +120,7 @@ module Statements =
         (argument   : Parser<'T, 'a>)
         (body       : Parser<'b, 'a>) : Parser<('T * ('b list)), 'a>
         =
-            skipString keyword >>. spaces >>.
-            argument .>> spaces .>>
+            attempt (skipString keyword >>. spaces >>. argument .>> spaces) .>>
             begin_block .>>.
             (block_generic body)
 
@@ -133,8 +131,7 @@ module Statements =
         (argument   : Parser<'T, 'a>)
         (body       : Parser<'b, 'a>) : Parser<('T * ('b list option)), 'a>
         =
-            skipString keyword >>. spaces >>.
-            argument .>> spaces .>>.
+            attempt (skipString keyword >>. spaces >>. argument .>> spaces) .>>.
             (
                     (end_of_statement                       |>> (fun _ -> None))
                 <|> (begin_block >>. (block_generic body)   |>> Some)
@@ -145,7 +142,7 @@ module Statements =
         (keyword    : string)
         (body       : Parser<'b, 'a>) : Parser<('b list), 'a>
         =
-            skipString keyword >>. spaces >>.
+            attempt (skipString keyword >>. spaces) >>.
             begin_block >>.
             (block_generic body)
 
@@ -349,7 +346,7 @@ module Statements =
         // [RFC 7950, p. 192]
         //ordered-by-stmt     = ordered-by-keyword sep
         //                        ordered-by-arg-str stmtend
-        make_statement_parser_optional "ordered-by" Arguments.parse_ordered_by parse_statement
+        make_statement_parser_optional "ordered-by" (pip Strings.parse_string Arguments.parse_ordered_by) parse_statement
         |>> OrderedByStatement
 
     /// Parses an organization statement
@@ -427,7 +424,7 @@ module Statements =
         //status-arg          = current-keyword /
         //                        obsolete-keyword /
         //                        deprecated-keyword
-        make_statement_parser_optional "status" Arguments.parse_status parse_statement
+        make_statement_parser_optional "status" (pip Strings.parse_string Arguments.parse_status) parse_statement
         |>> StatusStatement
 
     let parse_units_statement<'a> : Parser<UnitsStatement, 'a> =
@@ -530,6 +527,7 @@ module Statements =
         <|> (parse_status_statement         |>> ExtensionBodyStatement.Status)
         <|> (parse_description_statement    |>> ExtensionBodyStatement.Description)
         <|> (parse_reference_statement      |>> ExtensionBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> ExtensionBodyStatement.Unknown)
 
     let parse_extension_statement<'a> : Parser<ExtensionStatement, 'a> =
         // [RFC 7950, p. 187]
@@ -542,7 +540,7 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "extension" Identifier.parse_identifier parse_extension_body_statement
+        make_statement_parser_optional_generic "extension" (pip Strings.parse_string Identifier.parse_identifier) parse_extension_body_statement
         |>> ExtensionStatement
 
     let parse_length_body_statement<'a> : Parser<LengthBodyStatement, 'a> =
