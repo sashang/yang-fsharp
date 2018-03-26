@@ -13,4 +13,4 @@ module ArgumentsTests =
         Assert.Equal("source-port",         (List.item 0 keys).Value)
         Assert.Equal("destination-port",    (List.item 1 keys).Value)
         Assert.Equal("source-address",      (List.item 2 keys).Value)
-        Assert.Equal("source-address",      (List.item 3 keys).Value)
+        Assert.Equal("destination-address",      (List.item 3 keys).Value)

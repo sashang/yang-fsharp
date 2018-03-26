@@ -78,8 +78,8 @@ module Header =
             | None,    Some ns, Some ps, us ->
                 // Special case: the yang-version statement must appear, but there are cases where it is omitted.
                 // So we will generate it.
-                _logger.Warn("Module missing yang-version statement; will assume 1.1")
-                let vs = YangVersionStatement (Version(1, 1), None)
+                _logger.Warn("Module missing yang-version statement; will assume 1.0")
+                let vs = YangVersionStatement (Version(1, 0), None)
                 vs, ns, ps, us
             | _                             ->
                 let sb = StringBuilder("Failed to find all mandatory header statements for module; missing:")
@@ -145,8 +145,8 @@ module Header =
             | None,    Some bt, un ->
                 // Special case: the yang-version statement must appear, but there are cases where it is omitted.
                 // So we will generate it.
-                _logger.Warn("Module missing yang-version statement; will assume 1.1")
-                let vs = YangVersionStatement (Version(1, 1), None)
+                _logger.Warn("Module missing yang-version statement; will assume 1.0")
+                let vs = YangVersionStatement (Version(1, 0), None)
                 vs, bt, un
             | _                             ->
                 let sb = StringBuilder("Failed to find all mandatory header statements for submodule; missing:")

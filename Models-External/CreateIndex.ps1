@@ -10,4 +10,4 @@ if (-not(Get-Command -Name "Get-YangUniqueModels" -ErrorAction SilentlyContinue)
 }
 
 $outfile = Join-Path -Path $PSScriptRoot -ChildPath "all_yang_models.txt"
-Get-UniqueModels -Path $PSScriptRoot -OutFile $outfile
+Get-YangUniqueModels -Path $PSScriptRoot -OutFile $outfile

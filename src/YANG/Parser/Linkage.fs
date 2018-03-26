@@ -51,7 +51,7 @@ module Linkage =
         <|> (parse_unknown_statement        |>> ImportBodyStatement.Unknown)
 
     let parse_import_statement<'a> : Parser<ImportStatement, 'a> =
-        make_statement_parser_generic "import" Identifier.parse_identifier parse_import_body_statement
+        make_statement_parser_generic "import" (pip Strings.parse_string Identifier.parse_identifier) parse_import_body_statement
         |>> ImportStatement
 
     let parse_include_body_statement<'a> : Parser<IncludeBodyStatement, 'a> =

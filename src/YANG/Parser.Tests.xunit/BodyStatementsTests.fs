@@ -12,57 +12,22 @@ module DataDefinitionsTests =
     open Yang.Parser.Types
 
     [<Fact>]
-    let ``parse leaf definition with type string`` () =
-        let body = """
-        leaf host-name {
-            type string;
-            description
-                "Hostname for this system.";
+    let ``parse case statement`` () =
+        let input = """case "non-candidate" {
+        leaf non-candidate-bsr-state {
+          type enumeration {
+            enum "no-info";
+            enum "accept-any";
+            enum "accept";
+          }
         }
-        """
-
-        let t = FParsecHelper.apply (spaces >>. parse_body_statement) body
-        Assert.True(BodyStatement.IsLeaf t)
-
-        match t with
-        | Leaf leaf ->
-            Assert.Equal("host-name", LeafStatement.IdentifierAsString leaf)
-            let statements = LeafStatement.Statements leaf
-            Assert.Equal(2, statements.Length)
-
-            match statements with
-            | ts :: ds :: [] ->
-                // We want the statements to appear in the same order as they are in the input
-                Assert.True(LeafBodyStatement.IsType ts)
-                Assert.True(LeafBodyStatement.IsDescription ds)
-            | _ -> failwith "Internal error: unit test should not have reached this point"
-        | _ -> failwith "Internal error: unit test should not have reached this point"
-
-    [<Fact>]
-    let ``parse leaf-list definition with type string`` () =
-        let body = """
-leaf-list domain-search {
-    type string;
-    description
-        "List of domain names to search.";
-}
-"""
-
-        let t = FParsecHelper.apply (spaces >>. parse_body_statement) body
-        Assert.True(BodyStatement.IsLeafList t)
-
-        match t with
-        | LeafList ll ->
-            Assert.Equal("domain-search", LeafListStatement.IdentifierAsString ll)
-            let statements = LeafListStatement.Statements ll
-            Assert.Equal(2, statements.Length)
-
-            match statements with
-            | ts :: ds :: [] ->
-                Assert.True(LeafListBodyStatement.IsType ts)
-                Assert.True(LeafListBodyStatement.IsDescription ds)
-            | _ -> failwith "Internal error: unit test should not have reached this point"
-        | _ -> failwith "Internal error: unit test should not have reached this point"
+      }"""
+        let (CaseStatement (id, body)) = FParsecHelper.apply parse_case_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("non-candidate", id.Value)
+        Assert.True(body.IsSome)
+        Assert.Equal(1, body.Value.Length)
+        Assert.True(CaseBodyStatement.IsLeaf body.Value.Head)
 
     [<Fact>]
     let ``parse container statement`` () =
@@ -162,6 +127,59 @@ container system {
         Assert.Equal("mpls-rsvp-session-state", id.Value)
         Assert.True(body.IsSome)
         Assert.Equal(1, body.Value.Length)
+
+    [<Fact>]
+    let ``parse leaf definition with type string`` () =
+        let body = """
+        leaf host-name {
+            type string;
+            description
+                "Hostname for this system.";
+        }
+        """
+
+        let t = FParsecHelper.apply (spaces >>. parse_body_statement) body
+        Assert.True(BodyStatement.IsLeaf t)
+
+        match t with
+        | Leaf leaf ->
+            Assert.Equal("host-name", LeafStatement.IdentifierAsString leaf)
+            let statements = LeafStatement.Statements leaf
+            Assert.Equal(2, statements.Length)
+
+            match statements with
+            | ts :: ds :: [] ->
+                // We want the statements to appear in the same order as they are in the input
+                Assert.True(LeafBodyStatement.IsType ts)
+                Assert.True(LeafBodyStatement.IsDescription ds)
+            | _ -> failwith "Internal error: unit test should not have reached this point"
+        | _ -> failwith "Internal error: unit test should not have reached this point"
+
+    [<Fact>]
+    let ``parse leaf-list definition with type string`` () =
+        let body = """
+leaf-list domain-search {
+    type string;
+    description
+        "List of domain names to search.";
+}
+"""
+
+        let t = FParsecHelper.apply (spaces >>. parse_body_statement) body
+        Assert.True(BodyStatement.IsLeafList t)
+
+        match t with
+        | LeafList ll ->
+            Assert.Equal("domain-search", LeafListStatement.IdentifierAsString ll)
+            let statements = LeafListStatement.Statements ll
+            Assert.Equal(2, statements.Length)
+
+            match statements with
+            | ts :: ds :: [] ->
+                Assert.True(LeafListBodyStatement.IsType ts)
+                Assert.True(LeafListBodyStatement.IsDescription ds)
+            | _ -> failwith "Internal error: unit test should not have reached this point"
+        | _ -> failwith "Internal error: unit test should not have reached this point"
 
     [<Fact>]
     let ``parse list statement with long name`` () =

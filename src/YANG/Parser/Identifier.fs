@@ -98,7 +98,7 @@ module Identifier =
         // [RFC 7950, p. 195]
         //unique-arg          = descendant-schema-nodeid
         //                        *(sep descendant-schema-nodeid)
-        sepBy1 parse_schema_node_identifier spaces
+        sepBy1 parse_schema_node_identifier spaces1
         |>> Yang.Model.Arguments.MakeUniqueDescendant
 
 

@@ -211,9 +211,12 @@ module Types =
 
         /// Parses a specific string and also returns it in the parser output
         let force_type_name (``type`` : string) : Parser<IdentifierReference, 'a> =
-            // The type name should end with whitespace of 
-            pstring ``type`` .>> (spaces1 <|> (followedBy (skipChar ';')))
-            |>> fun v -> Yang.Model.Identifier.IdentifierReference.Make ``type``
+            // The type name should end with whitespace or ';'
+            attempt (
+                    (pstring ``type`` .>> (spaces1 <|> (followedBy (skipChar ';'))))
+                <|> (pip_pstring Strings.parse_string ``type``)
+            )
+            |>> fun _ -> Yang.Model.Identifier.IdentifierReference.Make ``type``
 
         /// Resolve the parser for the type specific restriction statements
         let parse_type_body_restriction_statement (``type`` : string) : Parser<TypeBodyStatement, 'a> =
@@ -289,7 +292,7 @@ module Types =
                 <|> do_parse "binary"
                 <|> do_parse "bits"
                 <|> do_parse "instance-identifier"
-                <|> (Identifier.parse_identifier_reference .>> spaces .>>. parse_end_of_unknown_type 
+                <|> ((pip Strings.parse_string Identifier.parse_identifier_reference) .>> spaces .>>. parse_end_of_unknown_type 
                      |>> fun (id, spec) ->
                         if spec.IsNone then id, None
                         else id, Some (TypeBodyStatement.UnknownTypeSpecification spec.Value)
