@@ -8,7 +8,6 @@ module Statements =
     open System.Collections.Generic
     open FParsec
     open NLog
-    open Identifier
     open Yang.Model
 
     // [RFC 7950, p. 202-204]
@@ -192,27 +191,31 @@ module Statements =
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
 
-        let debug_parser : Parser<Statement, 'a> =
-            if initialized = false then
-                let key = typeof<'a>
-                if generic_parser_implementations.ContainsKey(key) then
-                    parse_statement_ref := generic_parser_implementations.[key] :?> Parser<Statement, 'a>
-                    initialized <- true
-                elif generic_parser_generator.IsSome then
-                    debug "Constructing generator for %s" key.FullName
-                    let ty = generic_parser_generator.Value
-                    let generic = ty.GetGenericTypeDefinition()
-                    let proper = generic.MakeGenericType(key)
-                    let method = proper.GetMethod("Parser")
-                    let parser = method.Invoke(null, [| |])
-                    generic_parser_implementations.Add(key, parser)
-                    parse_statement_ref := parser :?> Parser<Statement, 'a>
-                    initialized <- true
-                else
-                    error "Cannot find generic parser for type %s and do not know how to construct it" key.FullName
-                    // The call will fail, the user will get the error that the parser is not implemented
+        printfn "Creating generic parser %A" parse_statement_ref
 
-            !parse_statement_ref
+        let debug_parser : Parser<Statement, 'a> =
+            fun stream ->
+                if initialized = false then
+                    let key = typeof<'a>
+                    if generic_parser_implementations.ContainsKey(key) then
+                        parse_statement_ref := generic_parser_implementations.[key] :?> Parser<Statement, 'a>
+                        initialized <- true
+                    elif generic_parser_generator.IsSome then
+                        debug "Constructing generator for %s" key.FullName
+                        let ty = generic_parser_generator.Value
+                        let generic = ty.GetGenericTypeDefinition()
+                        let proper = generic.MakeGenericType(key)
+                        let method = proper.GetMethod("Parser")
+                        let parser = method.Invoke(null, [| |])
+                        generic_parser_implementations.Add(key, parser)
+                        parse_statement_ref := parser :?> Parser<Statement, 'a>
+                        initialized <- true
+                    else
+                        error "Cannot find generic parser for type %s and do not know how to construct it" key.FullName
+                        // The call will fail, the user will get the error that the parser is not implemented
+
+                let result = !parse_statement_ref stream
+                result
 
 
         {
@@ -571,6 +574,7 @@ module Statements =
         <|> (parse_error_app_tag_statement  |>> MustBodyStatement.ErrorAppTag)
         <|> (parse_description_statement    |>> MustBodyStatement.Description)
         <|> (parse_reference_statement      |>> MustBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> MustBodyStatement.Unknown)
 
     let parse_must_statement<'a> : Parser<MustStatement, 'a> =
         // [RFC 7950, p. 192]

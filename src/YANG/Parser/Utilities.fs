@@ -26,9 +26,9 @@ module Utilities =
     /// Operator to aid the debugging of parsers
     let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
         fun stream ->
-            printfn "%A: Entering %s" stream.Position label
+            printfn "(Ln: %03d, Col: %03d): Entering %s" stream.Position.Line stream.Position.Column label
             let reply = p stream
-            printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
+            printfn "(Ln: %03d, Col: %03d): Leaving %s (%A)" stream.Position.Line stream.Position.Column label reply.Status
             reply
 
     /// Parser-in-parser: read a string with a string parser, and apply a second

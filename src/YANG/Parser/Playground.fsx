@@ -36,16 +36,98 @@ let juniper_def_use = Yang.Model.DefUseResolver.VisitDefinitions (fun _ -> true)
 printfn "Length: %d" juniper_def_use.Length
 
 let filex = @"e:\temp\failed.yang"
-let file1 = __SOURCE_DIRECTORY__ + @"../../../..\Models-External\YangModels\standard\ieee\802.1\draft\ieee802-dot1ax.yang"
+let file1 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\YangModels\vendor\cisco\xe\1631\ned.yang"
+let file2 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\YangModels\standard\mef\test\example\packages\mef\src\yang\mef.yang"
 let file5 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\YangModels\experimental\ietf-extracted-YANG-modules\ietf-voucher-request@2018-02-14.yang"
 let file6 = __SOURCE_DIRECTORY__ + @"../../../../Models-External\YangModels\vendor\cisco\nx\7.0-3-I7-3\cisco-nx-openconfig-bgp-deviations.yang"
 
+//  revision YYYY-MM-DD {
+//../../../Models-External\YangModels\standard\mef\src\model\draft\common\mef-types.yang
+//../../../Models-External\YangModels\standard\mef\src\model\draft\mef-legato-global.yang
+//../../../Models-External\YangModels\standard\mef\src\model\draft\mef-legato-interfaces.yang
+//../../../Models-External\YangModels\standard\mef\src\model\draft\mef-legato-services.yang
+
+//System.Exception: a parser created with createParserForwardedToRef was not initialized
+//../../../Models-External\YangModels\standard\mef\test\example\packages\mef\src\yang\mef.yang
+//../../../Models-External\YangModels\vendor\cisco\xe\1631\MIBS\SNMP-FRAMEWORK-MIB-ann.yang
+
+//    deviate  {
+//../../../Models-External\YangModels\vendor\cisco\nx\7.0-3-I6-1\cisco-nx-openconfig-if-ip-deviations.yang
+//../../../Models-External\YangModels\vendor\cisco\nx\7.0-3-I6-1\cisco-nx-openconfig-routing-policy-deviations.yang
+
+//        tailf:dependency ".";
+//../../../Models-External\YangModels\vendor\cisco\xe\1631\ned.yang
+
 Parser.ParseFile filex
 Parser.ParseFile file1
+Parser.ParseFile file2
+Parser.ParseFile file2
 Parser.ParseFile file5
 Parser.ParseFile file6
 
 Parser.ReadAndClean filex
+
+let input = """tailf:transaction-hook "subtree" {
+          tailf:invocation-mode "per-transaction";
+        }"""
+apply_parser parse_unknown_statement input
+
+let input = """tailf:callpoint "ncs-rfs-service-hook" {
+        tailf:transaction-hook "subtree" {
+          tailf:invocation-mode "per-transaction";
+        }
+      }"""
+apply_parser parse_unknown_statement input
+apply_parser generic_yang_statement_implementation input
+
+let input = """list ethernet-virtual-connection {
+      tailf:callpoint "ncs-rfs-service-hook" {
+        tailf:transaction-hook "subtree" {
+          tailf:invocation-mode "per-transaction";
+        }
+      }
+    }"""
+apply_parser parse_list_statement input
+
+let input = """container mef-evc-service {  
+    list ethernet-virtual-connection {
+      tailf:callpoint "ncs-rfs-service-hook" {
+        tailf:transaction-hook "subtree" {
+          tailf:invocation-mode "per-transaction";
+        }
+      }
+    }
+  }
+}"""
+apply_parser parse_container_statement input
+
+
+let input = """module mef {
+  namespace "http://tail-f.com/mef-evc-service";
+  prefix mef-evc-service;
+
+  container mef-evc-service {  
+    list ethernet-virtual-connection {
+      tailf:callpoint "ncs-rfs-service-hook" {
+        tailf:transaction-hook "subtree" {
+          tailf:invocation-mode "per-transaction";
+        }
+      }
+    }
+  }
+}"""
+apply_parser Module.parse_module input
+
+
+let input = """must "count(*) > 1" {
+        tailf:dependency ".";
+      }"""
+apply_parser parse_must_statement input
+
+let input = """rc:yang-data voucher-request-artifact {
+    uses voucher-request-grouping;
+  }"""
+apply_parser parse_unknown_statement input
 
 let input = """augment "/if:interfaces/if:interface" {
     when "if:type = 'ianaif:ieee8023adLag' or

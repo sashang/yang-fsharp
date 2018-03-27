@@ -364,3 +364,7 @@ printfn "Total: %05d, Correct: %05d, Success: %4.3f" total correct ((float corre
 // Total: 12367, Correct: 11562, Success: 0.935
 // Real: 00:26:17.771, CPU: 00:25:28.890, GC gen0: 51737, gen1: 14022, gen2: 41
 // Total: 12367, Correct: 11580, Success: 0.936
+//
+//
+// Real: 11:01:26.054, CPU: 11:00:20.781, GC gen0: 54898, gen1: 39779, gen2: 345
+// Total: 07763, Correct: 07732, Success: 0.996
