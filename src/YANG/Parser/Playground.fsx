@@ -69,7 +69,18 @@ apply_parser Identifier.parse_schema_node_identifier
 *)
 
 let xx = apply_parser parse_path "/ex:system/ex:server[ex:ip='192.0.2.1'][ex:port='80']/ex:other"
-xx._Schema.[1].IsValid
+
+
+let input = """must "/if:interfaces/if:interface[if:name = current()]"
+                + "/if:type = 'ianaift:ethernetCsmacd'" {
+                 description
+                     "The type of a slave interface must be
+                      'ethernetCsmacd'.";
+             }"""
+let (MustStatement (must, body)) = apply_parser parse_must_statement input
+printfn "%s" must
+body
+// TODO: There are standard ways to interpret the string in the must statement
 
 // TODO: should give 1 .. 96
 apply_parser Arguments.parse_range_part "1..96"
