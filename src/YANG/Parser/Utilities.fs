@@ -31,6 +31,17 @@ module Utilities =
             printfn "(Ln: %03d, Col: %03d): Leaving %s (%A)" stream.Position.Line stream.Position.Column label reply.Status
             reply
 
+    let private pip_error_transform (errors : ErrorMessageList) =
+        let pip_error = FParsec.ErrorMessage.ExpectedString("parser-in-parser: inner parser did not consume entire input string")
+        if errors.Head <> null then
+            match errors.Head with
+            | :? FParsec.ErrorMessage.Expected as expected ->
+                if expected.Label = "end of input" then
+                    Reply(Error, ErrorMessageList(pip_error, errors))
+                else Reply(Error, errors)
+            | _ -> Reply(Error, errors)
+        else Reply(Error, errors)
+
     /// Parser-in-parser: read a string with a string parser, and apply a second
     /// parser on the string read.
     let pip<'a, 'b> (outer : Parser<string, 'a>) (inner : Parser<'b, 'a>) =
@@ -43,12 +54,12 @@ module Utilities =
             if input.Status = Ok then
                 let str = input.Result
                 let cs  = new CharStream<'a>(str, 0, str.Length)
-                let output = inner cs
+                let output = (inner .>> eof) cs
                 if output.Status = Ok then
                     Reply output.Result
                 else
                     stream.BacktrackTo(state)
-                    Reply(Error, output.Error)
+                    pip_error_transform output.Error
             else
                 stream.BacktrackTo(state)
                 Reply (Error, input.Error)
@@ -65,12 +76,12 @@ module Utilities =
             if input.Status = Ok then
                 let str = transform input.Result
                 let cs  = new CharStream<'a>(str, 0, str.Length)
-                let output = inner cs
+                let output = (inner .>> eof) cs
                 if output.Status = Ok then
                     Reply output.Result
                 else
                     stream.BacktrackTo(state)
-                    Reply(Error, output.Error)
+                    pip_error_transform output.Error
             else
                 stream.BacktrackTo(state)
                 Reply (Error, input.Error)

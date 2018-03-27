@@ -30,9 +30,8 @@ module DataDefinitionsTests =
         Assert.Equal("if:interfaces", schema1.Value)
         Assert.Equal("if:interface", schema2.Value)
 
-        Assert.Equal(2, body.Length)
+        Assert.Equal(1, body.Length)
         Assert.True(AugmentBodyStatement.IsWhen body.[0])
-        Assert.True(AugmentBodyStatement.IsDescription body.[1])
 
     [<Fact>]
     let ``parse case statement`` () =

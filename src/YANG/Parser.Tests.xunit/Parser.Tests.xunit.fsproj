@@ -64,6 +64,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="FParsecHelper.fs" />
     <Compile Include="Initialize.fs" />
+    <Compile Include="UtilitiesTests.fs" />
     <Compile Include="CommentsTests.fs" />
     <Compile Include="StringsTests.fs" />
     <Compile Include="ArgumentsTests.fs" />

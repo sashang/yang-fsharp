@@ -199,6 +199,34 @@ module StatementsTests =
         Assert.True(extra.IsNone)
 
     [<Fact>]
+    let ``parse must statement with conditions`` () =
+        let input = """must "/if:interfaces/if:interface[if:name = current()]"
+                + "/if:type = 'ianaift:ethernetCsmacd'" {
+                 description
+                     "The type of a slave interface must be
+                      'ethernetCsmacd'.";
+             }"""
+        let (MustStatement (must, body)) = FParsecHelper.apply parse_must_statement input
+        Assert.Equal("/if:interfaces/if:interface[if:name = current()]/if:type = 'ianaift:ethernetCsmacd'", must)
+        Assert.True(body.IsSome)
+        Assert.Equal(1, body.Value.Length)
+        // TODO: Eventually, we also want to parse and test the conditionals inside the when string
+
+    [<Theory>]
+    [<InlineData("input/state input/symbol")>]
+    [<InlineData("input/state  input/symbol")>]
+    [<InlineData("input/state\tinput/symbol")>]
+    [<InlineData("input/state\ninput/symbol")>]
+    let ``parse unique statement`` (input) =
+        let input = sprintf "unique \"%s\";" input
+        let (UniqueStatement ((Arguments.Unique unique as u), extra)) = FParsecHelper.apply parse_unique_statement input
+        Assert.True(extra.IsNone)
+        Assert.Equal(2, unique.Length)
+        Assert.Equal("input/state", unique.[0].Value)
+        Assert.Equal("input/symbol", unique.[1].Value)
+        Assert.Equal("input/state input/symbol", u.Value)
+
+    [<Fact>]
     let ``parse unknown statement`` () =
         let input = """junos:posix-pattern "^.{1,64}$";"""
         let (UnknownStatement (id, label, body)) = FParsecHelper.apply parse_unknown_statement input
@@ -286,7 +314,7 @@ module StatementsTests =
         Assert.True(Statement.IsUnknown inner2)
         let unknown2 = Statement.AsUnknown inner2
         Assert.True(unknown2.IsSome)
-        let (UnknownStatement (id3, label3, body3)) = unknown1.Value
+        let (UnknownStatement (id3, label3, body3)) = unknown2.Value
         Assert.Equal("tailf:invocation-mode", id3.Value)
         Assert.Equal(Some "per-transaction", label3)
         Assert.True(body3.IsNone)
