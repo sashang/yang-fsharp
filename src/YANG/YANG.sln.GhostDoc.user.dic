@@ -28,5 +28,6 @@ readonly
 sprintf
 stmt
 stmtsep
+tailf
 typeof
 Xunit

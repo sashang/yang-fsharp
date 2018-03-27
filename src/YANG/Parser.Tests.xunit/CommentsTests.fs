@@ -65,3 +65,15 @@ a line"""
 a line"""
         let output = Comments.Remove input
         Assert.Equal(expected, output)
+
+    [<Fact>]
+    let ``empty line afer double comment`` () =
+        let input = """module ieee802-dot1ax {
+  //
+  augment "/if:interfaces/if:interface" {
+    when "if:type = 'ianaif:ieee8023adLag'"
+  }
+}"""
+        let output = Comments.Remove input
+        let lines = output.Split([| '\n' |])
+        Assert.Equal(5, lines.Length)

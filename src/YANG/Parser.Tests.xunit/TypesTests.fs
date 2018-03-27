@@ -134,3 +134,20 @@ module TypesTests =
         Assert.True(id.IsValid)
         Assert.True(extra.IsNone)
         Assert.Equal(name, id.Value)
+
+    [<Theory>]
+    [<InlineData("string")>]
+    [<InlineData("string-huge")>]
+    [<InlineData("assoc-type")>]
+    let ``parse types in strings`` (name) =
+        let input1 = sprintf "type \"%s\";" name
+        let input2 = sprintf "type '%s';"   name
+
+        let (TypeStatement (id1, extra1)) = FParsecHelper.apply parse_type_statement input1
+        let (TypeStatement (id2, extra2)) = FParsecHelper.apply parse_type_statement input2
+        Assert.True(id1.IsValid)
+        Assert.True(id2.IsValid)
+        Assert.True(extra1.IsNone)
+        Assert.True(extra2.IsNone)
+        Assert.Equal(name, id1.Value)
+        Assert.Equal(name, id2.Value)
