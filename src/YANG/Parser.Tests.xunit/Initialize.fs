@@ -10,7 +10,7 @@ open Xunit
 // [<Collection("Yang Parser")>]
 
 type YangParserInitializationFixture () =
-    do GenericParser.initialize()
+    do Parser.Initialize()
 
     interface IDisposable with
         member __.Dispose() = ()

@@ -12,6 +12,29 @@ module DataDefinitionsTests =
     open Yang.Parser.Types
 
     [<Fact>]
+    let ``parse augment statement`` () =
+        let input = """augment "/if:interfaces/if:interface" {
+    when "if:type = 'ianaif:ieee8023adLag' or
+          if:type = 'ianaif:ethernetCsmacd' or 
+          if:type = 'ianaif:bridge'" {
+      description
+        "Applies to Ethernet interfaces or Bridge Ports.";
+      }}"""
+        let (AugmentStatement (augment, body)) = FParsecHelper.apply parse_augment_statement input
+        Assert.True(augment.IsAbsolute)
+        Assert.Equal("/if:interfaces/if:interface", augment.Value)
+        let schema = augment._Schema
+        Assert.Equal(2, schema.Length)
+        let schema1 = List.item 0 schema
+        let schema2 = List.item 1 schema
+        Assert.Equal("if:interfaces", schema1.Value)
+        Assert.Equal("if:interface", schema2.Value)
+
+        Assert.Equal(2, body.Length)
+        Assert.True(AugmentBodyStatement.IsWhen body.[0])
+        Assert.True(AugmentBodyStatement.IsDescription body.[1])
+
+    [<Fact>]
     let ``parse case statement`` () =
         let input = """case "non-candidate" {
         leaf non-candidate-bsr-state {
@@ -199,6 +222,44 @@ leaf-list domain-search {
         Assert.True(id.IsValid)
         Assert.Equal("optical-logical-interface-logical-channel-assignment", id.Value)
         Assert.Equal(3, body.Length)
+
+    [<Fact>]
+    let ``parse list statement with nested unknown body`` () =
+        // The following statement is not correct (it is missing the type statement); however, it exposed a bug
+        let input = """list ethernet-virtual-connection {
+      tailf:callpoint "ncs-rfs-service-hook" {
+        tailf:transaction-hook "subtree" {
+          tailf:invocation-mode "per-transaction";
+        }
+      }
+    }"""
+        let (ListStatement (id, body)) = FParsecHelper.apply parse_list_statement input
+        Assert.Equal("ethernet-virtual-connection", id.Value)
+        Assert.Equal(1, body.Length)
+        let unknown = body.Head
+        Assert.True(ListBodyStatement.IsUnknown unknown)
+
+    [<Fact>]
+    let ``parse output statement`` () =
+        let input = """output {
+          leaf success {
+            type boolean;
+            mandatory true;
+        	description
+          	  "Did the action succeed?";
+          }
+          leaf message {
+            type string;
+            mandatory true;
+        	description
+          	  "Any message associated with the output.";
+          }}"""
+        let (OutputStatement body) =  FParsecHelper.apply parse_output_statement input
+        Assert.Equal(2, body.Length)
+        let body1 = body.[0]
+        let body2 = body.[1]
+        Assert.True(OutputBodyStatement.IsLeaf body1)
+        Assert.True(OutputBodyStatement.IsLeaf body2)
 
     [<Fact>]
     let ``parse typedef statement simple`` () =

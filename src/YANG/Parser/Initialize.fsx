@@ -32,7 +32,7 @@
 #load "GenericParser.fs"
 #load "Parser.fs"
 
-Yang.Parser.GenericParser.initialize ()
+Yang.Parser.Parser.Initialize ()
 
 [<AutoOpen>]
 module MyEnvironment =
@@ -64,15 +64,24 @@ module MyEnvironment =
 
     let get_all_external_models = lazy (
         let index_file = Path.Combine(external_modules_dir, "all_yang_models.txt")
+        let bad_models_file = Path.Combine(external_modules_dir, "bad_models.txt")
+
         if File.Exists(index_file) then
+            let bad_model_filter =
+                if File.Exists(bad_models_file) then
+                    Some (File.ReadLines(bad_models_file) |> Seq.toList)
+                else None
+
             File.ReadAllLines(index_file)
-            |> Seq.map (
+            |> Seq.choose (
                 fun filename ->
                     let filename =
                         if filename.StartsWith("\\") then
                             filename.TrimStart([| '\\'; '/' |])
                         else filename
-                    Path.Combine(external_modules_dir, filename)
+
+                    if bad_model_filter.IsSome && (List.contains filename bad_model_filter.Value) then None
+                    else Some (Path.Combine(external_modules_dir, filename))
             )
         else
             Directory.EnumerateFiles(external_modules_dir, "*.yang", SearchOption.AllDirectories)

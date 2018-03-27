@@ -5,3 +5,4 @@ networkop/
 sysrepo/
 tail-f-systems/
 all_yang_models.txt
+bad_models.txt

@@ -181,6 +181,24 @@ module StatementsTests =
         Assert.Equal(128uL, right'.Value)
 
     [<Fact>]
+    let ``parse must statement`` () =
+        let input = """must "count(*) > 1" {
+        tailf:dependency ".";
+      }"""
+        let (MustStatement (condition, body)) = FParsecHelper.apply parse_must_statement input
+        Assert.Equal("count(*) > 1", condition)
+        Assert.True(body.IsSome)
+        Assert.Equal(1, body.Value.Length)
+        let inner = body.Value.Head
+        Assert.True(MustBodyStatement.IsUnknown inner)
+        let unknown = MustBodyStatement.AsUnknown inner
+        Assert.True(unknown.IsSome)
+        let (UnknownStatement (id, label, extra)) = unknown.Value
+        Assert.Equal("tailf:dependency", id.Value)
+        Assert.Equal(Some ".", label)
+        Assert.True(extra.IsNone)
+
+    [<Fact>]
     let ``parse unknown statement`` () =
         let input = """junos:posix-pattern "^.{1,64}$";"""
         let (UnknownStatement (id, label, body)) = FParsecHelper.apply parse_unknown_statement input
@@ -209,6 +227,20 @@ module StatementsTests =
         // TODO: All test that the body statement is of type position
 
     [<Fact>]
+    let ``parse unknown statement with uses in the body`` () =
+        let input = """rc:yang-data voucher-request-artifact {
+    uses voucher-request-grouping;
+  }"""
+        let (UnknownStatement (id, label, body)) = FParsecHelper.apply parse_unknown_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("rc:yang-data", id.Value)
+        Assert.Equal(Some "voucher-request-artifact", label)
+        Assert.True(body.IsSome)
+        Assert.Equal(1, body.Value.Length)
+        let statement = body.Value.Head
+        Assert.True(Statement.IsUses statement)
+
+    [<Fact>]
     let ``parse unknown statement with keyword prefix`` () =
         let input = """config:required-identity sal:dom-data-store;"""
         let statement =
@@ -224,6 +256,40 @@ module StatementsTests =
         Assert.True(label.IsSome)
         Assert.Equal("sal:dom-data-store", label.Value)
         Assert.True(extra.IsNone)
+
+    [<Fact>]
+    let ``parse unknown statement nested`` () =
+        let input = """tailf:callpoint "ncs-rfs-service-hook" {
+        tailf:transaction-hook "subtree" {
+          tailf:invocation-mode "per-transaction";
+        }
+      }"""
+        let (UnknownStatement (id, label, body)) = FParsecHelper.apply parse_unknown_statement input
+        Assert.True(id.IsValid)
+        Assert.Equal("tailf:callpoint", id.Value)
+        Assert.True(label.IsSome)
+        Assert.Equal("ncs-rfs-service-hook", label.Value)
+        Assert.True(body.IsSome)
+        Assert.Equal(1, body.Value.Length)
+
+        let inner1 = body.Value.Head
+        Assert.True(Statement.IsUnknown inner1)
+        let unknown1 = Statement.AsUnknown inner1
+        Assert.True(unknown1.IsSome)
+        let (UnknownStatement (id2, label2, body2)) = unknown1.Value
+        Assert.Equal("tailf:transaction-hook", id2.Value)
+        Assert.Equal(Some "subtree", label2)
+        Assert.True(body2.IsSome)
+        Assert.Equal(1, body2.Value.Length)
+
+        let inner2 = body2.Value.Head
+        Assert.True(Statement.IsUnknown inner2)
+        let unknown2 = Statement.AsUnknown inner2
+        Assert.True(unknown2.IsSome)
+        let (UnknownStatement (id3, label3, body3)) = unknown1.Value
+        Assert.Equal("tailf:invocation-mode", id3.Value)
+        Assert.Equal(Some "per-transaction", label3)
+        Assert.True(body3.IsNone)
 
     [<Fact>]
     let ``parse when statement`` () =

@@ -8,7 +8,6 @@ module Statements =
     open System.Collections.Generic
     open FParsec
     open NLog
-    open Identifier
     open Yang.Model
 
     // [RFC 7950, p. 202-204]
@@ -176,23 +175,26 @@ module Statements =
     //
     //
 
-    type GenericParser<'a> = {
-        Parser          : Parser<Statement, 'a>
-        Implementation  : Parser<Statement, 'a> ref
-    }
-    with
-        member this.Set (implementation : Parser<Statement, 'a>) =
-            this.Implementation := implementation
+    //
+    // Definition of generic parser
+    //
 
     let mutable generic_parser_generator : Type option = None
     let generic_parser_implementations = Dictionary<System.Type, obj>()
 
-    let generic_parser<'a> : GenericParser<'a> =
+    /// Parses a yang-stmt [RFC 7950, p. 202].
+    /// It should be used for parsing rules with no constraints, e.g.
+    // inside unknown-statement rules.
+    let parse_statement<'a> =
+        // This statement has many call sites. Each of them will initialize the following variables.
+        // See for example, the number of calls with the following command in interactive:
+        // printfn "Inside parse_statement creation for type %s" typeof<'a>.FullName
+
         let mutable initialized = false
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
 
-        let debug_parser : Parser<Statement, 'a> =
+        fun stream ->
             if initialized = false then
                 let key = typeof<'a>
                 if generic_parser_implementations.ContainsKey(key) then
@@ -200,6 +202,7 @@ module Statements =
                     initialized <- true
                 elif generic_parser_generator.IsSome then
                     debug "Constructing generator for %s" key.FullName
+
                     let ty = generic_parser_generator.Value
                     let generic = ty.GetGenericTypeDefinition()
                     let proper = generic.MakeGenericType(key)
@@ -212,18 +215,12 @@ module Statements =
                     error "Cannot find generic parser for type %s and do not know how to construct it" key.FullName
                     // The call will fail, the user will get the error that the parser is not implemented
 
-            !parse_statement_ref
+            let result = !parse_statement_ref stream
+            result
 
-
-        {
-            Parser          = debug_parser
-            Implementation  = parse_statement_ref
-        }
-
-    /// Parses a yang-stmt [RFC 7950, p. 202].
-    /// It should be used for parsing rules with no constraints, e.g.
-    // inside unknown-statement rules.
-    let parse_statement<'a> = generic_parser<'a>.Parser
+    //
+    // End of definition of generic parser
+    //
 
     /// Parses the rest of statements.
     /// It should be used inside blocks with no constraints, e.g. in unknown statement blocks.
@@ -571,6 +568,7 @@ module Statements =
         <|> (parse_error_app_tag_statement  |>> MustBodyStatement.ErrorAppTag)
         <|> (parse_description_statement    |>> MustBodyStatement.Description)
         <|> (parse_reference_statement      |>> MustBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> MustBodyStatement.Unknown)
 
     let parse_must_statement<'a> : Parser<MustStatement, 'a> =
         // [RFC 7950, p. 192]

@@ -208,6 +208,7 @@ module Identifier =
         member this.IsAbsolute = let (SchemaNodeIdentifier (_, absolute)) = this in absolute
         member this.IsDescendant = let (SchemaNodeIdentifier (_, absolute)) = this in absolute = false
         member this._Schema = let (SchemaNodeIdentifier (schema, _)) = this in schema
+        member this.Item index = let (SchemaNodeIdentifier (schema, _)) = this in List.item index schema
 
         member this.Value =
             let (SchemaNodeIdentifier (schema, absolute)) = this

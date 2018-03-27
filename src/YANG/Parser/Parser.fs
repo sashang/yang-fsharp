@@ -7,6 +7,9 @@ module Parser =
     open FParsec
     open Yang.Model.Statements
 
+    let Initialize () =
+        GenericParser.initialize ()
+
     /// <summary>
     /// Reads a YANG model from a file and removes all comments.
     /// (It does NOT parse the statements --- just reads the file)

@@ -904,6 +904,42 @@ module Statements =
         | AugmentBodyStatement.Notification  st -> Statement.Notification   st
         | AugmentBodyStatement.Unknown       st -> Statement.Unknown        st
 
+        let IsWhen         = function | AugmentBodyStatement.When         _ -> true | _ -> false
+        let IsIfFeature    = function | AugmentBodyStatement.IfFeature    _ -> true | _ -> false
+        let IsStatus       = function | AugmentBodyStatement.Status       _ -> true | _ -> false
+        let IsDescription  = function | AugmentBodyStatement.Description  _ -> true | _ -> false
+        let IsReference    = function | AugmentBodyStatement.Reference    _ -> true | _ -> false
+        let IsContainer    = function | AugmentBodyStatement.Container    _ -> true | _ -> false
+        let IsLeaf         = function | AugmentBodyStatement.Leaf         _ -> true | _ -> false
+        let IsLeafList     = function | AugmentBodyStatement.LeafList     _ -> true | _ -> false
+        let IsList         = function | AugmentBodyStatement.List         _ -> true | _ -> false
+        let IsChoice       = function | AugmentBodyStatement.Choice       _ -> true | _ -> false
+        let IsAnyData      = function | AugmentBodyStatement.AnyData      _ -> true | _ -> false
+        let IsAnyXml       = function | AugmentBodyStatement.AnyXml       _ -> true | _ -> false
+        let IsUses         = function | AugmentBodyStatement.Uses         _ -> true | _ -> false
+        let IsCase         = function | AugmentBodyStatement.Case         _ -> true | _ -> false
+        let IsAction       = function | AugmentBodyStatement.Action       _ -> true | _ -> false
+        let IsNotification = function | AugmentBodyStatement.Notification _ -> true | _ -> false
+        let IsUnknown      = function | AugmentBodyStatement.Unknown      _ -> true | _ -> false
+
+        let AsWhen         = function | AugmentBodyStatement.When         v -> Some v | _ -> None
+        let AsIfFeature    = function | AugmentBodyStatement.IfFeature    v -> Some v | _ -> None
+        let AsStatus       = function | AugmentBodyStatement.Status       v -> Some v | _ -> None
+        let AsDescription  = function | AugmentBodyStatement.Description  v -> Some v | _ -> None
+        let AsReference    = function | AugmentBodyStatement.Reference    v -> Some v | _ -> None
+        let AsContainer    = function | AugmentBodyStatement.Container    v -> Some v | _ -> None
+        let AsLeaf         = function | AugmentBodyStatement.Leaf         v -> Some v | _ -> None
+        let AsLeafList     = function | AugmentBodyStatement.LeafList     v -> Some v | _ -> None
+        let AsList         = function | AugmentBodyStatement.List         v -> Some v | _ -> None
+        let AsChoice       = function | AugmentBodyStatement.Choice       v -> Some v | _ -> None
+        let AsAnyData      = function | AugmentBodyStatement.AnyData      v -> Some v | _ -> None
+        let AsAnyXml       = function | AugmentBodyStatement.AnyXml       v -> Some v | _ -> None
+        let AsUses         = function | AugmentBodyStatement.Uses         v -> Some v | _ -> None
+        let AsCase         = function | AugmentBodyStatement.Case         v -> Some v | _ -> None
+        let AsAction       = function | AugmentBodyStatement.Action       v -> Some v | _ -> None
+        let AsNotification = function | AugmentBodyStatement.Notification v -> Some v | _ -> None
+        let AsUnknown      = function | AugmentBodyStatement.Unknown      v -> Some v | _ -> None
+
     /// Helper methods for the BelongsToBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module BelongsToBodyStatement =
@@ -1514,6 +1550,59 @@ module Statements =
         | BodyStatement.Uses          st -> ListBodyStatement.Uses         st
         | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
 
+        let IsWhen          = function | ListBodyStatement.When         _ -> true | _ -> false
+        let IsIfFeature     = function | ListBodyStatement.IfFeature    _ -> true | _ -> false
+        let IsMust          = function | ListBodyStatement.Must         _ -> true | _ -> false
+        let IsKey           = function | ListBodyStatement.Key          _ -> true | _ -> false
+        let IsUnique        = function | ListBodyStatement.Unique       _ -> true | _ -> false
+        let IsConfig        = function | ListBodyStatement.Config       _ -> true | _ -> false
+        let IsMinElements   = function | ListBodyStatement.MinElements  _ -> true | _ -> false
+        let IsMaxElements   = function | ListBodyStatement.MaxElements  _ -> true | _ -> false
+        let IsOrderedBy     = function | ListBodyStatement.OrderedBy    _ -> true | _ -> false
+        let IsStatus        = function | ListBodyStatement.Status       _ -> true | _ -> false
+        let IsDescription   = function | ListBodyStatement.Description  _ -> true | _ -> false
+        let IsReference     = function | ListBodyStatement.Reference    _ -> true | _ -> false
+        let IsTypeDef       = function | ListBodyStatement.TypeDef      _ -> true | _ -> false
+        let IsGrouping      = function | ListBodyStatement.Grouping     _ -> true | _ -> false
+        let IsContainer     = function | ListBodyStatement.Container    _ -> true | _ -> false
+        let IsLeaf          = function | ListBodyStatement.Leaf         _ -> true | _ -> false
+        let IsLeafList      = function | ListBodyStatement.LeafList     _ -> true | _ -> false
+        let IsList          = function | ListBodyStatement.List         _ -> true | _ -> false
+        let IsChoice        = function | ListBodyStatement.Choice       _ -> true | _ -> false
+        let IsAnyData       = function | ListBodyStatement.AnyData      _ -> true | _ -> false
+        let IsAnyXml        = function | ListBodyStatement.AnyXml       _ -> true | _ -> false
+        let IsUses          = function | ListBodyStatement.Uses         _ -> true | _ -> false
+        let IsAction        = function | ListBodyStatement.Action       _ -> true | _ -> false
+        let IsNotification  = function | ListBodyStatement.Notification _ -> true | _ -> false
+        let IsUnknown       = function | ListBodyStatement.Unknown      _ -> true | _ -> false
+
+        let AsWhen          = function | ListBodyStatement.When         v -> Some v | _ -> None
+        let AsIfFeature     = function | ListBodyStatement.IfFeature    v -> Some v | _ -> None
+        let AsMust          = function | ListBodyStatement.Must         v -> Some v | _ -> None
+        let AsKey           = function | ListBodyStatement.Key          v -> Some v | _ -> None
+        let AsUnique        = function | ListBodyStatement.Unique       v -> Some v | _ -> None
+        let AsConfig        = function | ListBodyStatement.Config       v -> Some v | _ -> None
+        let AsMinElements   = function | ListBodyStatement.MinElements  v -> Some v | _ -> None
+        let AsMaxElements   = function | ListBodyStatement.MaxElements  v -> Some v | _ -> None
+        let AsOrderedBy     = function | ListBodyStatement.OrderedBy    v -> Some v | _ -> None
+        let AsStatus        = function | ListBodyStatement.Status       v -> Some v | _ -> None
+        let AsDescription   = function | ListBodyStatement.Description  v -> Some v | _ -> None
+        let AsReference     = function | ListBodyStatement.Reference    v -> Some v | _ -> None
+        let AsTypeDef       = function | ListBodyStatement.TypeDef      v -> Some v | _ -> None
+        let AsGrouping      = function | ListBodyStatement.Grouping     v -> Some v | _ -> None
+        let AsContainer     = function | ListBodyStatement.Container    v -> Some v | _ -> None
+        let AsLeaf          = function | ListBodyStatement.Leaf         v -> Some v | _ -> None
+        let AsLeafList      = function | ListBodyStatement.LeafList     v -> Some v | _ -> None
+        let AsList          = function | ListBodyStatement.List         v -> Some v | _ -> None
+        let AsChoice        = function | ListBodyStatement.Choice       v -> Some v | _ -> None
+        let AsAnyData       = function | ListBodyStatement.AnyData      v -> Some v | _ -> None
+        let AsAnyXml        = function | ListBodyStatement.AnyXml       v -> Some v | _ -> None
+        let AsUses          = function | ListBodyStatement.Uses         v -> Some v | _ -> None
+        let AsAction        = function | ListBodyStatement.Action       v -> Some v | _ -> None
+        let AsNotification  = function | ListBodyStatement.Notification v -> Some v | _ -> None
+        let AsUnknown       = function | ListBodyStatement.Unknown      v -> Some v | _ -> None
+
+
     /// Helper methods for the MetaBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module MetaBodyStatement =
@@ -1602,6 +1691,18 @@ module Statements =
         | MustBodyStatement.Reference     st -> Statement.Reference     st
         | MustBodyStatement.Unknown       st -> Statement.Unknown       st
 
+        let IsErrorMessage = function | MustBodyStatement.ErrorMessage _ -> true | _ -> false
+        let IsErrorAppTag  = function | MustBodyStatement.ErrorAppTag  _ -> true | _ -> false
+        let IsDescription  = function | MustBodyStatement.Description  _ -> true | _ -> false
+        let IsReference    = function | MustBodyStatement.Reference    _ -> true | _ -> false
+        let IsUnknown      = function | MustBodyStatement.Unknown      _ -> true | _ -> false
+
+        let AsErrorMessage = function | MustBodyStatement.ErrorMessage v -> Some v | _ -> None
+        let AsErrorAppTag  = function | MustBodyStatement.ErrorAppTag  v -> Some v | _ -> None
+        let AsDescription  = function | MustBodyStatement.Description  v -> Some v | _ -> None
+        let AsReference    = function | MustBodyStatement.Reference    v -> Some v | _ -> None
+        let AsUnknown      = function | MustBodyStatement.Unknown      v -> Some v | _ -> None
+
     /// Helper methods for the NotificationBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module NotificationBodyStatement =
@@ -1670,6 +1771,32 @@ module Statements =
         | OutputBodyStatement.AnyXml        st -> Statement.AnyXml      st
         | OutputBodyStatement.Uses          st -> Statement.Uses        st
         | OutputBodyStatement.Unknown       st -> Statement.Unknown     st
+
+        let IsMust      = function | OutputBodyStatement.Must       _ -> true | _ -> false
+        let IsTypeDef   = function | OutputBodyStatement.TypeDef    _ -> true | _ -> false
+        let IsGrouping  = function | OutputBodyStatement.Grouping   _ -> true | _ -> false
+        let IsContainer = function | OutputBodyStatement.Container  _ -> true | _ -> false
+        let IsLeaf      = function | OutputBodyStatement.Leaf       _ -> true | _ -> false
+        let IsLeafList  = function | OutputBodyStatement.LeafList   _ -> true | _ -> false
+        let IsList      = function | OutputBodyStatement.List       _ -> true | _ -> false
+        let IsChoice    = function | OutputBodyStatement.Choice     _ -> true | _ -> false
+        let IsAnyData   = function | OutputBodyStatement.AnyData    _ -> true | _ -> false
+        let IsAnyXml    = function | OutputBodyStatement.AnyXml     _ -> true | _ -> false
+        let IsUses      = function | OutputBodyStatement.Uses       _ -> true | _ -> false
+        let IsUnknown   = function | OutputBodyStatement.Unknown    _ -> true | _ -> false
+
+        let AsMust      = function | OutputBodyStatement.Must       v -> Some v | _ -> None
+        let AsTypeDef   = function | OutputBodyStatement.TypeDef    v -> Some v | _ -> None
+        let AsGrouping  = function | OutputBodyStatement.Grouping   v -> Some v | _ -> None
+        let AsContainer = function | OutputBodyStatement.Container  v -> Some v | _ -> None
+        let AsLeaf      = function | OutputBodyStatement.Leaf       v -> Some v | _ -> None
+        let AsLeafList  = function | OutputBodyStatement.LeafList   v -> Some v | _ -> None
+        let AsList      = function | OutputBodyStatement.List       v -> Some v | _ -> None
+        let AsChoice    = function | OutputBodyStatement.Choice     v -> Some v | _ -> None
+        let AsAnyData   = function | OutputBodyStatement.AnyData    v -> Some v | _ -> None
+        let AsAnyXml    = function | OutputBodyStatement.AnyXml     v -> Some v | _ -> None
+        let AsUses      = function | OutputBodyStatement.Uses       v -> Some v | _ -> None
+        let AsUnknown   = function | OutputBodyStatement.Unknown    v -> Some v | _ -> None
 
     /// Helper methods for the PatternBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -2083,6 +2210,9 @@ module Statements =
 
         let IsDeviateNotSupported = function | Statement.DeviateNotSupported _ -> true   | _ -> false
         let AsDeviateNotSupported = function | Statement.DeviateNotSupported v -> Some v | _ -> None
+
+        let IsUses = function | Statement.Uses _ -> true   | _ -> false
+        let AsUses = function | Statement.Uses v -> Some v | _ -> None
 
         let IsUnknown = function | Statement.Unknown _ -> true   | _ -> false
         let AsUnknown = function | Statement.Unknown v -> Some v | _ -> None

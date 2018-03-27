@@ -96,6 +96,8 @@ module BodyStatements =
         Output          : Parser<OutputStatement, 'a>
         Rpc             : Parser<RpcStatement, 'a>
         TypeDef         : Parser<TypeDefStatement, 'a>
+        Uses            : Parser<UsesStatement, 'a>
+        UsesAugment     : Parser<UsesAugmentStatement, 'a>
     }
 
     /// Create parsers for the high-level constructs of the model (data  types, etc).
@@ -586,6 +588,8 @@ module BodyStatements =
             Output          = parse_output_statement
             Rpc             = parse_rpc_statement
             TypeDef         = parse_typedef_statement
+            Uses            = parse_uses_statement
+            UsesAugment     = parse_uses_augment_statement
         }
 
     let parse_action_statement<'a>          : Parser<ActionStatement, 'a>           = parsers.Action
@@ -603,3 +607,5 @@ module BodyStatements =
     let parse_output_statement<'a>          : Parser<OutputStatement, 'a>           = parsers.Output
     let parse_rpc_statement<'a>             : Parser<RpcStatement, 'a>              = parsers.Rpc
     let parse_typedef_statement<'a>         : Parser<TypeDefStatement, 'a>          = parsers.TypeDef
+    let parse_uses_statement<'a>            : Parser<UsesStatement, 'a>             = parsers.Uses
+    let parse_uses_augment_statement<'a>    : Parser<UsesAugmentStatement, 'a>      = parsers.UsesAugment

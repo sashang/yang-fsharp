@@ -44,7 +44,7 @@ module GenericParser =
         <|> (parse_any_data_statement           |>> Statement.AnyData)
         <|> (parse_any_xml_statement            |>> Statement.AnyXml)
         <|> (parse_argument_statement           |>> Statement.Argument)
-        <|> (parse_augment_statement            |>> Statement.Augment)
+        // For Statement.Augment, see below
         <|> (parse_base_statement               |>> Statement.Base)
         <|> (parse_belongs_to_statement         |>> Statement.BelongsTo)
         <|> (parse_bit_statement                |>> Statement.Bit)
@@ -106,11 +106,17 @@ module GenericParser =
         <|> (parse_type_statement               |>> Statement.Type)
         <|> (parse_unique_statement             |>> Statement.Unique)
         <|> (parse_units_statement              |>> Statement.Units)
-
+        <|> (parse_uses_statement               |>> Statement.Uses)
         <|> (parse_value_statement              |>> Statement.Value)
         <|> (parse_when_statement               |>> Statement.When)
         <|> (parse_yang_version_statement       |>> Statement.YangVersion)
         <|> (parse_yin_element_statement        |>> Statement.YinElement)
+
+        // The following two use the same keyword. At this point, we may consider
+        // parsing together.
+        <|> (parse_augment_statement            |>> Statement.Augment)
+        <|> (parse_uses_augment_statement       |>> Statement.UsesAugment)
+
         <|> (parse_unknown_statement            |>> Statement.Unknown)
 
     type GenericYangStatementParserGenerator<'a> =
