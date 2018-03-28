@@ -38,7 +38,8 @@ module Identifier =
 
     /// YANG Identifier
     [<StructuredFormatDisplay("{Value}")>]
-    type Identifier = private | String of string
+    [<Struct>]
+    type Identifier = private String of string
     with
         /// <summary>
         /// Creates an identifier from the input string,
@@ -72,10 +73,8 @@ module Identifier =
 
     /// YANG Identifier with prefix
     [<StructuredFormatDisplay("{Value}")>]
-    type IdentifierWithPrefix = {
-        Prefix  : string
-        Name    : string
-    }
+    [<Struct>]
+    type IdentifierWithPrefix = IdentifierWithPrefix of Prefix:string * Name:String
     with
         /// <summary>
         /// Creates a composite identifier without checking validity of input string;
@@ -83,7 +82,7 @@ module Identifier =
         /// </summary>
         /// <param name="prefix">The prefix of the identifier</param>
         /// <param name="name">The name of the identifier</param>
-        static member MakeUnchecked (prefix, name) = { Prefix = prefix; Name = name }
+        static member MakeUnchecked (prefix, name) = (IdentifierWithPrefix (prefix, name))
 
         /// <summary>
         /// Creates a composite identifier
@@ -96,7 +95,7 @@ module Identifier =
             if (is_identifier_valid name) = false then
                 throw "Invalid name of (prefixed) identifier: %s" name
 
-            { Prefix = prefix; Name = name }
+            (IdentifierWithPrefix (prefix, name))
 
         /// <summary>
         /// Create a composite identifier
@@ -118,23 +117,27 @@ module Identifier =
             let identifier  = id.Substring(separator+1)
             IdentifierWithPrefix.Make(prefix, identifier)
 
+        member this._Prefix = let (IdentifierWithPrefix (prefix, _)) = this in prefix
+        member this._Name   = let (IdentifierWithPrefix (_, name))   = this in name
+
         /// <summary>
         /// Gets the string value of the identifier
         /// </summary>
-        member this.Value = sprintf "%s:%s" this.Prefix this.Name
+        member this.Value = sprintf "%s:%s" this._Prefix this._Name
 
         /// <summary>
         /// Checks whether the identifier has a valid name
         /// </summary>
-        member this.IsValid = (is_identifier_valid this.Prefix) && (is_identifier_valid this.Name)
+        member this.IsValid = (is_identifier_valid this._Prefix) && (is_identifier_valid this._Name)
 
         override this.ToString() = this.Value
 
     /// Captures either a simple or custom identifier
     [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
     type IdentifierReference =
-    | Simple of Identifier
-    | Custom of IdentifierWithPrefix
+    | Simple of SimpleId:Identifier
+    | Custom of PrefixedId:IdentifierWithPrefix
     with
         /// <summary>
         /// Create an identifier from a string
@@ -193,7 +196,8 @@ module Identifier =
             | Custom identifier -> identifier.IsValid
 
     [<StructuredFormatDisplay("{Value}")>]
-    type SchemaNodeIdentifier = | SchemaNodeIdentifier of Schema:(IdentifierReference list) * Absolute:bool
+    [<Struct>]
+    type SchemaNodeIdentifier = SchemaNodeIdentifier of Schema:(IdentifierReference list) * Absolute:bool
     with
         static member MakeAbsolute (schema : IdentifierReference list) =
             if schema.Length = 0 then

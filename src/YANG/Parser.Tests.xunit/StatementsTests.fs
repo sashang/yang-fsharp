@@ -231,7 +231,7 @@ module StatementsTests =
         let input = """junos:posix-pattern "^.{1,64}$";"""
         let (UnknownStatement (id, label, body)) = FParsecHelper.apply parse_unknown_statement input
         Assert.True(id.IsValid)
-        Assert.Equal("junos", id.Prefix)
+        Assert.Equal("junos", id._Prefix)
         Assert.Equal("junos:posix-pattern", id.Value)
         Assert.True(label.IsSome)
         Assert.Equal("^.{1,64}$", label.Value)
@@ -244,7 +244,7 @@ module StatementsTests =
           }"""
         let (UnknownStatement (id, label, body)) = FParsecHelper.apply parse_unknown_statement input
         Assert.True(id.IsValid)
-        Assert.Equal("ext", id.Prefix)
+        Assert.Equal("ext", id._Prefix)
         Assert.Equal("ext:bit", id.Value)
 
         Assert.True(label.IsSome)
