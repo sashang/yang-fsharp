@@ -6,7 +6,9 @@ namespace Yang.Model
 [<AutoOpen>]
 module Identifier =
     open System
+    open System.Text
     open NLog
+    open System.Runtime.InteropServices
 
     /// Logger for this module
     let private _logger = LogManager.GetCurrentClassLogger()
@@ -219,4 +221,83 @@ module Identifier =
             let prefix = if absolute then "/" else ""
             sprintf "%s%s" prefix (schema |> List.map (fun i -> i.Value) |> String.concat "/")
 
+    let private to_yang_double_quoted_string (input : string) =
+        input.Replace("\\", "\\\\").
+              Replace("\"", "\\\"").
+              Replace("\n", "\\n").
+              Replace("\t", "\\t")
 
+    [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
+    type KeyPredicateExpression = KeyPredicateExpression of IdentifierReference * string
+    with
+        member this.Identifier = let (KeyPredicateExpression (id, _)) = this in id
+
+        member this.Value =
+            let (KeyPredicateExpression (identifier, expression)) = this
+            let sb = StringBuilder()
+            Printf.bprintf sb "%s = " (identifier.Value)
+            if expression.Contains("'") = false then
+                // Easy case: the string does not contain a single quote,
+                // hence it is safe to wrap it in single quotes without any change
+                Printf.bprintf sb "'%s'" expression
+            else
+                let expression' = to_yang_double_quoted_string expression
+                Printf.bprintf sb "\"%s\"" expression'
+
+            sb.ToString()
+
+        override this.ToString() = this.Value
+
+    [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
+    type InstanceIdentifierFilter =
+    | KeyPredicate      of Key:KeyPredicateExpression
+    | LeafListPredicate of LeafList:string
+    | Position          of Pos:uint32
+    with
+        member this.Value =
+            match this with
+            | KeyPredicate key      -> key.Value
+            | LeafListPredicate ll  -> to_yang_double_quoted_string ll
+            | Position pos          -> sprintf "%d" pos
+
+        override this.ToString() = this.Value
+
+    [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
+    type InstanceIdentifierNode = InstanceIdentifierNode of IdentifierReference * (InstanceIdentifierFilter option)
+    with
+        member this.ToStringBuilder (sb : StringBuilder) =
+            let (InstanceIdentifierNode (id, filter)) = this
+            match filter with
+            | None          -> Printf.bprintf sb "%s" id.Value
+            | Some filter   -> Printf.bprintf sb "%s[%s]" id.Value filter.Value
+
+        member this.Value =
+            let (InstanceIdentifierNode (id, filter)) = this
+            match filter with
+            | None          -> sprintf "%s" id.Value
+            | Some filter   -> sprintf "%s[%s]" id.Value filter.Value
+
+        override this.ToString() = this.Value
+
+    [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
+    type InstanceIdentifier = InstanceIdentifier of InstanceIdentifierNode list
+    with
+        member this.Nodes = let (InstanceIdentifier nodes) = this in nodes
+
+        member this.ToStringBuilder(sb : StringBuilder) = 
+            this.Nodes |> List.iter (
+                fun node ->
+                    Printf.bprintf sb "/"
+                    node.ToStringBuilder sb
+            )
+
+        member this.Value =
+            let sb = StringBuilder()
+            this.ToStringBuilder sb
+            sb.ToString()
+
+        override this.ToString() = this.Value
