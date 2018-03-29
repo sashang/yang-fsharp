@@ -5,6 +5,8 @@ namespace Yang.Parser
 
 module Arguments =
     open System
+    open System.Numerics
+    open System.Text
     open FParsec
     open Yang.Model.Arguments
 
@@ -111,7 +113,6 @@ module Arguments =
 
     let parse_range_boundary<'a> : Parser<RangeBoundary, 'a> =
         let numberFormat =     NumberLiteralOptions.AllowMinusSign
-                           ||| NumberLiteralOptions.AllowFraction
 
         (skipString "min"   |>> fun _ -> RangeBoundary.Min)
         <|> (skipString "max"   |>> fun _ -> RangeBoundary.Max)
@@ -122,14 +123,162 @@ module Arguments =
             )
         .>> spaces
 
+    [<Struct>]
+    type private RangePartState =
+    | First
+    | RangeSearch
+    | Second
+    | RangeError of string
+
+    [<Struct>]
+    type private BoundaryType =
+    | BoundaryMin
+    | BoundaryMax
+    | BoundaryInteger
+    | BoundaryDecimal
+
+    let private parse_range_part_implementation<'a> (input : CharStream<'a>) : Reply<Range.RangePart> =
+        let left = StringBuilder ()
+        let right = StringBuilder ()
+
+        let left_type  : BoundaryType option ref = ref None
+        let right_type : BoundaryType option ref = ref None
+
+        let skip ()  = input.Read() |> ignore
+        let skip2 () = input.Read() |> ignore; input.Read() |> ignore
+
+        let rec advance (state : RangePartState) =
+            if input.IsEndOfStream then state
+            else scan state
+        and apply_minus (sb : StringBuilder, ty : BoundaryType option ref, state) =
+            if (!ty).IsNone then
+                ty  := Some BoundaryInteger
+                sb.Append(input.Read()) |> ignore
+                advance state
+            else
+                RangeError "Unexpected character '-'"
+        and apply_keyword (ty : BoundaryType option ref, state, should_continue) =
+            if (!ty).IsSome then
+                RangeError "Unexpected character 'm' in number"
+            else
+                skip()
+                let next = input.Peek2()
+                match next.Char0, next.Char1 with
+                | 'i', 'n'  ->
+                    skip2 ()
+                    let after = input.Peek()
+                    if isLetter after || isDigit after then
+                        RangeError "Expecting 'min' literal"
+                    else
+                        ty := Some BoundaryMin
+                        if should_continue then advance state
+                        else state
+                | 'a', 'x'  ->
+                    skip2 ()
+                    let after = input.Peek()
+                    if isLetter after || isDigit after then
+                        RangeError "Expecting 'max' literal"
+                    else
+                        ty := Some BoundaryMax
+                        if should_continue then advance state
+                        else state
+                | _, _      ->
+                    RangeError "Expecting either min or max"
+        and apply_digit (sb : StringBuilder, ty : BoundaryType option ref, state) =
+            let d = input.Read()
+            if (!ty).IsNone then ty := Some BoundaryInteger
+            sb.Append(d) |> ignore
+            advance state
+        and scan (state : RangePartState) =
+            match input.Peek(), state with
+            | _  , RangeError _                         -> state
+            | '|', _                                    -> state
+            | ch , First    when Char.IsWhiteSpace(ch)  -> skip(); advance RangeSearch
+            | ch , state    when Char.IsWhiteSpace(ch)  -> skip(); advance state
+
+            | '.', First    ->
+                skip()
+                let next = input.Peek()
+                if next = '.'     then
+                    skip()
+                    advance Second
+                elif isDigit next then
+                    left.Append('.') |> ignore
+                    // If there are two periods in the number, we can continue parsing here,
+                    // and expect to fail later when trying to recover the number from the string
+                    left_type := Some BoundaryDecimal
+                    advance First
+                else
+                    RangeError "Expected a digit"
+
+            | '.', Second   ->
+                right.Append(input.Read()) |> ignore
+                right_type := Some BoundaryDecimal
+                advance Second
+
+            | '.', RangeSearch    ->
+                skip ()
+                let next = input.Read()
+                if next = '.' then advance Second
+                else RangeError "Cannot detect '..'"
+
+            | '-', First    -> apply_minus (left, left_type, First)
+            | '-', Second   -> apply_minus (right, right_type, Second)
+            | '-', _        ->
+                // Probably we reached here in error. In any case, stop search
+                // and expect next parser to fail
+                state
+
+            | 'm', First    -> apply_keyword (left_type, RangeSearch, true)
+            | 'm', Second   -> apply_keyword (right_type, Second, false)
+            | 'm', _        -> RangeError "Unexpected character 'm'"
+
+            | d, First  when isDigit(d) -> apply_digit(left, left_type, First)
+            | d, Second when isDigit(d) -> apply_digit(right, right_type, Second)
+
+            | _, _  ->
+                if input.IsEndOfStream then state
+                else RangeError "Unexpected character"
+
+
+        let make (sb : StringBuilder, ty : BoundaryType option) =
+            match ty with
+            | None                  -> Result.Error (ErrorMessage.Expected "Expected to find integer or decimal")
+            | Some BoundaryMin      -> Result.Ok    (Range.RangeBoundary.Min)
+            | Some BoundaryMax      -> Result.Ok    (Range.RangeBoundary.Max)
+            | Some BoundaryDecimal  ->
+                match Decimal.TryParse (sb.ToString()) with
+                | false, _ -> Result.Error (ErrorMessage.Expected "Expected to find decimal")
+                | true, v  -> Result.Ok    (Range.RangeBoundary.Decimal v)
+            | Some BoundaryInteger  ->
+                match BigInteger.TryParse (sb.ToString()) with
+                | false, _ -> Result.Error (ErrorMessage.Expected "Expected to find integer")
+                | true, v  -> Result.Ok    (Range.RangeBoundary.Integer v)
+
+        let result = advance First
+        match result with
+        | First
+        | RangeSearch ->
+            match make (left, !left_type) with
+            | Result.Error error -> Reply(Error, ErrorMessageList error)
+            | Result.Ok    value -> Reply(Range.RangePart.Single value)
+
+        | Second ->
+            match make (left, !left_type), make (right, !right_type) with
+            | Result.Error error, _ ->
+                let msg = ErrorMessage.Message "Error parsing the left boundary"
+                Reply(Error, ErrorMessageList (msg, error))
+            | _, Result.Error error ->
+                let msg = ErrorMessage.Message "Error parsing the right boundary"
+                Reply(Error, ErrorMessageList (msg, error))
+            | Result.Ok left_boundary, Result.Ok right_boundary ->
+                Reply(Range.RangePart.Region (left_boundary, right_boundary))
+
+        | RangeError message ->
+            Reply(Error, ErrorMessageList (ErrorMessage.Message message))
+
     let parse_range_part<'a> : Parser<RangePart, 'a> =
-        parse_range_boundary .>> spaces .>>. (opt (skipString ".." >>. spaces >>. parse_range_boundary)) .>> spaces
-        |>> (
-            fun (left, right) ->
-                match right with
-                | None          -> RangePart.Single left
-                | Some right    -> RangePart.Region (left, right)
-        )
+        parse_range_part_implementation
         .>> spaces
 
     let parse_range<'a> : Parser<Range, 'a> =

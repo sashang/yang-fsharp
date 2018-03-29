@@ -259,7 +259,7 @@ module Identifier =
         member this.Value =
             match this with
             | KeyPredicate key      -> key.Value
-            | LeafListPredicate ll  -> to_yang_double_quoted_string ll
+            | LeafListPredicate ll  -> sprintf ". = %s" (to_yang_double_quoted_string ll)
             | Position pos          -> sprintf "%d" pos
 
         override this.ToString() = this.Value

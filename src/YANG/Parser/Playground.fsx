@@ -56,3 +56,70 @@ let xx = apply_parser parse_path "/ex:system/ex:server[ex:ip='192.0.2.1'][ex:por
 
 // TODO: should give 1 .. 96
 apply_parser Arguments.parse_range_part "1..96"
+apply_parser Arguments.parse_range_part "1.0..96.0"
+apply_parser Arguments.parse_range_part "1.0 .. 96.0"
+
+
+//range-arg           = range-part *(optsep "|" optsep range-part)
+//range-part          = range-boundary
+//                        [optsep ".." optsep range-boundary]
+//range-boundary      = min-keyword / max-keyword /
+//                        integer-value / decimal-value
+//integer-value       = ("-" non-negative-integer-value) /
+//                       non-negative-integer-value
+//decimal-value       = integer-value ("." zero-integer-value)
+//non-negative-integer-value = "0" / positive-integer-value
+//positive-integer-value = (non-zero-digit *DIGIT)
+//non-zero-digit      = %x31-39
+//zero-integer-value  = 1*DIGIT
+//DIGIT               = %x30-39
+
+open Yang.Parser.Arguments
+apply_parser parse_range_part "min .. max"
+apply_parser parse_range_part "min..max"
+apply_parser parse_range_part "max..max"
+apply_parser parse_range_part "1..2"
+apply_parser parse_range_part "1 .. 2"
+apply_parser parse_range_part "1.1..2.2"
+apply_parser parse_range_part "1.1 .. 2.2"
+apply_parser parse_range_part "-1..2"
+apply_parser parse_range_part "-1 .. 2"
+apply_parser parse_range_part "-1.1..2.2"
+apply_parser parse_range_part "-1.1 .. 2.2"
+apply_parser parse_range_part "-10..-2"
+apply_parser parse_range_part "-11 .. -2"
+apply_parser parse_range_part "-11.1..-2.2"
+apply_parser parse_range_part "-11.1..-2"
+apply_parser parse_range_part "-11.1..-2."
+apply_parser parse_range_part "-11.1 .. -2.2"
+apply_parser parse_range_part "min..1"
+apply_parser parse_range_part "min..1.0"
+apply_parser parse_range_part "1.0..max"
+apply_parser parse_range_part "1..max"
+
+apply_parser parse_range_part "1.1.1"
+apply_parser parse_range_part "2 .. 2.3.4"
+
+
+open FParsec
+let parse_path_statement<'a> : Parser<Yang.Model.Statements.PathStatement, 'a> =
+    make_statement_parser_optional "path" (pip Strings.parse_string PathArgument.parse_path) parse_statement
+    |>> fun x -> Yang.Model.Statements.PathStatement x
+
+let input = """path "/nw:networks/nw:network/nw:node/tet:te/"
+             + "tet:te-node-attributes/tet:connectivity-
+matrices/tet:connectivity-matrix/tet:id";"""
+apply_parser parse_path_statement input
+
+
+let input = """path "/nw:networks/nw:network/nw:node/tet:te/tet:te-node-attributes/tet:connectivity-matrices/tet:connectivity-matrix/tet:id";"""
+apply_parser parse_path_statement input
+
+let input = "\"" + """/nw:networks/nw:network/nw:node/tet:te/"
+             + "tet:te-node-attributes/tet:connectivity-
+matrices/tet:connectivity-matrix/tet:id";"""
+apply_parser Strings.parse_string input
+
+let db (input : string) = input.Replace("\n", "").Replace("\r", "")
+apply_parser (pipt Strings.parse_string db PathArgument.parse_path) input
+

@@ -159,16 +159,18 @@ module Deviation =
         //                                deviate-delete-stmt))
         //                        "}" stmtsep
         let transform_invalid_absolute_path (input : string) =
-            if input.StartsWith "/" then input
-            elif input.Contains(":/") then
-                // HACK: The argument to the deviation-stmt does not start with '/', but maybe we need to transform it to make it valid
-                //       This issue exists in some models, e.g. from Cisco Models-External\YangModels\vendor\cisco\nx\7.0-3-I7-3\cisco-nx-openconfig-bgp-deviations.yang
-                //       It seems to be invalid syntax according to the spec, but the intensions are rather clear.
-                warn "Detected invalid input in deviation-arg; will attempt to correct and try again"
-                sprintf "/%s" (input.Replace(":/", ":"))
-            else
-                warn "Detected invalid input in deviation-arg; will attempt to correct and try again"
-                sprintf "/%s" input
+            if input.StartsWith "/" || Configuration.Forgiving = false then input
+            elif Configuration.Forgiving then
+                if input.Contains(":/") then
+                    // HACK: The argument to the deviation-stmt does not start with '/', but maybe we need to transform it to make it valid
+                    //       This issue exists in some models, e.g. from Cisco Models-External\YangModels\vendor\cisco\nx\7.0-3-I7-3\cisco-nx-openconfig-bgp-deviations.yang
+                    //       It seems to be invalid syntax according to the spec, but the intensions are rather clear.
+                    warn "Detected invalid input in deviation-arg; will attempt to correct and try again"
+                    sprintf "/%s" (input.Replace(":/", ":"))
+                else
+                    warn "Detected invalid input in deviation-arg; will attempt to correct and try again"
+                    sprintf "/%s" input
+            else input
 
         make_statement_parser_generic "deviation" (
             pipt Strings.parse_string transform_invalid_absolute_path Identifier.parse_schema_node_identifier_absolute

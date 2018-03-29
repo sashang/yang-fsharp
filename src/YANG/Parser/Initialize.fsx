@@ -9,6 +9,7 @@
 // Initialize logging
 #load "Logging.fsx"
 
+#load "Configuration.fs"
 #load "Utilities.fs"
 #load "Errors.fs"
 #load "Comments.fs"

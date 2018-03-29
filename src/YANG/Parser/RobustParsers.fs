@@ -15,6 +15,11 @@ module RobustParsers =
 
     // TODO: Evaluate performance gains by combining the parsers below
 
+    let private remove_newlines_in_identifiers (input : string) =
+        if Configuration.Forgiving then
+            input.Replace("\n", "").Replace("\r", "")
+        else input
+
     let parse_identifier<'a> : Parser<Identifier, 'a> =
         pip Strings.parse_string Identifier.parse_identifier
 
@@ -43,7 +48,8 @@ module RobustParsers =
         pip Strings.parse_string Arguments.parse_ordered_by
 
     let parse_path<'a> : Parser<Arguments.Path.Path, 'a> =
-        pip Strings.parse_string parse_path
+        // TODO: Be forgiving for newlines and remove them
+        pipt Strings.parse_string remove_newlines_in_identifiers PathArgument.parse_path
 
     let parse_range<'a> : Parser<Arguments.Range.Range, 'a> =
         pip Strings.parse_string Arguments.parse_range
