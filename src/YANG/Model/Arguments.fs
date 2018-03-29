@@ -90,7 +90,8 @@ module Arguments =
 
 
     [<StructuredFormatDisplay("{Value}")>]
-    type Key = | Key of IdentifierReference list
+    [<Struct>]
+    type Key = Key of IdentifierReference list
     with
         static member Make (keys : string) =
             if String.IsNullOrWhiteSpace(keys) then invalidArg "keys" "keys cannot be null or whitespace"
@@ -110,6 +111,7 @@ module Arguments =
     [<AutoOpen>]
     module Length =
         [<StructuredFormatDisplay("{Value}")>]
+        [<Struct>]
         type LengthBoundary =
         | Min
         | Max
@@ -135,9 +137,10 @@ module Arguments =
             override this.ToString() = this.Value
 
         [<StructuredFormatDisplay("{Value}")>]
+        [<Struct>]
         type LengthPart =
         | Single of LengthBoundary
-        | Range of LengthBoundary * LengthBoundary
+        | Range  of LengthBoundary * LengthBoundary
         with
             static member Make(value : uint64) =
                 Single (Number value)
@@ -183,6 +186,7 @@ module Arguments =
                     | Number left, Number right     -> left <= value && value <= right
 
         [<StructuredFormatDisplay("{Value}")>]
+        [<Struct>]
         type Length = | Length of LengthPart list
         with
             member this.Value = let (Length v) = this in v |> List.map (fun v' -> v'.Value) |> String.concat " | "
@@ -195,6 +199,7 @@ module Arguments =
 
     /// Captures the max-value-arg from [RFC 7950, p. 192]
     [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
     type MaxValue =
     | Unbounded
     | Bounded   of uint64
@@ -223,6 +228,7 @@ module Arguments =
 
 
     [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
     type Modifier =
     | InvertMatch
     with
@@ -230,13 +236,15 @@ module Arguments =
         override this.ToString() = this.Value
 
     [<StructuredFormatDisplay("{Value}")>]
-    type MinValue = | MinValue of uint32
+    [<Struct>]
+    type MinValue = MinValue of uint32
     with
         static member Make (value : uint32) = MinValue value
         member this.Value = let (MinValue mv) = this in sprintf "%d" mv
         override this.ToString() = this.Value
 
     [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
     type OrderedBy =
     | User
     | System
@@ -251,7 +259,8 @@ module Arguments =
     [<AutoOpen>]
     module Path =
         [<StructuredFormatDisplay("{Value}")>]
-        type PathKey = | PathKey of Up:uint16 * Node:(IdentifierReference list)
+        [<Struct>]
+        type PathKey = PathKey of Up:uint16 * Node:(IdentifierReference list)
         with
             member this.IsValid =
                 let (PathKey (up, nodes)) = this
@@ -271,7 +280,8 @@ module Arguments =
             member this._Node = let (PathKey (_, node)) = this in node
 
         [<StructuredFormatDisplay("{Value}")>]
-        type PathPredicate = | PathPredicate of Node:IdentifierReference * PathKey:PathKey
+        [<Struct>]
+        type PathPredicate = PathPredicate of Node:IdentifierReference * PathKey:PathKey
         with
             member this.Value =
                 let (PathPredicate (node, key)) = this
@@ -283,7 +293,8 @@ module Arguments =
             member this._Key = let (PathPredicate (_, key)) = this in key
 
         [<StructuredFormatDisplay("{Value}")>]
-        type PathItem = | PathItem of Node:IdentifierReference * Predicate:(PathPredicate list option)
+        [<Struct>]
+        type PathItem = PathItem of Node:IdentifierReference * Predicate:(PathPredicate list option)
         with
             static member Make (identifier : string) =
                 PathItem (IdentifierReference.Make identifier, None)
@@ -307,7 +318,8 @@ module Arguments =
             override this.ToString() = this.Value
 
         [<StructuredFormatDisplay("{Value}")>]
-        type AbsolutePath = | AbsolutePath of PathItem list
+        [<Struct>]
+        type AbsolutePath = AbsolutePath of PathItem list
         with
             static member Make (identifier : string) =
                 AbsolutePath [ PathItem (IdentifierReference.Make identifier, None) ]
@@ -348,7 +360,8 @@ module Arguments =
                 AbsolutePath (this.Raw @ [item])
 
         [<StructuredFormatDisplay("{Value}")>]
-        type RelativePath = | RelativePath of Up:uint16 * PathItem list
+        [<Struct>]
+        type RelativePath = RelativePath of Up:uint16 * PathItem list
         with
             static member Make (identifier : string, ?up : uint16) =
                 let up = defaultArg up 1us
@@ -398,9 +411,10 @@ module Arguments =
 
 
         [<StructuredFormatDisplay("{Value}")>]
+        [<Struct>]
         type Path =
-        | Absolute of AbsolutePath
-        | Relative of RelativePath
+        | Absolute of Absolute: AbsolutePath
+        | Relative of Relative: RelativePath
         with
             member this.Value =
                 match this with
@@ -421,11 +435,12 @@ module Arguments =
 
         [<StructuredFormatDisplay("{Value}")>]
         [<CustomEquality; CustomComparison>]
+        [<Struct>]
         type RangeBoundary =
         | Min
         | Max
-        | Integer of BigInteger
-        | Decimal of System.Decimal
+        | Integer of Integer:   BigInteger
+        | Decimal of Decimal:   System.Decimal
         with
             static member Make (value : int64) = Integer (BigInteger value)
             static member Make (value : int32) = Integer (BigInteger value)
@@ -531,6 +546,7 @@ module Arguments =
 
 
         [<StructuredFormatDisplay("{Value}")>]
+        [<Struct>]
         type RangePart =
         | Single    of RangeBoundary
         | Region    of RangeBoundary * RangeBoundary
@@ -661,7 +677,8 @@ module Arguments =
 
         /// Definition of Range ([RFC 7950, p. 204])
         [<StructuredFormatDisplay("{Value}")>]
-        type Range = | Range of RangePart list
+        [<Struct>]
+        type Range = Range of RangePart list
         with
             static member Make (left : BigInteger, right : BigInteger) =
                 if left > right then throw "Left region cannot be larger than right (%s .. %s)" (left.ToString()) (right.ToString())
@@ -730,6 +747,7 @@ module Arguments =
 
 
     [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
     type Status =
     | Current
     | Obsolete
@@ -745,7 +763,8 @@ module Arguments =
 
     /// Set of descendant schema nodes that specify uniqueness
     [<StructuredFormatDisplay("{Value}")>]
-    type Unique = | Unique of SchemaNodeIdentifier list
+    [<Struct>]
+    type Unique = Unique of SchemaNodeIdentifier list
     with
         static member Make (schema : SchemaNodeIdentifier list) =
             if (List.length schema) = 0 then
@@ -768,16 +787,52 @@ module Arguments =
 
 
     /// Captures the 'augment-arg' definition ([RFC 7950, p. 199])
-    type Augment = SchemaNodeIdentifier
+    [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
+    type Augment = Augment of SchemaNodeIdentifier
+    with
+        member this.Id = let (Augment id) = this in id
+        member this.IsAbsolute   = this.Id.IsAbsolute
+        member this.IsDescendant = this.Id.IsDescendant
+        member this._Schema      = this.Id._Schema
+        member this.Value = this.Id.Value
+        override this.ToString() = this.Value
 
     /// Captures the 'deviation-arg' definition ([RFC 7950, p. 201])
-    type Deviation = SchemaNodeIdentifier
+    [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
+    type Deviation = Deviation of SchemaNodeIdentifier
+    with
+        member this.Id = let (Deviation id) = this in id
+        member this.IsAbsolute   = this.Id.IsAbsolute
+        member this.IsDescendant = this.Id.IsDescendant
+        member this._Schema      = this.Id._Schema
+        member this.Value = this.Id.Value
+        override this.ToString() = this.Value
 
     /// Captures the 'refine-arg' definition ([RFC 7950, p. 198])
-    type Refine = SchemaNodeIdentifier
+    [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
+    type Refine = Refine of SchemaNodeIdentifier
+    with
+        member this.Id = let (Refine id) = this in id
+        member this.IsAbsolute   = this.Id.IsAbsolute
+        member this.IsDescendant = this.Id.IsDescendant
+        member this._Schema      = this.Id._Schema
+        member this.Value = this.Id.Value
+        override this.ToString() = this.Value
 
     /// Captures the 'uses-augment-arg' definition ([RFC 7950, p. 198])
-    type UsesAugment = SchemaNodeIdentifier
+    [<StructuredFormatDisplay("{Value}")>]
+    [<Struct>]
+    type UsesAugment = UsesAugment of SchemaNodeIdentifier
+    with
+        member this.Id = let (UsesAugment id) = this in id
+        member this.IsAbsolute   = this.Id.IsAbsolute
+        member this.IsDescendant = this.Id.IsDescendant
+        member this._Schema      = this.Id._Schema
+        member this.Value = this.Id.Value
+        override this.ToString() = this.Value
 
     let BoolAsString v = if v then "true" else "false"
 

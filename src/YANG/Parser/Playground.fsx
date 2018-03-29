@@ -29,6 +29,11 @@ let big_model = get_external_model @"Juniper\16.1\configuration.yang"
 
 let juniper = apply_parser (spaces >>. Module.parse_module) big_model
 
+let very_big_model = get_external_model @"Juniper\16.2\16.2R1\operational\show-ddos-protection-0.yang"
+let _x =
+    let model = apply_parser (spaces >>. Module.parse_module) very_big_model
+    model.Name
+
 #time
 // Typical statistics: Real: 00:00:14.234, CPU: 00:00:14.203, GC gen0: 1231, gen1: 1160, gen2: 0
 let juniper_def_use = Yang.Model.DefUseResolver.VisitDefinitions (fun _ -> true) (Yang.Model.Statements.Module juniper)

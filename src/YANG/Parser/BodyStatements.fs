@@ -400,7 +400,7 @@ module BodyStatements =
             //                            action-stmt / notification-stmt)
             //                        "}" stmtsep
             make_statement_parser_generic "augment" (pip Strings.parse_string Identifier.parse_schema_node_identifier_absolute) parse_augment_body_statement
-            |>> AugmentStatement
+            |>> fun (augment, body) -> AugmentStatement (Augment augment, body)
 
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
                 (parse_when_statement           |>> ContainerBodyStatement.When)
@@ -513,7 +513,7 @@ module BodyStatements =
             //                            action-stmt / notification-stmt)
             //                        "}" stmtsep
             make_statement_parser_generic "augment" (pip Strings.parse_string Identifier.parse_schema_node_identifier_descendant) parse_uses_augment_body_statement
-            |>> UsesAugmentStatement
+            |>> fun (augment, body) -> UsesAugmentStatement (UsesAugment augment, body)
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
             // TODO: fill in missing parsing for UsesBodyStatement

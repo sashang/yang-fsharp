@@ -173,4 +173,4 @@ module Deviation =
         make_statement_parser_generic "deviation" (
             pipt Strings.parse_string transform_invalid_absolute_path Identifier.parse_schema_node_identifier_absolute
         ) parse_deviation_body_statement
-        |>> DeviationStatement
+        |>> fun (id, body) -> DeviationStatement (Arguments.Deviation id, body)
