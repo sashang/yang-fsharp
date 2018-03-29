@@ -822,6 +822,8 @@ module Arguments =
         member this.Value = this.Id.Value
         override this.ToString() = this.Value
 
+    let MakeRefine id = Refine id
+
     /// Captures the 'uses-augment-arg' definition ([RFC 7950, p. 198])
     [<StructuredFormatDisplay("{Value}")>]
     [<Struct>]

@@ -292,7 +292,7 @@ module Types =
                 <|> do_parse "binary"
                 <|> do_parse "bits"
                 <|> do_parse "instance-identifier"
-                <|> ((pip Strings.parse_string Identifier.parse_identifier_reference) .>> spaces .>>. parse_end_of_unknown_type 
+                <|> (parse_identifier_reference .>> spaces .>>. parse_end_of_unknown_type 
                      |>> fun (id, spec) ->
                         if spec.IsNone then id, None
                         else id, Some (TypeBodyStatement.UnknownTypeSpecification spec.Value)

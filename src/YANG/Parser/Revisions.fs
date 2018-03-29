@@ -23,7 +23,7 @@ module Revisions =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "revision" (pip Strings.parse_string Arguments.parse_date) parse_revision_body_statement
+        make_statement_parser_optional_generic "revision" parse_date parse_revision_body_statement
         |>> RevisionStatement
 
     /// Parses all revision statements

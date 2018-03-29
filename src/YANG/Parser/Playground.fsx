@@ -11,6 +11,8 @@ open Yang.Parser.BodyStatements
 open Initialize
 open Logging
 
+#time
+
 MyLog.myLog.AddTrace(Header._name)
 MyLog.myLog.AddTrace(Types._name)
 MyLog.myLog.AddTrace(Statements._name)
@@ -34,7 +36,6 @@ let _x =
     let model = apply_parser (spaces >>. Module.parse_module) very_big_model
     model.Name
 
-#time
 // Typical statistics: Real: 00:00:14.234, CPU: 00:00:14.203, GC gen0: 1231, gen1: 1160, gen2: 0
 let juniper_def_use = Yang.Model.DefUseResolver.VisitDefinitions (fun _ -> true) (Yang.Model.Statements.Module juniper)
 
@@ -55,4 +56,3 @@ let xx = apply_parser parse_path "/ex:system/ex:server[ex:ip='192.0.2.1'][ex:por
 
 // TODO: should give 1 .. 96
 apply_parser Arguments.parse_range_part "1..96"
-

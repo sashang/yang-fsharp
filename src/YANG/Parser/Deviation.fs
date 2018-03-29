@@ -41,7 +41,7 @@ module Deviation =
         (keyword    : string)
         (body       : Parser<'b, 'a>) : Parser<('b list option), 'a>
         =
-            attempt (skipString "deviate" >>. spaces >>. (pip Strings.parse_string (skipString keyword)) >>.
+            attempt (skipString "deviate" >>. spaces >>. (parse_skipString keyword) >>.
                      (spaces1 <|> (followedBy (skipChar ';')))) >>.
             (
                     (end_of_statement                       |>> (fun _ -> None))

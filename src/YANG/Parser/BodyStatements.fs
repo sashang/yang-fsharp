@@ -146,7 +146,7 @@ module BodyStatements =
             //                            [description-stmt]
             //                            [reference-stmt]
             //                        "}" stmtsep
-            make_statement_parser_generic "typedef" (pip Strings.parse_string Identifier.parse_identifier) parse_typedef_body_statement
+            make_statement_parser_generic "typedef" parse_identifier parse_typedef_body_statement
             |>> TypeDefStatement
 
         let parse_notification_body_statement : Parser<NotificationBodyStatement, 'a> =
@@ -176,7 +176,7 @@ module BodyStatements =
             //                            *data-def-stmt
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality constraints for notification-stmt
-            make_statement_parser_optional_generic "notification" (pip Strings.parse_string Identifier.parse_identifier) parse_notification_body_statement
+            make_statement_parser_optional_generic "notification" parse_identifier parse_notification_body_statement
             |>> NotificationStatement
 
         let parse_grouping_body_statement : Parser<GroupingBodyStatement, 'a> =
@@ -205,7 +205,7 @@ module BodyStatements =
             //                            *notification-stmt
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality constraints for grouping-stmt
-            make_statement_parser_optional_generic "grouping" (pip Strings.parse_string Identifier.parse_identifier) parse_grouping_body_statement
+            make_statement_parser_optional_generic "grouping" parse_identifier parse_grouping_body_statement
             |>> GroupingStatement
 
         let parse_input_body_statement : Parser<InputBodyStatement, 'a> =
@@ -269,7 +269,7 @@ module BodyStatements =
             //                            *notification-stmt
             //                        "}" stmtsep
             // TODO: Check and enforce cardinality constraints for list-stmt
-            make_statement_parser_generic "list" (pip Strings.parse_string Identifier.parse_identifier) parse_list_body_statement
+            make_statement_parser_generic "list" parse_identifier parse_list_body_statement
             |>> ListStatement
 
         let parse_output_body_statement : Parser<OutputBodyStatement, 'a> =
@@ -316,7 +316,7 @@ module BodyStatements =
             //                            [input-stmt]
             //                            [output-stmt]
             //                        "}") stmtsep
-            make_statement_parser_optional_generic "rpc" (pip Strings.parse_string Identifier.parse_identifier) parse_rpc_body_statement
+            make_statement_parser_optional_generic "rpc" parse_identifier parse_rpc_body_statement
             |>> RpcStatement
 
         let parse_action_body_statement : Parser<ActionBodyStatement, 'a> =
@@ -345,7 +345,7 @@ module BodyStatements =
             //                            [output-stmt]
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality constraints for action-stmt
-            make_statement_parser_optional_generic "action" (pip Strings.parse_string Identifier.parse_identifier) parse_action_body_statement
+            make_statement_parser_optional_generic "action" parse_identifier parse_action_body_statement
             |>> ActionStatement
 
         let parse_case_body_statement : Parser<CaseBodyStatement, 'a> =
@@ -371,7 +371,7 @@ module BodyStatements =
             //                            *data-def-stmt
             //                        "}") stmtsep
             // TODO: Check and enforce cardinality for case-stmt
-            make_statement_parser_optional_generic "case" (pip Strings.parse_string Identifier.parse_identifier) parse_case_body_statement
+            make_statement_parser_optional_generic "case" parse_identifier parse_case_body_statement
             |>> CaseStatement
 
         let parse_augment_body_statement : Parser<AugmentBodyStatement, 'a> =
@@ -399,7 +399,7 @@ module BodyStatements =
             //                            1*(data-def-stmt / case-stmt /
             //                            action-stmt / notification-stmt)
             //                        "}" stmtsep
-            make_statement_parser_generic "augment" (pip Strings.parse_string Identifier.parse_schema_node_identifier_absolute) parse_augment_body_statement
+            make_statement_parser_generic "augment" parse_schema_node_identifier_absolute parse_augment_body_statement
             |>> fun (augment, body) -> AugmentStatement (Augment augment, body)
 
         let parse_container_body_statement : Parser<ContainerBodyStatement, 'a> =
@@ -438,7 +438,7 @@ module BodyStatements =
             //                           *notification-stmt
             //                       "}") stmtsep
             // TODO: Check and enforce cardinality for container-stmt.
-            make_statement_parser_optional_generic "container" (pip Strings.parse_string Identifier.parse_identifier) parse_container_body_statement
+            make_statement_parser_optional_generic "container" parse_identifier parse_container_body_statement
             |>> ContainerStatement
 
         let parse_choice_body_statement : Parser<ChoiceBodyStatement, 'a> =
@@ -484,7 +484,7 @@ module BodyStatements =
             //                        anydata-stmt /
             //                        anyxml-stmt
             // TODO: Check and enforce cardinality and other constraints for choice-stmt
-            make_statement_parser_optional_generic "choice" (pip Strings.parse_string Identifier.parse_identifier) parse_choice_body_statement
+            make_statement_parser_optional_generic "choice" parse_identifier parse_choice_body_statement
             |>> ChoiceStatement
 
         let parse_uses_augment_body_statement : Parser<UsesAugmentBodyStatement, 'a> =
@@ -512,7 +512,7 @@ module BodyStatements =
             //                            1*(data-def-stmt / case-stmt /
             //                            action-stmt / notification-stmt)
             //                        "}" stmtsep
-            make_statement_parser_generic "augment" (pip Strings.parse_string Identifier.parse_schema_node_identifier_descendant) parse_uses_augment_body_statement
+            make_statement_parser_generic "augment" parse_schema_node_identifier_descendant parse_uses_augment_body_statement
             |>> fun (augment, body) -> UsesAugmentStatement (UsesAugment augment, body)
 
         let parse_uses_body_statement : Parser<UsesBodyStatement, 'a> =
@@ -540,7 +540,7 @@ module BodyStatements =
             //                            *refine-stmt
             //                            *uses-augment-stmt
             //                        "}") stmtsep
-            make_statement_parser_optional_generic "uses" (pip Strings.parse_string Identifier.parse_identifier_reference) parse_uses_body_statement
+            make_statement_parser_optional_generic "uses" parse_identifier_reference parse_uses_body_statement
             |>> UsesStatement
 
         let parse_data_definition_implementation : Parser<BodyStatement, 'a> =

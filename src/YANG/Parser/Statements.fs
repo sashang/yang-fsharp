@@ -231,7 +231,7 @@ module Statements =
         // [RFC 7950, p. 187]
         //base-stmt           = base-keyword sep identifier-ref-arg-str
         //                        stmtend
-        make_statement_parser_optional "base" (pip Strings.parse_string Identifier.parse_identifier_reference) parse_statement
+        make_statement_parser_optional "base" parse_identifier_reference parse_statement
         |>> BaseStatement
 
     /// Parses a config statement
@@ -242,7 +242,7 @@ module Statements =
         //config-arg-str      = < a string that matches the rule >
         //                        < config-arg >
         //config-arg          = true-keyword / false-keyword
-        make_statement_parser_optional "config" (pip Strings.parse_string Arguments.parse_boolean) parse_statement
+        make_statement_parser_optional "config" parse_boolean parse_statement
         |>> ConfigStatement
 
     /// Parses a contact statement
@@ -311,14 +311,14 @@ module Statements =
         // [RFC 7950, p. 192]
         //max-elements-stmt   = max-elements-keyword sep
         //                        max-value-arg-str stmtend
-        make_statement_parser_optional "max-elements" (pip Strings.parse_string Arguments.parse_max_value) parse_statement
+        make_statement_parser_optional "max-elements" parse_max_value parse_statement
         |>> MaxElementsStatement
 
     let parse_min_elements_statement<'a> : Parser<MinElementsStatement, 'a> =
         // [RFC 7950, p. 192]
         //min-elements-stmt   = min-elements-keyword sep
         //                        min-value-arg-str stmtend
-        make_statement_parser_optional "min-elements" (pip Strings.parse_string Arguments.parse_min_value) parse_statement
+        make_statement_parser_optional "min-elements" parse_min_value parse_statement
         |>> MinElementsStatement
 
     let parse_modifier_statement<'a> : Parser<ModifierStatement, 'a> =
@@ -327,7 +327,7 @@ module Statements =
         //modifier-arg-str    = < a string that matches the rule >
         //                        < modifier-arg >
         //modifier-arg        = invert-match-keyword
-        make_statement_parser_optional "modifier" (pip Strings.parse_string Arguments.parse_modifier) parse_statement
+        make_statement_parser_optional "modifier" Arguments.parse_modifier parse_statement
         |>> ModifierStatement
 
     /// Parses a reference statement
@@ -343,7 +343,7 @@ module Statements =
         // [RFC 7950, p. 192]
         //ordered-by-stmt     = ordered-by-keyword sep
         //                        ordered-by-arg-str stmtend
-        make_statement_parser_optional "ordered-by" (pip Strings.parse_string Arguments.parse_ordered_by) parse_statement
+        make_statement_parser_optional "ordered-by" parse_ordered_by parse_statement
         |>> OrderedByStatement
 
     /// Parses an organization statement
@@ -357,7 +357,7 @@ module Statements =
     let parse_path_statement<'a> : Parser<PathStatement, 'a> =
         // [RFC 7950, p. 190]
         // path-stmt           = path-keyword sep path-arg-str stmtend
-        make_statement_parser_optional "path" (pip Strings.parse_string parse_path) parse_statement
+        make_statement_parser_optional "path" parse_path parse_statement
         |>> PathStatement
 
     let parse_position_statement<'a> : Parser<PositionStatement, 'a> =
@@ -367,7 +367,7 @@ module Statements =
         //position-value-arg-str = < a string that matches the rule >
         //                        < position-value-arg >
         //position-value-arg  = non-negative-integer-value
-        make_statement_parser_optional "position" (pip Strings.parse_string puint32) parse_statement
+        make_statement_parser_optional "position" parse_uint32 parse_statement
         |>> PositionStatement
 
     /// Parses a prefix statement
@@ -402,7 +402,7 @@ module Statements =
         //require-instance-arg-str = < a string that matches the rule >
         //                            < require-instance-arg >
         //require-instance-arg = true-keyword / false-keyword
-        make_statement_parser_optional "require-instance" (pip Strings.parse_string Arguments.parse_boolean) parse_statement
+        make_statement_parser_optional "require-instance" parse_boolean parse_statement
         |>> RequireInstanceStatement
 
     let parse_revision_date_statement<'a> : Parser<RevisionDateStatement, 'a> =
@@ -410,7 +410,7 @@ module Statements =
         // revision-date-stmt  = revision-date-keyword sep revision-date stmtend
         // [RFC 7950, p.207]
         // revision-date-keyword    = %s"revision-date"
-        make_statement_parser_optional "revision-date" (pip Strings.parse_string Arguments.parse_date) parse_statement
+        make_statement_parser_optional "revision-date" parse_date parse_statement
         |>> RevisionDateStatement
 
     let parse_status_statement<'a> : Parser<StatusStatement, 'a> =
@@ -421,7 +421,7 @@ module Statements =
         //status-arg          = current-keyword /
         //                        obsolete-keyword /
         //                        deprecated-keyword
-        make_statement_parser_optional "status" (pip Strings.parse_string Arguments.parse_status) parse_statement
+        make_statement_parser_optional "status" parse_status parse_statement
         |>> StatusStatement
 
     let parse_units_statement<'a> : Parser<UnitsStatement, 'a> =
@@ -462,7 +462,7 @@ module Statements =
     let parse_unique_statement<'a> : Parser<UniqueStatement, 'a> =
         // [RFC 7950, p. 195]
         // unique-stmt         = unique-keyword sep unique-arg-str stmtend
-        make_statement_parser_optional "unique" (pip Strings.parse_string Identifier.parse_unique) parse_statement
+        make_statement_parser_optional "unique" parse_unique parse_statement
         |>> UniqueStatement
 
     /// Helper method to parse an unknown statement
@@ -484,7 +484,7 @@ module Statements =
         //value-stmt          = value-keyword sep integer-value-str stmtend
         //integer-value-str   = < a string that matches the rule >
         //                        < integer-value >
-        make_statement_parser_optional "value" (pip Strings.parse_string pint64) parse_statement
+        make_statement_parser_optional "value" parse_int64 parse_statement
         |>> ValueStatement
 
     //
@@ -502,7 +502,7 @@ module Statements =
         //                        "{" stmtsep
         //                            [yin-element-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "argument" (pip Strings.parse_string Identifier.parse_identifier) parse_argument_body_statement
+        make_statement_parser_optional_generic "argument" parse_identifier parse_argument_body_statement
         |>> ArgumentStatement
 
     let parse_belongs_to_body_statement<'a> : Parser<BelongsToBodyStatement, 'a> =
@@ -516,7 +516,7 @@ module Statements =
         //                        "{" stmtsep
         //                            prefix-stmt
         //                        "}" stmtsep
-        make_statement_parser_generic "belongs-to" (pip Strings.parse_string Identifier.parse_identifier) parse_belongs_to_body_statement
+        make_statement_parser_generic "belongs-to" parse_identifier parse_belongs_to_body_statement
         |>> BelongsToStatement
 
     let parse_extension_body_statement<'a> : Parser<ExtensionBodyStatement, 'a> =
@@ -537,7 +537,7 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "extension" (pip Strings.parse_string Identifier.parse_identifier) parse_extension_body_statement
+        make_statement_parser_optional_generic "extension" parse_identifier parse_extension_body_statement
         |>> ExtensionStatement
 
     let parse_length_body_statement<'a> : Parser<LengthBodyStatement, 'a> =
@@ -560,7 +560,7 @@ module Statements =
         //                            [reference-stmt]
         //                        "}") stmtsep
         // TODO: Check and enforce cardinality constraints for length-stmt
-        make_statement_parser_optional_generic "length" (pip Strings.parse_string Arguments.parse_length) parse_length_body_statement
+        make_statement_parser_optional_generic "length" parse_length parse_length_body_statement
         |>> LengthStatement
 
     let parse_must_body_statement<'a> : Parser<MustBodyStatement, 'a> =
@@ -628,7 +628,7 @@ module Statements =
         //                        "}") stmtsep
 
         // TODO: Unit tests for range statement
-        make_statement_parser_optional_generic "range" (pip Strings.parse_string Arguments.parse_range) parse_range_body_statement
+        make_statement_parser_optional_generic "range" parse_range parse_range_body_statement
         |>> RangeStatement
 
     let parse_when_body_statement<'a> : Parser<WhenBodyStatement, 'a> =

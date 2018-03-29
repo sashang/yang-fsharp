@@ -35,7 +35,7 @@ module ExtraStatements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "anydata" (pip Strings.parse_string Identifier.parse_identifier) parse_any_data_body_statement
+        make_statement_parser_optional_generic "anydata" parse_identifier parse_any_data_body_statement
         |>> AnyDataStatement
 
     let parse_any_xml_body_statement<'a> : Parser<AnyXmlBodyStatement, 'a> =
@@ -64,7 +64,7 @@ module ExtraStatements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "anyxml" (pip Strings.parse_string Identifier.parse_identifier) parse_any_xml_body_statement
+        make_statement_parser_optional_generic "anyxml" parse_identifier parse_any_xml_body_statement
         |>> AnyXmlStatement
 
     let parse_bit_body_statement<'a> : Parser<BitBodyStatement, 'a> =
@@ -87,7 +87,7 @@ module ExtraStatements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "bit" (pip Strings.parse_string Identifier.parse_identifier) parse_bit_body_statement
+        make_statement_parser_optional_generic "bit" parse_identifier parse_bit_body_statement
         |>> BitStatement
 
     let parse_feature_body_statement<'a> : Parser<FeatureBodyStatement, 'a> =
@@ -109,7 +109,7 @@ module ExtraStatements =
         //                            [reference-stmt]
         //                        "}") stmtsep
         // TODO: Check and enforce cardinality of feature-stmt
-        make_statement_parser_optional_generic "feature" (pip Strings.parse_string Identifier.parse_identifier) parse_feature_body_statement
+        make_statement_parser_optional_generic "feature" parse_identifier parse_feature_body_statement
         |>> FeatureStatement
 
     let parse_identity_body_statement<'a> : Parser<IdentityBodyStatement, 'a> =
@@ -133,7 +133,7 @@ module ExtraStatements =
         //                            [reference-stmt]
         //                        "}") stmtsep
         // TODO: Check and enforce cardinality of refine-stmt body
-        make_statement_parser_optional_generic "identity" (pip Strings.parse_string Identifier.parse_identifier) parse_identity_body_statement
+        make_statement_parser_optional_generic "identity" parse_identifier parse_identity_body_statement
         |>> IdentityStatement
 
     let parse_enum_body_statement<'a> : Parser<EnumBodyStatement, 'a> =
@@ -191,5 +191,5 @@ module ExtraStatements =
         //                            [reference-stmt]
         //                        "}" stmtsep
         // TODO: Check and enforce cardinality for refine-stmt
-        make_statement_parser_optional_generic "refine" (pip Strings.parse_string Identifier.parse_schema_node_identifier_descendant) parse_refine_body_statement
-        |>> fun (refine, body) -> RefineStatement (Arguments.Refine refine, body)
+        make_statement_parser_optional_generic "refine" parse_schema_node_identifier_descendant parse_refine_body_statement
+        |>> fun (id, body) -> RefineStatement (Arguments.Refine id, body)
