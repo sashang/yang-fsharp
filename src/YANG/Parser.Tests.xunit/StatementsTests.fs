@@ -212,6 +212,20 @@ module StatementsTests =
         Assert.Equal(1, body.Value.Length)
         // TODO: Eventually, we also want to parse and test the conditionals inside the when string
 
+    [<Fact>]
+    let ``parse path statement in multiline string`` () =
+        let input = """path "/nw:networks/nw:network/nw:node/tet:te/"
+             + "tet:te-node-attributes/tet:connectivity-
+matrices/tet:connectivity-matrix/tet:id";"""
+        let (PathStatement (path, extra)) = FParsecHelper.apply parse_path_statement input
+        Assert.True(extra.IsNone)
+        Assert.True(path._IsAbsolute)
+        let path' = path.AsAbsolute
+        Assert.True(path'.IsSome)
+        let items = path'.Value.Path
+        Assert.Equal(8, items.Length)
+        // TODO: Add extras tests for the parts of the path
+
     [<Theory>]
     [<InlineData("input/state input/symbol")>]
     [<InlineData("input/state  input/symbol")>]

@@ -4,26 +4,49 @@ namespace Yang.Model
 
 /// Methods for detecting and processing definition and use statements for types and groupings
 module DefUseResolver =
+    open System.Collections.Generic
     open StatementHelper.Patterns
 
     // TODO: Deal with module prefixes
     // TODO: Deal with imports and includes
 
+    type IdUse = IdentifierReference * (int option)
+    type IdDef = IdentifierReference * int
+
+    let private mkIdUse id = id, None
+    let private mkIdDef id number = id, number
+
     [<StructuredFormatDisplay("{AsString}")>]
     type NodeType =
-    | TypeUse of IdentifierReference
-    | TypeDefinition
-    | GroupingUse of IdentifierReference
-    | GroupingDefinition
+    | TypeUse               of IdUse
+    | TypeDefinition        of IdDef
+    | GroupingUse           of IdUse
+    | GroupingDefinition    of IdDef
     with
         member this.AsString =
             match this with
-            | TypeUse      ``type`` -> sprintf "type use: %s" ``type``.Value
-            | TypeDefinition        -> "type definition"
-            | GroupingUse  ``type`` -> sprintf "grouping use: %s" ``type``.Value
-            | GroupingDefinition    -> "grouping definition"
+            | TypeUse               (ty, None)          ->
+                sprintf "type use: %s[?]" ty.Value
+            | TypeUse               (ty, Some unique)   ->
+                sprintf "type use: %s[%d]" ty.Value unique
+            | TypeDefinition        (_, unique)         -> 
+                sprintf "type definition [%d]" unique
+            | GroupingUse           (ty, None)          ->
+                sprintf "grouping use: %s[?]" ty.Value
+            | GroupingUse           (ty, Some unique)   ->
+                sprintf "grouping use: %s[%d]" ty.Value unique
+            | GroupingDefinition    (_, unique)         ->
+                sprintf "grouping definition [%d]" unique
 
         override this.ToString() = this.AsString
+
+        member this._IsTypeUse            = match this with | TypeUse            _ -> true | _ -> false
+        member this._IsTypeDefinition     = match this with | TypeDefinition     _ -> true | _ -> false
+        member this._IsGroupingUse        = match this with | GroupingUse        _ -> true | _ -> false
+        member this._IsGroupingDefinition = match this with | GroupingDefinition _ -> true | _ -> false
+
+        member this.AsTypeUse            = match this with | TypeUse            v -> Some v | _ -> None
+        member this.AsGroupingUse        = match this with | GroupingUse        v -> Some v | _ -> None
 
     [<StructuredFormatDisplay("{AsString}")>]
     type Path = | Path of (IdentifierReference list)
@@ -94,49 +117,87 @@ module DefUseResolver =
 
 
     let VisitDefinitions (filter : Statement -> bool) (root : Statement) : Node list=
+        // This version is much faster than using a work list, collection of results,
+        // and tail recursion.
+
+        let definitions = Dictionary<IdentifierReference, int>()
+        let getUnique (id : IdentifierReference) =
+            if definitions.ContainsKey(id) then
+                let unique = definitions.[id] + 1
+                definitions.[id] <- unique
+                unique
+            else
+                definitions.Add(id, 1)
+                1
+
+        let mkTypeDefinition (id : Identifier) =
+            let id = IdentifierReference.Make id
+            let unique = getUnique id
+            Some (TypeDefinition (mkIdDef id unique))
+
+        let mkTypeUse (id : IdentifierReference) =
+            Some (TypeUse (id, None))
+
+        let mkGroupingDefinition (id : Identifier) =
+            let id = IdentifierReference.Make id
+            let unique = getUnique id
+            Some (GroupingDefinition (id, unique))
+
+        let mkGroupingUse (id : IdentifierReference) =
+            Some (GroupingUse (id, None))
+
         let get (path : Path) (statement : Statement) : Node option =
             // printfn "Visiting %A" path
             match statement with
             | TypeDef (TypeDefStatement (id, _)) ->
                 if filter statement then
                     let path' = path.Push id
-                    Node (path', Some TypeDefinition) |> Some
+
+                    Node (path', mkTypeDefinition id) |> Some
                 else None
             | Type (TypeStatement (id, _)) ->
                 if filter statement then
-                    Node (path, Some (TypeUse id)) |> Some
+                    Node (path, mkTypeUse id) |> Some
                 else None
             | Grouping (GroupingStatement (id, _)) ->
                 if filter statement then
                     let path' = path.Push id
-                    Node (path', Some GroupingDefinition) |> Some
+                    Node (path', mkGroupingDefinition id) |> Some
                 else None
             | Uses (UsesStatement (id, _)) ->
                 if filter statement then
-                    Node (path, Some (GroupingUse id)) |> Some
+                    Node (path, mkGroupingUse id) |> Some
                 else None
             | _ -> None
 
-        let rec find (work : (Path * Statement) list) (results : Node list) =
-            match work with
-            | [] -> results
-            | (path, statement) :: tl ->
-                if filter statement then
-                    let inner = StatementHelper.Children statement
-                    match StatementHelper.GetReferenceIdentifier statement with
-                    | None  ->
-                        // Statement without a label. These ones typically don't have sub-statements.
-                        // Ignore them for now.
-                        // TODO: Name resolution for statements without labels
-                        find tl results
-                    | Some id ->
-                        let path' = path.Push id
-                        let extra_work = inner |> List.map (fun work -> path', work)
-                        match get path statement with
-                        | None      -> find (extra_work @ tl) results
-                        | Some v    -> find (extra_work @ tl) (results @ [v])
-                else
-                    find tl results
+        let rec find (path : Path) (statement : Statement) =
+            if filter statement then
+                match StatementHelper.GetReferenceIdentifier statement with
+                | None  ->
+                    // Statement without a label. These ones typically don't have sub-statements.
+                    // Ignore them for now.
+                    // TODO: Name resolution for statements without labels
+                    []
+                | Some id ->
+                    let path' = path.Push id
 
-        find [ (Path.Empty, root) ] []
+                    let active = get path statement
+
+                    let inner = StatementHelper.Children statement
+                    if active.IsNone then
+                        inner |> List.collect (
+                            fun child ->
+                                find path' child
+                        )
+                    else
+                        active.Value :: (
+                            inner |> List.collect (
+                                fun child ->
+                                    find path' child
+                            )
+                        )
+            else
+                []
+
+        find Path.Empty root
 

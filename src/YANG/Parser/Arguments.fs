@@ -272,7 +272,13 @@ module Arguments =
                 let msg = ErrorMessage.Message "Error parsing the right boundary"
                 Reply(Error, ErrorMessageList (msg, error))
             | Result.Ok left_boundary, Result.Ok right_boundary ->
-                Reply(Range.RangePart.Region (left_boundary, right_boundary))
+                if left_boundary = right_boundary then
+                    Reply(Range.RangePart.Single left_boundary)
+                elif (left_boundary :> IComparable<RangeBoundary>).CompareTo(right_boundary) > 0 then
+                    let msg = ErrorMessage.Message "Left boundary cannot be larger than right boundary"
+                    Reply(Error, ErrorMessageList(msg))
+                else
+                    Reply(Range.RangePart.Region (left_boundary, right_boundary))
 
         | RangeError message ->
             Reply(Error, ErrorMessageList (ErrorMessage.Message message))

@@ -1,6 +1,7 @@
 ﻿namespace Yang.Parser.Tests
 
 module ArgumentsTests =
+    open System
     open System.Numerics
     open Xunit
     open Yang.Model.Arguments
@@ -150,3 +151,119 @@ module ArgumentsTests =
         Assert.Equal(96L, righti.Value)
 
     // TODO: Add more tests for range-arg parser
+    [<Theory>]
+    [<InlineData("min .. max")>]
+    [<InlineData("min..max")>]
+    [<InlineData("min.. max")>]
+    [<InlineData("min ..max")>]
+    let ``parse min to max range part`` (input : string) =
+        let result = FParsecHelper.apply parse_range_part input
+        Assert.True(result._IsRegion)
+        let region = result.AsRegion
+        Assert.True(region.IsSome)
+        let (left, right) = region.Value
+        Assert.Equal(RangeBoundary.Min, left)
+        Assert.Equal(RangeBoundary.Max, right)
+
+    [<Theory>]
+    [<InlineData("1..2",     1,   2)>]
+    [<InlineData("1 .. 2",   1,   2)>]
+    [<InlineData("-1..2",   -1,   2)>]
+    [<InlineData("-1 .. 2", -1,   2)>]
+    [<InlineData("-11..-2", -11, -2)>]
+    let ``parse valid integer range part`` (input : string, left : int, right : int) =
+        let result = FParsecHelper.apply parse_range_part input
+        Assert.True(result._IsRegion)
+        let region = result.AsRegion
+        Assert.True(region.IsSome)
+        let (left', right') = region.Value
+        Assert.True(left'._IsInteger)
+        Assert.True(right'._IsInteger)
+        let lv = left'.AsInteger
+        let rv = right'.AsInteger
+        Assert.True(lv.IsSome)
+        Assert.True(rv.IsSome)
+        Assert.Equal(int64 left, lv.Value)
+        Assert.Equal(int64 right, rv.Value)
+
+    [<Theory>]
+    [<InlineData("1.1..2.2",        "1.1",   "2.2")>]
+    [<InlineData("1.1 .. 2.2",      "1.1",   "2.2")>]
+    [<InlineData("-1.1..2.2",      "-1.1",   "2.2")>]
+    [<InlineData("-1.1 .. 2.2",    "-1.1",   "2.2")>]
+    [<InlineData("-11.1..-2.2",   "-11.1",  "-2.2")>]
+    [<InlineData("-11.1 .. -2.2", "-11.1",  "-2.2")>]
+    [<InlineData("-11.1..-2.",    "-11.1",  "-2.0")>]
+    let ``parse valid decimal range part`` (input : string, left : string, right : string) =
+        let result = FParsecHelper.apply parse_range_part input
+        Assert.True(result._IsRegion)
+        let region = result.AsRegion
+        Assert.True(region.IsSome)
+        let (left', right') = region.Value
+        Assert.True(left'._IsDecimal)
+        Assert.True(right'._IsDecimal)
+
+        let left = System.Decimal.Parse(left)
+        let right = System.Decimal.Parse(right)
+        let left' = left'.AsDecimal
+        let right' = right'.AsDecimal
+        Assert.True(left'.IsSome)
+        Assert.True(right'.IsSome)
+        Assert.True(System.Math.Abs(left'.Value - left) < 0.001M)
+        Assert.True(System.Math.Abs(right'.Value - right) < 0.001M)
+
+    [<Theory>]
+    [<InlineData("1.1.1")>]
+    [<InlineData("2 .. 2.3.4")>]
+    let ``fail parsing invalid range parts`` (input : string) =
+        Assert.ThrowsAny<Exception>(
+            fun _ -> FParsecHelper.apply parse_range_part input |> ignore
+        )
+
+    [<Fact>]
+    let ``parse min to integer 1`` () =
+        let input = "min..1"
+        let result = FParsecHelper.apply parse_range_part input
+        Assert.True(result._IsRegion)
+        let region = result.AsRegion
+        Assert.True(region.IsSome)
+        let (left', right') = region.Value
+        Assert.True(left'._IsMin)
+        Assert.True(right'._IsInteger)
+        let right' = right'.AsInteger
+        Assert.True(right'.IsSome)
+        Assert.Equal(1L, right'.Value)
+
+    [<Fact>]
+    let ``parse min to decimal 1.0`` () =
+        let input = "min..1.0"
+        let result = FParsecHelper.apply parse_range_part input
+        Assert.True(result._IsRegion)
+        let region = result.AsRegion
+        Assert.True(region.IsSome)
+        let (left', right') = region.Value
+        Assert.True(left'._IsMin)
+        Assert.True(right'._IsDecimal)
+        let right' = right'.AsDecimal
+        Assert.True(right'.IsSome)
+        Assert.True(System.Math.Abs(1.0M - right'.Value) < 0.0001M)
+
+    [<Theory>]
+    [<InlineData("min..min")>]
+    [<InlineData("max..max")>]
+    [<InlineData("1..1")>]
+    [<InlineData("1.0..1.0")>]
+    let ``parse trivial ranges as single values`` (input) =
+        let result = FParsecHelper.apply parse_range_part input
+        Assert.True(result._IsSingle)
+
+    [<Theory>]
+    [<InlineData("2 .. 1")>]
+    [<InlineData("2 .. min")>]
+    [<InlineData("max .. 1")>]
+    [<InlineData("2.0 .. 1")>]
+    [<InlineData("2 .. 1.0")>]
+    let ``fail to parse ranges with left boundary bigger than right`` (input) =
+        Assert.ThrowsAny<Exception>(
+            fun _ -> FParsecHelper.apply parse_range_part input |> ignore
+        )

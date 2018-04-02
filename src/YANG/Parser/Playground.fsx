@@ -40,6 +40,137 @@ let _x =
 let juniper_def_use = Yang.Model.DefUseResolver.VisitDefinitions (fun _ -> true) (Yang.Model.Statements.Module juniper)
 
 printfn "Length: %d" juniper_def_use.Length
+juniper_def_use |> List.iter (printfn "%A")
+
+open System.Collections.Generic
+open System.Text
+open System.Collections.ObjectModel
+
+[<StructuredFormatDisplay("{AsString}")>]
+type GraphNode<'T when 'T : (new : unit -> 'T)> = {
+    Parent      : GraphNode<'T> option
+    Children    : Dictionary<IdentifierReference, GraphNode<'T>>
+    Value       : 'T
+} with
+    static member Empty() = {
+        Parent      = None
+        Children    = new Dictionary<IdentifierReference, GraphNode<'T>>()
+        Value       = new 'T()
+    }
+    static member Make(parent : GraphNode<'T>) = {
+        Parent      = Some parent
+        Children    = new Dictionary<IdentifierReference, GraphNode<'T>>()
+        Value       = new 'T()
+    }
+
+    member this.ToStringBuilder (sb : StringBuilder, index : int) =
+        let indent () = Printf.bprintf sb "%s" (String.replicate index "    ")
+        indent ()
+        Printf.bprintf sb "(*)\t%A\n"  this.Value
+        this.Children
+        |> Seq.iter (
+            fun child ->
+                indent()
+                Printf.bprintf sb "(+)\t%s\n" child.Key.Value
+                child.Value.ToStringBuilder (sb, index + 1)
+        )
+
+    member this.AsString =
+        let sb = StringBuilder ()
+        this.ToStringBuilder (sb, 0)
+        sb.ToString()
+
+    override this.ToString() = this.AsString
+
+
+[<StructuredFormatDisplay("{AsString}")>]
+type Graph<'T when 'T : (new : unit -> 'T)> = {
+    Root    : GraphNode<'T>
+} with
+    member private this.GetNode (items : IdentifierReference list) =
+        let rec search (current : GraphNode<'T>) (path : IdentifierReference list) =
+            match path with
+            | [] -> current
+            | hd :: tl ->
+                if current.Children.ContainsKey(hd) = false then
+                    current.Children.Add(hd, GraphNode<'T>.Make(current))
+
+                let next = current.Children.[hd]
+                search next tl
+
+        search this.Root items
+
+    static member Empty() = { Root = GraphNode<'T>.Empty() }
+    member this.Add(path : IdentifierReference list, apply : 'T -> unit) =
+        let node = this.GetNode path
+        apply node.Value
+
+    member this.ToStringBuilder (sb : StringBuilder) =
+        this.Root.ToStringBuilder(sb, 0)
+
+    member this.AsString =
+        let sb = StringBuilder()
+        this.ToStringBuilder sb
+        sb.ToString()
+
+    override this.ToString() = this.AsString
+
+
+[<StructuredFormatDisplay("{AsString}")>]
+type Phi () = class
+    let phis = new Dictionary<IdentifierReference, List<DefUseResolver.IdDef>>()
+
+    member this.AsString =
+        let sb = StringBuilder()
+        phis.Keys
+        |> Seq.iteri (
+            fun i key ->
+                if i > 0 then Printf.bprintf sb ", "
+                let values = phis.[key]
+                Printf.bprintf sb "%s(" key.Value
+                values
+                |> Seq.iteri (
+                    fun i value ->
+                        if i > 0 then Printf.bprintf sb ", "
+                        let (_, unique) = value
+                        Printf.bprintf sb "%03d" unique
+                )
+                Printf.bprintf sb ")"
+        )
+
+        sb.ToString()
+
+    member this.Add (definition : Yang.Model.DefUseResolver.IdDef) =
+        let (id, _) = definition
+        if (phis.ContainsKey id) = false then
+            phis.Add(id, List())
+
+        let l = phis.[id]
+        if l.Contains(definition) = false then l.Add(definition)
+
+    member this.Phis = ReadOnlyDictionary(phis)
+
+    override this.ToString() = this.AsString
+end
+
+type Groupings = Graph<Phi>
+let groups =
+    let add node (phi : Phi) =
+        phi.Add node
+
+    let g = Groupings.Empty()
+    juniper_def_use
+    |> List.iter (
+        fun (Yang.Model.DefUseResolver.Node (Yang.Model.DefUseResolver.Path path, definition)) ->
+            match definition with
+            | Some (Yang.Model.DefUseResolver.GroupingDefinition grouping) ->
+                let path = List.rev path
+                g.Add(path, add grouping)
+            | _ -> ()
+    )
+    g
+
+groups
 
   // TODO: test with augment-stmt and uses-augment-stmt
 
@@ -53,73 +184,3 @@ apply_parser Identifier.parse_schema_node_identifier
 *)
 
 let xx = apply_parser parse_path "/ex:system/ex:server[ex:ip='192.0.2.1'][ex:port='80']/ex:other"
-
-// TODO: should give 1 .. 96
-apply_parser Arguments.parse_range_part "1..96"
-apply_parser Arguments.parse_range_part "1.0..96.0"
-apply_parser Arguments.parse_range_part "1.0 .. 96.0"
-
-
-//range-arg           = range-part *(optsep "|" optsep range-part)
-//range-part          = range-boundary
-//                        [optsep ".." optsep range-boundary]
-//range-boundary      = min-keyword / max-keyword /
-//                        integer-value / decimal-value
-//integer-value       = ("-" non-negative-integer-value) /
-//                       non-negative-integer-value
-//decimal-value       = integer-value ("." zero-integer-value)
-//non-negative-integer-value = "0" / positive-integer-value
-//positive-integer-value = (non-zero-digit *DIGIT)
-//non-zero-digit      = %x31-39
-//zero-integer-value  = 1*DIGIT
-//DIGIT               = %x30-39
-
-open Yang.Parser.Arguments
-apply_parser parse_range_part "min .. max"
-apply_parser parse_range_part "min..max"
-apply_parser parse_range_part "max..max"
-apply_parser parse_range_part "1..2"
-apply_parser parse_range_part "1 .. 2"
-apply_parser parse_range_part "1.1..2.2"
-apply_parser parse_range_part "1.1 .. 2.2"
-apply_parser parse_range_part "-1..2"
-apply_parser parse_range_part "-1 .. 2"
-apply_parser parse_range_part "-1.1..2.2"
-apply_parser parse_range_part "-1.1 .. 2.2"
-apply_parser parse_range_part "-10..-2"
-apply_parser parse_range_part "-11 .. -2"
-apply_parser parse_range_part "-11.1..-2.2"
-apply_parser parse_range_part "-11.1..-2"
-apply_parser parse_range_part "-11.1..-2."
-apply_parser parse_range_part "-11.1 .. -2.2"
-apply_parser parse_range_part "min..1"
-apply_parser parse_range_part "min..1.0"
-apply_parser parse_range_part "1.0..max"
-apply_parser parse_range_part "1..max"
-
-apply_parser parse_range_part "1.1.1"
-apply_parser parse_range_part "2 .. 2.3.4"
-
-
-open FParsec
-let parse_path_statement<'a> : Parser<Yang.Model.Statements.PathStatement, 'a> =
-    make_statement_parser_optional "path" (pip Strings.parse_string PathArgument.parse_path) parse_statement
-    |>> fun x -> Yang.Model.Statements.PathStatement x
-
-let input = """path "/nw:networks/nw:network/nw:node/tet:te/"
-             + "tet:te-node-attributes/tet:connectivity-
-matrices/tet:connectivity-matrix/tet:id";"""
-apply_parser parse_path_statement input
-
-
-let input = """path "/nw:networks/nw:network/nw:node/tet:te/tet:te-node-attributes/tet:connectivity-matrices/tet:connectivity-matrix/tet:id";"""
-apply_parser parse_path_statement input
-
-let input = "\"" + """/nw:networks/nw:network/nw:node/tet:te/"
-             + "tet:te-node-attributes/tet:connectivity-
-matrices/tet:connectivity-matrix/tet:id";"""
-apply_parser Strings.parse_string input
-
-let db (input : string) = input.Replace("\n", "").Replace("\r", "")
-apply_parser (pipt Strings.parse_string db PathArgument.parse_path) input
-
