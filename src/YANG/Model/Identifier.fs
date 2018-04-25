@@ -71,6 +71,27 @@ module Identifier =
         /// </summary>
         member this.IsValid = is_identifier_valid this.Value
 
+        member this.IsBuiltIn =
+            let (String value) = this
+            String.Equals(value, "binary", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "bits", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "boolean", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "decimal64", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "empty", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "enumeration", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "identityref", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "instance-identifier", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "int8 ", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "int16", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "int32", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "int64", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "leafref", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "string", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "uint8", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "uint16", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "uint32", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "uint64", StringComparison.InvariantCultureIgnoreCase)
+
         override this.ToString() = this.Value
 
     /// YANG Identifier with prefix
@@ -187,6 +208,12 @@ module Identifier =
             | Simple identifier -> identifier.Value
             | Custom identifier -> identifier.Value
 
+
+        member this.IsPrimitive =
+            match this with
+            | Simple id -> id.IsBuiltIn
+            | _         -> false
+
         override this.ToString() = this.Value
 
         /// <summary>
@@ -288,7 +315,7 @@ module Identifier =
     with
         member this.Nodes = let (InstanceIdentifier nodes) = this in nodes
 
-        member this.ToStringBuilder(sb : StringBuilder) = 
+        member this.ToStringBuilder(sb : StringBuilder) =
             this.Nodes |> List.iter (
                 fun node ->
                     Printf.bprintf sb "/"
