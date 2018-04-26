@@ -3,27 +3,45 @@
 namespace Yang.Model
 
 /// Methods for detecting and processing definition and use statements for types and groupings
-module DefUseResolver =
+module DefUse =
     open System.Collections.Generic
     open StatementHelper.Patterns
-    open System.Text.RegularExpressions
+    open Graph
 
     // TODO: Deal with module prefixes
     // TODO: Deal with imports and includes
 
-    let private default_path_separator = '/'
-
+    /// Information about the use of an identifier.
+    /// The identifier may not be resolved yet.
     type IdUse = IdentifierReference * (int option)
+
+    /// Information about the definition of an identifier.
+    /// At the point of definition, the identifier gets a unique id.
     type IdDef = IdentifierReference * int
 
+    /// <summary>
+    /// Create an unresolved use of an identifier
+    /// </summary>
+    /// <param name="id">The identifier</param>
     let private mkIdUse id = id, None
+
+    /// <summary>
+    /// Create an identifier use
+    /// </summary>
+    /// <param name="id">The identifier</param>
+    /// <param name="number">The unique number of the identifier</param>
     let private mkIdDef id number = id, number
 
+    /// Type of definition or use
     [<StructuredFormatDisplay("{AsString}")>]
     type NodeType =
+    /// Use of type
     | TypeUse               of IdUse
+    /// Definition of type
     | TypeDefinition        of IdDef
+    /// Use of a group
     | GroupingUse           of IdUse
+    /// Definition of a group
     | GroupingDefinition    of IdDef
     with
         member this.AsString =
@@ -48,11 +66,21 @@ module DefUseResolver =
         member this._IsGroupingUse        = match this with | GroupingUse        _ -> true | _ -> false
         member this._IsGroupingDefinition = match this with | GroupingDefinition _ -> true | _ -> false
 
+        member this.IsUnresolved =
+            match this with
+            | TypeDefinition        _
+            | GroupingDefinition    _
+            | TypeUse              (_, Some _)
+            | GroupingUse          (_, Some _)
+                -> false
+            | _ -> true
+
         member this.AsTypeUse             = match this with | TypeUse            v -> Some v | _ -> None
         member this.AsTypeDefinition      = match this with | TypeDefinition     v -> Some v | _ -> None
         member this.AsGroupingUse         = match this with | GroupingUse        v -> Some v | _ -> None
         member this.AsGroupingDefinition  = match this with | GroupingDefinition v -> Some v | _ -> None
 
+    /// Active patterns for the various types of definitions and uses
     module Patterns =
         let (|GroupingDef|_|) = function | GroupingDefinition x -> Some x | _ -> None
         let (|GroupingUse|_|) = function | GroupingUse        x -> Some x | _ -> None
@@ -118,6 +146,7 @@ module DefUseResolver =
             -> Some id
         | _ -> None
 
+    /// Generators of grouping definitions and uses
     type Groupings =
         static member Use id                        = GroupingUse (id, None)
         static member Use (id : string)             = GroupingUse (IdentifierReference.Make id, None)
@@ -131,6 +160,7 @@ module DefUseResolver =
         static member Define (id, seq)              = GroupingDefinition (id, seq)
         static member Define (id : string, seq)     = GroupingDefinition (IdentifierReference.Make id, seq)
 
+    /// Generators of type definitions and uses
     type Types =
         static member Use id                        = TypeUse (id, None)
         static member Use (id : string)             = TypeUse (IdentifierReference.Make id, None)
@@ -144,59 +174,7 @@ module DefUseResolver =
         static member Define (id, seq)              = TypeDefinition (id, seq)
         static member Define (id : string, seq)     = TypeDefinition (IdentifierReference.Make id, seq)
 
-    [<StructuredFormatDisplay("{AsString}")>]
-    type Path = | Path of (IdentifierReference list)
-    with
-        static member Empty = Path []
-        static member Make (identifier : Identifier) =
-            Path [ IdentifierReference.Make identifier ]
-        static member Make (identifier : Identifier list) =
-            Path ( identifier |> List.map IdentifierReference.Make)
-        static member Make (identifier : IdentifierReference) =
-            Path [ identifier ]
-        static member Make (identifier : IdentifierReference list) =
-            Path identifier
-        static member Make (identifier : IdentifierWithPrefix) =
-            Path [ IdentifierReference.Make identifier ]
-        static member Make (identifier : IdentifierWithPrefix list) =
-            Path (identifier |> List.map IdentifierReference.Make)
-        static member Make (identifier : string) =
-            Path [ IdentifierReference.Make identifier ]
-
-        static member MakeFromPath (identifier : string, ?separator : char) =
-            let separator = defaultArg separator default_path_separator
-            let ids = identifier.Split(separator) |> Array.toList |> List.rev
-            Path ( ids |> List.map IdentifierReference.Make )
-
-        member this._Path = let (Path path) = this in path
-        member this._Head = let (Path path) = this in List.head path
-
-        member this.Push (identifier : Identifier) =
-            Path ((IdentifierReference.Make identifier) :: this._Path)
-
-        member this.Push (identifier : IdentifierReference) =
-            Path (identifier :: this._Path)
-
-        member this.Push (identifier : IdentifierWithPrefix) =
-            Path ((IdentifierReference.Make identifier) :: this._Path)
-
-        member this.Push (identifier : string) =
-            Path ((IdentifierReference.Make identifier) :: this._Path)
-
-        member this.Pop () =
-            let rest = List.tail this._Path
-            Path rest
-
-        member this.Parent = this.Pop ()
-
-        member this.AsPathList = this._Path |> List.rev
-
-        member this.AsString =
-            let path = this._Path |> List.rev |> List.map (fun p -> p.Value) |> String.concat "/"
-            sprintf "/%s" path
-
-        override this.ToString() = this.AsString
-
+    /// Information about the location of an identifier definition or use
     [<StructuredFormatDisplay("{AsString}")>]
     type Node = | Node of Path:Path * Type:(NodeType option)
     with
@@ -268,6 +246,12 @@ module DefUseResolver =
             match ``type`` with
             | None      -> sprintf "%s [-]" path.AsString
             | Some t    -> sprintf "%s [%s]" path.AsString t.AsString
+
+        member this.IsUnresolved =
+            let (Node (_, ty)) = this
+            match ty with
+            | Some du -> du.IsUnresolved
+            | None    -> false
 
 
     let VisitDefinitions (filter : Statement -> bool) (root : Statement) : Node list=
@@ -355,3 +339,4 @@ module DefUseResolver =
 
         find Path.Empty root
 
+    let HasUnresolved (input : Node list) = input |> List.map (fun node -> node.IsUnresolved) |> List.contains true

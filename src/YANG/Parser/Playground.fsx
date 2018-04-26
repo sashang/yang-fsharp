@@ -3,10 +3,15 @@
 
 #load "Initialize.fsx"
 
+open System.Collections.Generic
+open System.Collections.ObjectModel
+open System.Text
+
 open FParsec
 open Yang.Model
+open Yang.Model.Graph
+open Yang.Model.DefUse
 open Yang.Parser
-open Yang.Parser.BodyStatements
 
 open Initialize
 open Logging
@@ -36,158 +41,10 @@ let _x =
     let model = apply_parser (spaces >>. Module.parse_module) very_big_model
     model.Name
 
-open System.Collections.Generic
-open System.Text
-open System.Collections.ObjectModel
-
-open DefUseResolver
-open System
-
-[<StructuredFormatDisplay("{AsStringShort}")>]
-type GraphNode<'T> (value : 'T, ?id : IdentifierReference, ?parent : GraphNode<'T>) = class
-    let children = new Dictionary<IdentifierReference, GraphNode<'T>>()
-
-    member __.Id            = id
-    member __.Parent        = parent
-    member __.Children      = children |> Seq.map (fun kv -> kv.Key, kv.Value)
-    member __.CountChildren = children.Count
-    member __.IsRoot        = parent.IsNone
-    member __.IsNotRoot     = parent.IsSome
-    member __.Value         = value
-
-    member this.ToStringBuilder (sb : StringBuilder, index : int) =
-        let indent () = Printf.bprintf sb "%s" (String.replicate index "    ")
-
-        indent ()
-        Printf.bprintf sb "(*)\t%A\n"  value
-        this.Children
-        |> Seq.iter (
-            fun (key, child) ->
-                indent()
-                Printf.bprintf sb "(+)\t%s\n" key.Value
-                child.ToStringBuilder (sb, index + 1)
-        )
-
-    member this.AsString =
-        let sb = StringBuilder ()
-        this.ToStringBuilder (sb, 0)
-        sb.ToString()
-
-    member this.AsStringShort =
-        let root_string = if this.IsRoot then "[Root] " else ""
-        match id with
-        | None      -> sprintf "%s<unknown id> (%d children)"  root_string this.CountChildren
-        | Some id   -> sprintf "%sID: %A (%d children)"        root_string id this.CountChildren
-
-    member __.HasChild (id : IdentifierReference) = children.ContainsKey id
-    member __.AddChild (id : IdentifierReference, child : GraphNode<'T>) = children.Add(id, child)
-    member __.GetChild (id : IdentifierReference) = children.[id]
-
-    member this.Search (id : IdentifierReference) : 'T option =
-        if children.ContainsKey(id) then Some (children.[id].Value)
-        elif this.IsNotRoot         then parent.Value.Search id
-        else None
-
-    member this.Path =
-        let rec find (current : GraphNode<'T>) (result : IdentifierReference list) =
-            match parent, id with
-            | None, Some id         -> id :: result
-            | None, None            -> result
-            | Some parent, Some id  -> find parent (id :: result)
-            | Some _, None          -> failwith "Internal node, no id"
-
-        match id with
-        | None      -> []   // Root node
-        | Some _    -> find this []
-
-    member this.PathAsString (?separator : string) =
-        let separator = defaultArg separator "/"
-        let path = this.Path |> List.map (fun v -> v.Value) |> String.concat separator
-        sprintf "/%s" path
-
-    override this.ToString() = this.AsString
-end
-and GraphNodeChild<'T> = IdentifierReference * GraphNode<'T>
-
-type Graph<'T when 'T : (new : unit -> 'T)> = {
-    Root    : GraphNode<'T>
-} with
-    member private this.GetNode (items : IdentifierReference list) =
-        let rec search (current : GraphNode<'T>) (path : IdentifierReference list) =
-            match path with
-            | [] -> current
-            | hd :: tl ->
-                if current.HasChild hd = false then
-                    let child = GraphNode<'T>(new 'T(), hd, current)
-                    current.AddChild(hd, child)
-
-                let next = current.GetChild hd
-                search next tl
-
-        search this.Root items
-
-    member private this.SearchNode (items : IdentifierReference list) =
-        let rec search (current : GraphNode<'T>) (path : IdentifierReference list) =
-            match path with
-            | []        -> current
-            | hd :: tl  ->
-                if current.HasChild(hd) = false then
-                    failwithf "Node %A (of %A) not found" hd path
-                else
-                    let next = current.GetChild hd
-                    search next tl
-
-        search this.Root items
-
-    member private this.SearchNodeLongest (items : IdentifierReference list) =
-        let rec search (current : GraphNode<'T>) (path : IdentifierReference list) =
-            match path with
-            | []        -> current
-            | hd :: tl  ->
-                if current.HasChild(hd) = false then
-                    current
-                else
-                    let next = current.GetChild hd
-                    search next tl
-
-        search this.Root items
-
-    static member Empty() = { Root = GraphNode<'T>(new 'T()) }
-
-    member this.Add(path : IdentifierReference list, apply : 'T -> unit) =
-        let node = this.GetNode path
-        apply node.Value
-
-    member this.Add(path : Path, apply : 'T -> unit) = this.Add (path.AsPathList, apply)
-
-    member this.Search(path : IdentifierReference list) =
-        let node = this.SearchNode path
-        node.Value
-
-    member this.FindClosest(path : Path) = this.SearchNodeLongest path.AsPathList
-    member this.FindClosest(path : string, ?separator : char) =
-        let separator = defaultArg separator '/'
-        path.Split(separator)
-        |> Array.toList
-        |> List.filter (fun entry -> (String.IsNullOrWhiteSpace entry) = false)
-        |> List.map IdentifierReference.Make
-        |> this.SearchNodeLongest
-
-    member this.ToStringBuilder (sb : StringBuilder) =
-        this.Root.ToStringBuilder(sb, 0)
-
-    member this.AsString =
-        let sb = StringBuilder()
-        sb.AppendLine() |> ignore
-        this.ToStringBuilder sb
-        sb.ToString()
-
-    override this.ToString() = this.AsString
-
 
 [<StructuredFormatDisplay("{AsString}")>]
 type Phi () = class
-    let phis = new Dictionary<IdentifierReference, List<DefUseResolver.IdDef>>()
+    let phis = new Dictionary<IdentifierReference, List<DefUse.IdDef>>()
 
     member this.AsString =
         let sb = StringBuilder()
@@ -209,10 +66,10 @@ type Phi () = class
 
         sb.ToString()
 
-    member this.Add (definition : Yang.Model.DefUseResolver.IdDef) =
+    member this.Add (definition : DefUse.IdDef) =
         let (id, _) = definition
         if (phis.ContainsKey id) = false then
-            phis.Add(id, List())
+            phis.Add(id, System.Collections.Generic.List())
 
         let l = phis.[id]
         if l.Contains(definition) = false then l.Add(definition)
@@ -224,7 +81,7 @@ end
 
 [<StructuredFormatDisplay("{AsString}")>]
 type NodeDefinition () = class
-    let properties = List<Node>()
+    let properties = System.Collections.Generic.List<Node>()
 
     member this.AsString = properties |> Seq.map (fun p -> p.AsString) |> String.concat ", "
     member this.Add (node : Node) = properties.Add(node)
@@ -274,17 +131,9 @@ let AsGroupUseNode (node : DefUseGraphNode) =
     else None
 
 let get_local_group_uses (node : DefUseGraphNode) : IdDef list = node.Value.GroupingUsesResolved
-    //node.Children
-    //|> Seq.choose (
-    //    fun (_, node) ->
-    //        match AsGroupUseNode node with
-    //        | None                  -> None
-    //        | Some (id, Some seq)   -> Some (id, seq)
-    //        | Some (_, None)        -> None
-    //)
-    //|> Seq.toList
 
 let try_find_local_type_definition (node : DefUseGraphNode, id : IdentifierReference) =
+    printfn "Searching locally %A in %A" id node
     let candidates =
         node.Children
         |> Seq.choose (
@@ -294,8 +143,11 @@ let try_find_local_type_definition (node : DefUseGraphNode, id : IdentifierRefer
                 | _                 -> None
         )
         |> Seq.toList
-    if candidates.Length = 1    then Some candidates.Head
-    elif candidates.Length > 1  then failwithf "Error: found many candidates:\n%A\n" candidates
+    if candidates.Length = 1    then
+        printfn "Found local definition of %A in %A" id node
+        Some candidates.Head
+    elif candidates.Length > 1  then
+        failwithf "Error: found many candidates:\n%A\n" candidates
     else None
 
 
@@ -444,17 +296,17 @@ let resolve (statements : Node list) =
         and do_search_up children =
             match children with
             | []                    -> None
-            | (id, seq) :: tl       ->
-                // printfn "Searching in groupings; %A (%d)" id seq
-                let candidate = groupings.Find (id, seq)
-                // printfn "Searching in groupings; %A -- %A" (id) candidate
+            | (group_id, seq) :: tl ->
+                printfn "Searching in groupings; %A (%d)" group_id seq
+                let candidate = groupings.Find (group_id, seq)
+                printfn "Searching in groupings; %A -- %A" group_id candidate
                 let jump = graph.FindClosest candidate
-                // printfn "Will resume from %A" jump
+                printfn "Will resume from %A" jump
                 match try_find_local_type_definition (jump, id) with
                 | Some _ as result  -> result
                 | None ->
                     let more_children = get_local_group_uses jump
-                    // printfn "Did not find; new group uses: %A" more_children
+                    printfn "Did not find; new group uses: %A" more_children
                     do_search_up (more_children @ tl)
 
         let nearest = graph.FindClosest path
@@ -478,10 +330,6 @@ let g0a = [
     Node.MakeGroupingDefinition ("module", "group1", 1)
     Node.MakeGroupingUse        ("module", "group1")
 ]
-
-let g0a_graph = mkPhiGraph Patterns.``|GroupingDef|_|`` g0a
-g0a_graph.AsString
-resolve_groups g0a_graph g0a
 
 resolve g0a
 
@@ -519,12 +367,6 @@ let g2b = [
 
 resolve g2b
 
-let g2bgraph = mkGraph g2b
-g2bgraph.AsString
-let g2broot = g2bgraph.FindClosest("module")
-g2broot.Value.TypeDefinitions
-
-
 let g2 = [
     Node.MakeGroupingDefinition ("module", "group1", 1)
     Node.MakeTypeDefinition     ("module/group1", "T", 1)
@@ -534,14 +376,24 @@ let g2 = [
     Node.MakeTypeUse            ("module/element/item", "T")
 ]
 
-let g2graph = mkGraph g2
-g2graph.AsString
-
 resolve g2
 
-let juniper_def_use = Yang.Model.DefUseResolver.VisitDefinitions (fun _ -> true) (Yang.Model.Statements.Module juniper)
+let g3 = [
+    Node.MakeGroupingDefinition ("module", "group1", 1)
+    Node.MakeGroupingUse        ("module/group1", "group2")
+    Node.MakeGroupingDefinition ("module/group1", "group2", 1)
+    Node.MakeTypeDefinition     ("module/group1/group2", "T", 1)
+    Node.MakeGroupingUse        ("module/element", "group1")
+    Node.MakeTypeUse            ("module/element/item", "T")
+]
+
+resolve g3
+
+let juniper_def_use = DefUse.VisitDefinitions (fun _ -> true) (Yang.Model.Statements.Module juniper)
 let juniper_def_use' = resolve juniper_def_use
 juniper_def_use' |> List.iter (printfn "%A")
+DefUse.HasUnresolved juniper_def_use'
+juniper_def_use' |> List.filter (fun v -> v.IsUnresolved)
 
 // At this point, we have resolved all def-use.
 // We need to lift them, and put them in order.

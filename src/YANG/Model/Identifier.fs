@@ -71,6 +71,7 @@ module Identifier =
         /// </summary>
         member this.IsValid = is_identifier_valid this.Value
 
+        /// Checks whether this is an identifier of a well known type.
         member this.IsBuiltIn =
             let (String value) = this
             String.Equals(value, "binary", StringComparison.InvariantCultureIgnoreCase) ||
@@ -81,7 +82,7 @@ module Identifier =
             String.Equals(value, "enumeration", StringComparison.InvariantCultureIgnoreCase) ||
             String.Equals(value, "identityref", StringComparison.InvariantCultureIgnoreCase) ||
             String.Equals(value, "instance-identifier", StringComparison.InvariantCultureIgnoreCase) ||
-            String.Equals(value, "int8 ", StringComparison.InvariantCultureIgnoreCase) ||
+            String.Equals(value, "int8", StringComparison.InvariantCultureIgnoreCase) ||
             String.Equals(value, "int16", StringComparison.InvariantCultureIgnoreCase) ||
             String.Equals(value, "int32", StringComparison.InvariantCultureIgnoreCase) ||
             String.Equals(value, "int64", StringComparison.InvariantCultureIgnoreCase) ||
@@ -208,7 +209,7 @@ module Identifier =
             | Simple identifier -> identifier.Value
             | Custom identifier -> identifier.Value
 
-
+        /// Checks whether this is an identifier of a well known type.
         member this.IsPrimitive =
             match this with
             | Simple id -> id.IsBuiltIn
