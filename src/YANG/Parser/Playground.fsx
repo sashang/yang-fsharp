@@ -540,31 +540,12 @@ g2graph.AsString
 resolve g2
 
 let juniper_def_use = Yang.Model.DefUseResolver.VisitDefinitions (fun _ -> true) (Yang.Model.Statements.Module juniper)
-let juniper_def_use' =
-    let groups = mkPhiGraph Patterns.``|GroupingDef|_|`` juniper_def_use
-    resolve_groups groups juniper_def_use
+let juniper_def_use' = resolve juniper_def_use
+juniper_def_use' |> List.iter (printfn "%A")
 
-let zzz = resolve juniper_def_use
-zzz |> List.iter (printfn "%A")
+// At this point, we have resolved all def-use.
+// We need to lift them, and put them in order.
 
-let z1 = mkGraph juniper_def_use'
-z1.AsString
-let xc = List.item 127 juniper_def_use
-
-let za = z1.FindClosest("/configuration")
-AsGroupUseNode za
-get_local_group_uses za
-
-za.Value.GroupingUses
-za.Value
-za.Children |> Seq.iter (printfn "%A")
-za.AsString
-
-
-try_find_local_type_definition(za, IdentifierReference.Make "ipv4addr")
-
-
-juniper_def_use |> List.iter (printfn "%A")
 
   // TODO: test with augment-stmt and uses-augment-stmt
 
