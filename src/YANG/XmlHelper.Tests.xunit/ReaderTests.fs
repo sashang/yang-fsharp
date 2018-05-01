@@ -1,9 +1,9 @@
-﻿namespace Yang.Generator.Tests
+﻿namespace Yang.XmlHelper.Tests
 
 module XmlHelperTests =
     open Xunit
-    open Yang.Generator
-    open Yang.Generator.XmlHelper
+    open Yang.XmlHelper
+    open Yang.XmlHelper.Reader
 
     [<Fact>]
     let ``parsing empty string should return none`` () =
@@ -30,4 +30,5 @@ module XmlHelperTests =
     let ``parser should ignore comments at the end of line`` () =
         let result = (XmlReaderHelper.Parse"""<name>1.2.0.1/31<!-- ignore this--></name>""").ReadString "name"
         Assert.Equal(Some "1.2.0.1/31", result)
+
 

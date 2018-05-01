@@ -1,8 +1,9 @@
 ﻿// XmlHelper.fs
-// Helper methods for deserializing the automatically generated types from XML messages
-namespace Yang.Generator
+// Helper methods for parsing XML
+namespace Yang.XmlHelper
 
-module XmlHelper =
+module Reader =
+    open System.IO
     open System.Xml
     open System.Xml.Linq
 
@@ -63,6 +64,9 @@ module XmlHelper =
             let reader = document.CreateReader()
             XmlReaderHelper(reader, document)
 
+        static member ParseFromFile(filename : string) =
+            XmlReaderHelper.Parse (File.ReadAllText filename)
+
         member this.ReadString (label : string) =
             check (label, XmlNodeType.Element)
             let result = get_content label
@@ -77,9 +81,29 @@ module XmlHelper =
                 throw "Expected to read a string; got nothing."
             else result.Value
 
-        member this.NodeType = reader.NodeType
-        member this.Name = reader.Name
-        member this.Value = reader.Value
+        /// Access the underlying reader (use for experimental purposes only)
+        member this.Reader      = reader
+
+        member this.NodeType    = reader.NodeType
+        member this.Prefix      = reader.Prefix
+        member this.Name        = reader.Name
+        member this.LocalName   = reader.LocalName
+        member this.Value       = reader.Value
+        member this.HasValue    = reader.HasValue
+        member this.ValueType   = reader.ValueType
+
+        member this.HasAttributes       = reader.HasAttributes
+        member this.MoveToAttributes()  = reader.MoveToFirstAttribute()
+        member this.NextAttribute()     = reader.MoveToNextAttribute()
+        member this.Attributes          =
+            if reader.MoveToFirstAttribute() then
+                seq {
+                    let mutable more_attributes = true
+                    while more_attributes do
+                        yield (reader.Name, reader.Value)
+                        more_attributes <- reader.MoveToNextAttribute()
+                }
+            else Seq.empty
 
         member this.IsElementBegin (name : string) =
             reader.NodeType = XmlNodeType.Element && reader.Name = name

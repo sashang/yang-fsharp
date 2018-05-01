@@ -5,12 +5,12 @@
 #r "System.Xml.Linq.dll"
 
 #r @"..\Model\bin\Debug\Yang.Model.dll"
+#r @"..\XmlHelper\bin\Debug\Yang.XmlHelper.dll"
 
 //#load @"..\..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypes.fs"
 //#load @"..\..\..\paket-files\fsprojects\FSharp.TypeProviders.StarterPack\src\ProvidedTypesTesting.fs"
 
 #load "Errors.fs"
-#load "XmlHelper.fs"
 #load "Program.fs"
 
 open Yang.Model
@@ -18,7 +18,7 @@ open Yang.Generator.Program
 
 let mkTypeStringSimple (description : string option) : Yang.Generator.Program.Type = Type.String {
     Description     = description
-    Restrictions    = None, []
+    Restrictions    = []
     Default         = None
 }
 

@@ -27,7 +27,7 @@ namespace SimpleRouter
     using System.Diagnostics.Contracts;
     using System.Text;
     using System.Text.RegularExpressions;
-    using Yang.Generator;
+    using Yang.XmlHelper;
 
     // Observe:
     // - transformations in name.
@@ -84,7 +84,7 @@ namespace SimpleRouter
             /// <summary>
             /// Maximum transmission unit packet size
             /// </summary>
-            private readonly UInt32 Mtu;
+            private readonly UInt32 _mtu;
 
             private static bool _mtu_Check(UInt32 value) => value >= 256 && value <= 9216;
             private static string _mtu_Range = "256 .. 9216";
@@ -209,18 +209,14 @@ namespace SimpleRouter
                             // We need to make sure that name is not null, because it is used as a key.
 
                             Contract.Requires(null != name);
-                            if (name is null)
-                            {
-                                throw new ArgumentNullException(nameof(name));
-                            }
 
-                            this.Name = name;
+                            Name = name ?? throw new ArgumentNullException(nameof(name));
                         }
 
-                        public AddressClass(XmlHelper.XmlReaderHelper reader)
+                        public AddressClass(Reader.XmlReaderHelper reader)
                         {
                             Contract.Requires(null != reader);
-                            if (Object.ReferenceEquals(null, reader))
+                            if (reader is null)
                             {
                                 throw new ArgumentNullException(nameof(reader));
                             }
@@ -253,7 +249,7 @@ namespace SimpleRouter
 
                         public override string ToString()
                         {
-                            StringBuilder sb = new StringBuilder();
+                            var sb = new StringBuilder();
                             sb.Append("{");
                             sb.AppendFormat("name: {0}", Name);
                             sb.Append("}");
@@ -273,11 +269,11 @@ namespace SimpleRouter
 
                         public bool Equals(AddressClass other)
                         {
-                            if (Object.ReferenceEquals(this, other))
+                            if (ReferenceEquals(this, other))
                             {
                                 return true;
                             }
-                            else if (Object.ReferenceEquals(null, other))
+                            else if (other is null)
                             {
                                 return false;
                             }
@@ -286,17 +282,16 @@ namespace SimpleRouter
 
                         public override bool Equals(object obj)
                         {
-                            if (Object.ReferenceEquals(this, obj))
+                            if (ReferenceEquals(this, obj))
                             {
                                 return true;
                             }
-                            else if (Object.ReferenceEquals(null, obj))
+                            else if (obj is null)
                             {
                                 return false;
                             }
 
-                            var other = obj as AddressClass;
-                            if (other == null)
+                            if (!(obj is AddressClass other))
                             {
                                 return false;
                             }
@@ -315,10 +310,10 @@ namespace SimpleRouter
                         Address = address;
                     }
 
-                    public InetClass(XmlHelper.XmlReaderHelper reader)
+                    public InetClass(Reader.XmlReaderHelper reader)
                     {
                         Contract.Requires(null != reader);
-                        if (Object.ReferenceEquals(null, reader))
+                        if (reader is null)
                         {
                             throw new ArgumentNullException(nameof(reader));
                         }
@@ -353,25 +348,25 @@ namespace SimpleRouter
                             throw new Exception("Unexpected statement");
                         }
 
-                        this.Address = new ReadOnlyDictionary<string, AddressClass>(address);
+                        Address = new ReadOnlyDictionary<string, AddressClass>(address);
                     }
 
                     public override string ToString()
                     {
-                        StringBuilder sb = new StringBuilder();
+                        var sb = new StringBuilder();
                         sb.Append("{");
                         sb.Append("address: [");
-                        bool first = true;
+                        var first = true;
                         foreach (var addressValue in Address.Values)
                         {
                             if (first)
                             {
-                                sb.Append(addressValue.ToString());
+                                sb.Append(addressValue);
                                 first = false;
                             }
                             else
                             {
-                                sb.AppendFormat(", {0}", addressValue.ToString());
+                                sb.AppendFormat(", {0}", addressValue);
                             }
                         }
 
@@ -382,27 +377,27 @@ namespace SimpleRouter
 
                     private bool EqualsUnprotected(InetClass other)
                     {
-                        bool equalAddress = false;
-                        if (Object.ReferenceEquals(this.Address, other.Address))
+                        var equalAddress = false;
+                        if (ReferenceEquals(Address, other.Address))
                         {
                             equalAddress = true;
                         }
-                        else if (this.Address.Count != other.Address.Count)
+                        else if (Address.Count != other.Address.Count)
                         {
                             // not equal
                         }
                         else
                         {
                             equalAddress = true;
-                            foreach (var pair in this.Address)
+                            foreach (var pair in Address)
                             {
-                                if (other.Address.ContainsKey(pair.Key) == false)
+                                if (!other.Address.ContainsKey(pair.Key))
                                 {
                                     equalAddress = false;
                                     break;
                                 }
 
-                                if (pair.Value.Equals(other.Address[pair.Key]) == false)
+                                if (!pair.Value.Equals(other.Address[pair.Key]))
                                 {
                                     equalAddress = false;
                                     break;
@@ -415,41 +410,27 @@ namespace SimpleRouter
 
                     public bool Equals(InetClass other)
                     {
-                        if (Object.ReferenceEquals(this, other))
+                        if (ReferenceEquals(this, other))
                         {
                             return true;
                         }
-                        else if (Object.ReferenceEquals(null, other))
-                        {
-                            return false;
-                        }
-                        else
-                        {
-                            return EqualsUnprotected(other);
-                        }
+
+                        return !(other is null) && EqualsUnprotected(other);
                     }
 
                     public override bool Equals(object obj)
                     {
-                        if (Object.ReferenceEquals(this, obj))
+                        if (ReferenceEquals(this, obj))
                         {
                             return true;
                         }
-                        else if (Object.ReferenceEquals(null, obj))
+                        else if (obj is null)
                         {
                             return false;
                         }
                         else
                         {
-                            var other = obj as InetClass;
-                            if (Object.ReferenceEquals(null, other))
-                            {
-                                return false;
-                            }
-                            else
-                            {
-                                return EqualsUnprotected(other);
-                            }
+                            return obj is InetClass other && EqualsUnprotected(other);
                         }
                     }
 
@@ -457,7 +438,7 @@ namespace SimpleRouter
                     {
                         // TODO: algorithm to compute hash value
                         // TODO: Should we transform to lazy value?
-                        int hash = 13;
+                        var hash = 13;
 
                         foreach (var pair in Address)
                         {
@@ -494,15 +475,11 @@ namespace SimpleRouter
                         public AddressClass(string name)
                         {
                             Contract.Requires(null != name);
-                            if (name is null)
-                            {
-                                throw new ArgumentNullException(nameof(name));
-                            }
 
-                            this.Name = name;
+                            Name = name ?? throw new ArgumentNullException(nameof(name));
                         }
 
-                        public AddressClass(XmlHelper.XmlReaderHelper reader)
+                        public AddressClass(Reader.XmlReaderHelper reader)
                         {
                             Contract.Requires(null != reader);
                             if (reader is null)
@@ -539,7 +516,7 @@ namespace SimpleRouter
 
                         public override string ToString()
                         {
-                            StringBuilder sb = new StringBuilder();
+                            var sb = new StringBuilder();
                             sb.Append("{");
                             sb.AppendFormat("name: {0}", Name);
                             sb.Append("}");
@@ -559,11 +536,11 @@ namespace SimpleRouter
 
                         public bool Equals(AddressClass other)
                         {
-                            if (Object.ReferenceEquals(this, other))
+                            if (ReferenceEquals(this, other))
                             {
                                 return true;
                             }
-                            else if (Object.ReferenceEquals(null, other))
+                            else if (other is null)
                             {
                                 return false;
                             }
@@ -572,22 +549,16 @@ namespace SimpleRouter
 
                         public override bool Equals(object obj)
                         {
-                            if (Object.ReferenceEquals(this, obj))
+                            if (ReferenceEquals(this, obj))
                             {
                                 return true;
                             }
-                            else if (Object.ReferenceEquals(null, obj))
+                            else if (obj is null)
                             {
                                 return false;
                             }
 
-                            var other = obj as AddressClass;
-                            if (other == null)
-                            {
-                                return false;
-                            }
-
-                            return EqualsUnprotected(other);
+                            return obj is AddressClass other && EqualsUnprotected(other);
                         }
                     }
 
@@ -606,7 +577,7 @@ namespace SimpleRouter
                         Address = address;
                     }
 
-                    public Inet6Class(XmlHelper.XmlReaderHelper reader)
+                    public Inet6Class(Reader.XmlReaderHelper reader)
                     {
                         Contract.Requires(null != reader);
                         if (reader is null)
@@ -642,25 +613,25 @@ namespace SimpleRouter
                             throw new Exception("Unexpected statement");
                         }
 
-                        this.Address = new ReadOnlyDictionary<string, AddressClass>(address);
+                        Address = new ReadOnlyDictionary<string, AddressClass>(address);
                     }
 
                     public override string ToString()
                     {
-                        StringBuilder sb = new StringBuilder();
+                        var sb = new StringBuilder();
                         sb.Append("{");
                         sb.Append("address: [");
-                        bool first = true;
+                        var first = true;
                         foreach (var addressValue in Address.Values)
                         {
                             if (first)
                             {
-                                sb.Append(addressValue.ToString());
+                                sb.Append(addressValue);
                                 first = false;
                             }
                             else
                             {
-                                sb.AppendFormat(", {0}", addressValue.ToString());
+                                sb.AppendFormat(", {0}", addressValue);
                             }
                         }
 
@@ -671,27 +642,27 @@ namespace SimpleRouter
 
                     private bool EqualsUnprotected(Inet6Class other)
                     {
-                        bool equalAddress = false;
-                        if (Object.ReferenceEquals(this.Address, other.Address))
+                        var equalAddress = false;
+                        if (ReferenceEquals(Address, other.Address))
                         {
                             equalAddress = true;
                         }
-                        else if (this.Address.Count != other.Address.Count)
+                        else if (Address.Count != other.Address.Count)
                         {
                             // not equal
                         }
                         else
                         {
                             equalAddress = true;
-                            foreach (var pair in this.Address)
+                            foreach (var pair in Address)
                             {
-                                if (other.Address.ContainsKey(pair.Key) == false)
+                                if (!other.Address.ContainsKey(pair.Key))
                                 {
                                     equalAddress = false;
                                     break;
                                 }
 
-                                if (pair.Value.Equals(other.Address[pair.Key]) == false)
+                                if (!pair.Value.Equals(other.Address[pair.Key]))
                                 {
                                     equalAddress = false;
                                     break;
@@ -704,41 +675,26 @@ namespace SimpleRouter
 
                     public bool Equals(Inet6Class other)
                     {
-                        if (Object.ReferenceEquals(this, other))
+                        if (ReferenceEquals(this, other))
                         {
                             return true;
                         }
-                        else if (Object.ReferenceEquals(null, other))
-                        {
-                            return false;
-                        }
-                        else
-                        {
-                            return EqualsUnprotected(other);
-                        }
+                        return !(other is null) && EqualsUnprotected(other);
                     }
 
                     public override bool Equals(object obj)
                     {
-                        if (Object.ReferenceEquals(this, obj))
+                        if (ReferenceEquals(this, obj))
                         {
                             return true;
                         }
-                        else if (Object.ReferenceEquals(null, obj))
+                        else if (obj is null)
                         {
                             return false;
                         }
                         else
                         {
-                            var other = obj as Inet6Class;
-                            if (Object.ReferenceEquals(null, other))
-                            {
-                                return false;
-                            }
-                            else
-                            {
-                                return EqualsUnprotected(other);
-                            }
+                            return obj is Inet6Class other && EqualsUnprotected(other);
                         }
                     }
 
@@ -746,7 +702,7 @@ namespace SimpleRouter
                     {
                         // TODO: algorithm to compute hash value
                         // TODO: Should we transform to lazy value?
-                        int hash = 13;
+                        var hash = 13;
 
                         foreach (var pair in Address)
                         {
@@ -772,14 +728,14 @@ namespace SimpleRouter
                     InetClass inet,
                     Inet6Class inet6)
                 {
-                    this.Name = name;
-                    this.Description = description;
-                    this.VlanChoice = vlanChoice;
-                    this.Inet = inet;
-                    this.Inet6 = inet6;
+                    Name = name;
+                    Description = description;
+                    VlanChoice = vlanChoice;
+                    Inet = inet;
+                    Inet6 = inet6;
                 }
 
-                public UnitClass(XmlHelper.XmlReaderHelper reader)
+                public UnitClass(Reader.XmlReaderHelper reader)
                 {
                     if (reader is null)
                     {
@@ -852,7 +808,7 @@ namespace SimpleRouter
 
                 public override string ToString()
                 {
-                    StringBuilder sb = new StringBuilder();
+                    var sb = new StringBuilder();
 
                     sb.Append("{");
                     sb.AppendFormat("name: {0}, ", Name);
@@ -867,7 +823,7 @@ namespace SimpleRouter
 
                 public bool Equals(UnitClass other)
                 {
-                    if (ReferenceEquals(null, other)) return false;
+                    if (other is null) return false;
                     if (ReferenceEquals(this, other)) return true;
 
                     return  string.Equals(Name, other.Name) &&
@@ -882,7 +838,7 @@ namespace SimpleRouter
                 {
                     if (ReferenceEquals(null, obj)) return false;
                     if (ReferenceEquals(this, obj)) return true;
-                    if (obj.GetType() != this.GetType()) return false;
+                    if (obj.GetType() != GetType()) return false;
                     return Equals((UnitClass) obj);
                 }
 
@@ -918,11 +874,11 @@ namespace SimpleRouter
 
                 Name = name;
                 Description = description;
-                Mtu = mtu;
+                _mtu = mtu;
                 Unit = unit;
             }
 
-            public InterfaceClass(XmlHelper.XmlReaderHelper reader)
+            public InterfaceClass(Reader.XmlReaderHelper reader)
             {
                 if (reader is null)
                 {
@@ -960,10 +916,10 @@ namespace SimpleRouter
                     if (reader.IsElementBegin("mtu"))
                     {
                         var value = reader.ReadStringValue("mtu");
-                        Mtu = UInt32.Parse(value);
-                        if (!_mtu_Check(Mtu))
+                        _mtu = UInt32.Parse(value);
+                        if (!_mtu_Check(_mtu))
                         {
-                            throw new ArgumentOutOfRangeException(nameof(Mtu), "Value should be in range: " + _mtu_Range);
+                            throw new ArgumentOutOfRangeException(nameof(_mtu), "Value should be in range: " + _mtu_Range);
                         }
 
                         continue;
@@ -990,10 +946,10 @@ namespace SimpleRouter
 
                 sb.AppendFormat("name: {0}, ", Name);
                 sb.AppendFormat("description: {0}, ", Description);
-                sb.AppendFormat("mtu: {0}, ", Mtu);
+                sb.AppendFormat("mtu: {0}, ", _mtu);
 
                 sb.Append("unit: [ ");
-                bool isFirst = true;
+                var isFirst = true;
 
                 foreach (var value in Unit.Values)
                 {
@@ -1026,7 +982,7 @@ namespace SimpleRouter
             Interface = _interface;
         }
 
-        public Configuration(XmlHelper.XmlReaderHelper reader)
+        public Configuration(Reader.XmlReaderHelper reader)
         {
             if (reader is null)
             {
@@ -1111,7 +1067,7 @@ namespace SimpleRouter
 
             sb.Append("interface: [");
 
-            bool isFirst = true;
+            var isFirst = true;
             foreach (var value in Interface.Values)
             {
                 if (isFirst)

@@ -66,7 +66,6 @@
       <Link>ProvidedTypesTesting.fs</Link>
     </Compile>
     <Compile Include="Errors.fs" />
-    <Compile Include="XmlHelper.fs" />
     <Compile Include="Program.fs" />
     <Compile Include="Yang.Types.fs" />
     <Compile Include="YangProvider.fs" />
@@ -94,6 +93,11 @@
     <ProjectReference Include="..\Parser\Parser.fsproj">
       <Name>Parser</Name>
       <Project>{e273db40-799e-44a9-8d73-602698e15e7c}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\XmlHelper\XmlHelper.fsproj">
+      <Name>XmlHelper</Name>
+      <Project>{55abd8bc-d7c2-4235-9abc-b4c68afe275a}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

@@ -38,8 +38,8 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="Yang.Generator">
-      <HintPath>..\..\..\..\build\Yang.Generator.dll</HintPath>
+    <Reference Include="Yang.XmlHelper">
+      <HintPath>..\..\..\..\build\Yang.XmlHelper.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
