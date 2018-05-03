@@ -3,6 +3,7 @@ Juniper/
 YangModels/
 networkop/
 openconfig/
+sonic-object-model-schema/
 sysrepo/
 tail-f-systems/
 all_yang_models.txt

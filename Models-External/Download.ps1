@@ -8,6 +8,7 @@ param(
     [PSCustomObject]@{ Name = "Juniper";        Link = "https://github.com/Juniper/yang.git" },
     [PSCustomObject]@{ Name = "networkop";      Link = "https://github.com/networkop/yang.git" },
     [PSCustomObject]@{ Name = "openconfig";     Link = "https://github.com/openconfig/public.git" },
+    [PSCustomObject]@{ Name = "sonic-object-model-schema"; Link = "https://github.com/Azure/sonic-object-model-schema.git"},
     [PSCustomObject]@{ Name = "sysrepo";        Link = "https://github.com/sysrepo/sysrepo.git" },
     [PSCustomObject]@{ Name = "tail-f-systems"; Link = "https://github.com/tail-f-systems/JNC.git" },
     [PSCustomObject]@{ Name = "YangModels";     Link = "https://github.com/YangModels/yang.git" }
