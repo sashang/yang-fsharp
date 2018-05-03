@@ -7,7 +7,7 @@ open System.Text
 open FSharp.Collections
 open System.Xml.Schema
 
-type Namespaces = {
+type Namespace = {
     Prefix      : string
     Uri         : Uri
     LocalFile   : string option
@@ -19,6 +19,18 @@ with
         LocalFile   = Some filename
     }
 
+let junos = Namespace.Make ("junos", "http://xml.juniper.net/junos/15.1X24/junos", "junos.xsd")
+let junos_xsd = let text = """
+<?xml version="1.0" encoding="us-ascii"?>
+<xsd:schema elementFormDefault="qualified" \
+        attributeFormDefault="unqualified" \
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema" \
+        targetNamespace="http://xml.juniper.net/junos/Junos-version/junos">
+    <xsd:element name="comment" type="xsd:string"/>
+</xsd:schema>""" in text.Trim()
+
+if File.Exists("junos.xsd") = false then File.WriteAllText("junos.xsd", junos_xsd)
+
 // Define your library scripting code here
 let input = Path.Combine(__SOURCE_DIRECTORY__, "..", "..", "..", "Models-External", "Juniper", "XSD", "juniper-netconf.xsd")
 let reader = File.OpenText(input)
@@ -28,29 +40,43 @@ let error_handler (_ : obj) (args : ValidationEventArgs) =
 
 let schema = XmlSchema.Read(reader, error_handler)
 
-let parse_xml_schema (schema : string, prefix : string, extra : Namespaces list) =
-    let sb = StringBuilder ()
+type XmlSchema =
+    static member Parse(schema : string, prefix : string, extra : Namespace list) =
+        let sb = StringBuilder ()
 
-    Printf.bprintf sb "<%s:schema xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\"" prefix
-    extra |> List.iter (
-        fun ns ->
-            Printf.bprintf sb " xmlns:%s=\"%s\"" ns.Prefix (ns.Uri.ToString())
-    )
-    Printf.bprintf sb ">\n"
+        Printf.bprintf sb "<%s:schema xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\"" prefix
+        extra |> List.iter (
+            fun ns ->
+                Printf.bprintf sb " xmlns:%s=\"%s\"" ns.Prefix (ns.Uri.ToString())
+        )
+        Printf.bprintf sb ">\n"
 
-    extra |> List.iter (
-        fun ns ->
-            match ns.LocalFile with
-            | None          -> ()
-            | Some filename ->
-                Printf.bprintf sb "  <%s:import schemaLocation=\"%s\" namespace=\"%s\"/>\n" prefix (ns.Uri.ToString()) filename
-    )
+        extra |> List.iter (
+            fun ns ->
+                match ns.LocalFile with
+                | None          -> ()
+                | Some filename ->
+                    Printf.bprintf sb "  <%s:import schemaLocation=\"%s\" namespace=\"%s\"/>\n" prefix (ns.Uri.ToString()) filename
+        )
 
-    Printf.bprintf sb "%s\n" (schema.Trim())
-    Printf.bprintf sb "</%s:schema>" prefix
+        Printf.bprintf sb "%s\n" (schema.Trim())
+        Printf.bprintf sb "</%s:schema>" prefix
 
-    use reader = new StringReader(sb.ToString())
-    XmlSchema.Read(reader, error_handler)
+        use reader = new StringReader(sb.ToString())
+        XmlSchema.Read(reader, error_handler)
+
+    static member Parse(schema : string) = XmlSchema.Parse(schema, "xsd", [])
+    static member Parse(schema : string, extra : Namespace list) = XmlSchema.Parse(schema, "xsd", extra)
+    static member Parse(schema : string, prefix : string) = XmlSchema.Parse(schema, prefix, [])
+
+let parse_first schema =
+    let parsed = XmlSchema.Parse schema
+    parsed.Items.Item 0
+
+module Patterns =
+    let AsComplexType : XmlSchemaObject -> XmlSchemaComplexType option = function
+    | :? XmlSchemaComplexType as t -> Some t
+    | _                            -> None
 
 let example1 = """
   <xsd:complexType name="key-attribute-long-type">
@@ -62,6 +88,8 @@ let example1 = """
   </xsd:complexType>
 """
 
+let parsed1 = parse_first example1 |> Patterns.AsComplexType |> Option.get
+
 //typedef filename {
 //    type string;
 //}
@@ -72,6 +100,8 @@ let example2 = """
     </xsd:simpleContent>
   </xsd:complexType>
 """
+
+let parsed2 = parse_first example2 |> Patterns.AsComplexType |> Option.get
 
 //leaf source-ipv4-address {
 //  description "IP Address to use as source address in IPv4 header appended to intercepted packets";
@@ -252,8 +282,7 @@ let example5 = """
   </xsd:sequence>
 </xsd:complexType>"""
 
-let junos = Namespaces.Make ("junos", "http://xml.juniper.net/junos/15.1X24/junos", "junos.xsd")
-let xx = parse_xml_schema (example5, "xsd", [ junos ])
+let xx = XmlSchema.Parse (example5, [ junos ])
 let items : XmlSchemaObject list = xx.Items |> Seq.cast |> Seq.toList
 let item = items.Head :?> XmlSchemaComplexType
 //let item = items.Head :?> XmlSchemaElement
