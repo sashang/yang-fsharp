@@ -7,6 +7,7 @@ namespace Yang.Model
 module Statements =
     open System
     open Arguments
+    open NLog
 
     (* The following captures the main part of the YANG model.
      * It tries to be reasonable close to [RFC 7950, Section 14, pp.184-210].
@@ -39,6 +40,30 @@ module Statements =
 
      // TODO: Remove/fix pretty printing functionality from this file; use other version.
      // TODO: Name items of *Statement definitions. Use the new syntax as well.
+
+    /// Logger for this module
+    let private _logger = LogManager.GetCurrentClassLogger()
+
+    let private throw fmt =
+        let do_throw (message : string) =
+            _logger.Error message
+            raise (YangModelException message)
+        Printf.ksprintf do_throw fmt
+
+    let private warn fmt = Printf.ksprintf _logger.Warn fmt
+    let private debug fmt = Printf.ksprintf _logger.Debug fmt
+    let private trace fmt = Printf.ksprintf _logger.Trace fmt
+    let private error fmt = Printf.ksprintf _logger.Error fmt
+
+#if INTERACTIVE
+    // The following are used only in interactive (fsi) to help with enabling disabling
+    // logging for particular modules.
+
+    type internal Marker = interface end
+    let _full_name = typeof<Marker>.DeclaringType.FullName
+    let _name = typeof<Marker>.DeclaringType.Name
+#endif
+
 
     /// Available Yang statement definitions
     // TODO: Fix printing: [<StructuredFormatDisplay("{PrettyPrint}")>]
@@ -883,7 +908,7 @@ module Statements =
         | BodyStatement.AnyData       st -> AugmentBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> AugmentBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> AugmentBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type AugmentBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type AugmentBodyStatement from %A" th
 
         let Translate = function
         | AugmentBodyStatement.When          st -> Statement.When           st
@@ -1067,7 +1092,7 @@ module Statements =
         | BodyStatement.AnyData       st -> CaseBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> CaseBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> CaseBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type ContainerBodyStatement from %A" th
 
         let IsWhen          = function | CaseBodyStatement.When _           -> true | _ -> false
         let IsIfFeature     = function | CaseBodyStatement.IfFeature _      -> true | _ -> false
@@ -1164,7 +1189,7 @@ module Statements =
         | BodyStatement.AnyData       st -> ContainerBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> ContainerBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> ContainerBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type ContainerBodyStatement from %A" th
 
         let IsContainer (this : ContainerBodyStatement) =
             match this with
@@ -1325,7 +1350,7 @@ module Statements =
         | BodyStatement.AnyData       st -> GroupingBodyStatement.AnyData       st
         | BodyStatement.AnyXml        st -> GroupingBodyStatement.AnyXml        st
         | BodyStatement.Uses          st -> GroupingBodyStatement.Uses          st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type GroupingBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type GroupingBodyStatement from %A" th
 
     /// Helper methods for the IdentityBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1379,7 +1404,7 @@ module Statements =
         | BodyStatement.AnyData       st -> InputBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> InputBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> InputBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type InputBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type InputBodyStatement from %A" th
 
         let Translate = function
         | InputBodyStatement.Must          st -> Statement.Must             st
@@ -1460,7 +1485,7 @@ module Statements =
     module LeafListStatement =
         let private try_find filter (LeafListStatement (_, statements)) =
             statements |> List.tryFind filter
-            
+
         let Description = try_find LeafListBodyStatement.IsDescription
         let Type = try_find LeafListBodyStatement.IsType
 
@@ -1548,7 +1573,7 @@ module Statements =
         | BodyStatement.AnyData       st -> ListBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> ListBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> ListBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type ContainerBodyStatement from %A" th
 
         let IsWhen          = function | ListBodyStatement.When         _ -> true | _ -> false
         let IsIfFeature     = function | ListBodyStatement.IfFeature    _ -> true | _ -> false
@@ -1640,7 +1665,7 @@ module Statements =
         let private try_find filter (this : MetaStatements) = this |> List.tryFind filter
 
         /// Get the organization meta information; None if not exists
-        let Organization (this : MetaStatements) = 
+        let Organization (this : MetaStatements) =
             try_find MetaBodyStatement.IsOrganization this
             |> Option.bind (fun s -> match s with | MetaBodyStatement.Organization o -> Some o | _ -> None)
 
@@ -1716,7 +1741,7 @@ module Statements =
         | BodyStatement.AnyData       st -> NotificationBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> NotificationBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> NotificationBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type NotificationBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type NotificationBodyStatement from %A" th
 
         let Translate = function
         | NotificationBodyStatement.IfFeature     st -> Statement.IfFeature     st
@@ -1755,7 +1780,7 @@ module Statements =
         | BodyStatement.AnyData       st -> OutputBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> OutputBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> OutputBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type InputBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type InputBodyStatement from %A" th
 
 
         let Translate = function
@@ -1971,13 +1996,23 @@ module Statements =
     module TypeDefBodyStatement =
 
         let Translate = function
-        | TypeDefBodyStatement.Type          st -> Statement.Type           st
-        | TypeDefBodyStatement.Units         st -> Statement.Units          st
-        | TypeDefBodyStatement.Default       st -> Statement.Default        st
-        | TypeDefBodyStatement.Status        st -> Statement.Status         st
-        | TypeDefBodyStatement.Description   st -> Statement.Description    st
-        | TypeDefBodyStatement.Reference     st -> Statement.Reference      st
-        | TypeDefBodyStatement.Unknown       st -> Statement.Unknown        st
+        | TypeDefBodyStatement.Type         st -> Statement.Type           st
+        | TypeDefBodyStatement.Units        st -> Statement.Units          st
+        | TypeDefBodyStatement.Default      st -> Statement.Default        st
+        | TypeDefBodyStatement.Status       st -> Statement.Status         st
+        | TypeDefBodyStatement.Description  st -> Statement.Description    st
+        | TypeDefBodyStatement.Reference    st -> Statement.Reference      st
+        | TypeDefBodyStatement.Unknown      st -> Statement.Unknown        st
+
+        let FromStatement = function
+        | Statement.Type                    st -> TypeDefBodyStatement.Type         st
+        | Statement.Units                   st -> TypeDefBodyStatement.Units        st
+        | Statement.Default                 st -> TypeDefBodyStatement.Default      st
+        | Statement.Status                  st -> TypeDefBodyStatement.Status       st
+        | Statement.Description             st -> TypeDefBodyStatement.Description  st
+        | Statement.Reference               st -> TypeDefBodyStatement.Reference    st
+        | Statement.Unknown                 st -> TypeDefBodyStatement.Unknown      st
+        | _ as input  -> throw "Cannot translate to TypeDef body statement from: %A" input
 
     /// Helper methods for the UnknownStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -2011,7 +2046,7 @@ module Statements =
         | BodyStatement.AnyData       st -> UsesAugmentBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> UsesAugmentBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> UsesAugmentBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type UsesAugmentBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type UsesAugmentBodyStatement from %A" th
 
         let Translate = function
         | UsesAugmentBodyStatement.When          st -> Statement.When           st

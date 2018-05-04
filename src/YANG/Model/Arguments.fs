@@ -205,19 +205,21 @@ module Arguments =
     | Bounded   of uint64
     with
         static member Make (bound : uint64) =
-            if bound = 0uL then
-                throw "MaxValue cannot be zero"
-            Bounded bound
+            if bound = 0uL then throw "MaxValue cannot be zero"
+            else Bounded bound
 
         static member Make (bound : uint32) =
-            if bound = 0ul then
-                throw "MaxValue cannot be zero"
-            Bounded (uint64 bound)
+            if bound = 0ul then throw "MaxValue cannot be zero"
+            else Bounded (uint64 bound)
 
         static member Make (bound : int32) =
-            if bound <= 0 then
-                throw "MaxValue cannot be zero or negative"
-            Bounded (uint64 bound)
+            if bound <= 0 then throw "MaxValue cannot be zero or negative"
+            else Bounded (uint64 bound)
+
+        static member Make (bound : decimal) =
+            if bound <= 0M then throw "MaxValue cannot be zero or negative"
+            elif bound > (decimal UInt64.MaxValue) then throw "MaxValue cannot be greater than %d" UInt64.MaxValue
+            else Bounded (uint64 bound)
 
         member this.Value =
             match this with
@@ -240,6 +242,14 @@ module Arguments =
     type MinValue = MinValue of uint32
     with
         static member Make (value : uint32) = MinValue value
+        static member Make (value : int32) =
+            if value < 0 then throw "MinValue cannot be negative"
+            else MinValue (uint32 value)
+        static member Make (value : decimal) =
+            if value < (decimal 0) then throw "MinValue cannot be negative"
+            elif (value > (decimal UInt32.MaxValue)) then throw "MinValue cannot be greater than %d" UInt32.MaxValue
+            else MinValue (uint32 value)
+
         member this.Value = let (MinValue mv) = this in sprintf "%d" mv
         override this.ToString() = this.Value
 
@@ -266,13 +276,13 @@ module Arguments =
                 let (PathKey (up, nodes)) = this
                 up > 0us && (List.length nodes > 0) && (nodes |> List.forall (fun node -> node.IsValid))
 
-            member this.Value = 
+            member this.Value =
                 let (PathKey (up, nodes)) = this
                 let up_string = if up > 0us then String.replicate (int up) "../" else "/"
                 let nodes_string =
                     if nodes.Length = 0 then ""
                     else nodes |> List.map (fun n -> n.Value) |> String.concat "/"
-                sprintf "%s%s" up_string nodes_string 
+                sprintf "%s%s" up_string nodes_string
 
             override this.ToString() = this.Value
 
