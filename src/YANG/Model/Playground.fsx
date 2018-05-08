@@ -128,7 +128,7 @@ module ResolveType =
     //}
 
 
-let xx = DefUseResolver.VisitDefinitions (fun _ -> true) (Statement.Module configuration)
+let xx = DefUse.VisitDefinitions (fun _ -> true) (Statement.Module configuration)
 
 open System.Text
 open System.Collections.Generic
