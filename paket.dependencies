@@ -1,5 +1,6 @@
 source https://nuget.org/api/v2
 
+nuget BrightSword.RoslynWrapper
 nuget FAKE
 nuget FParsec-Big-Data-Edition
 nuget FSharp.QueryProvider
