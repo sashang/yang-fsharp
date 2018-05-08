@@ -9,10 +9,10 @@ module Program =
         let do_throw message = raise (ProgramCreationException message)
         Printf.ksprintf do_throw fmt
 
-    type UInt32Type = {
+    type NumericType<'T> = {
         Description     : string option
         Range           : Arguments.Range.Range option
-        Default         : System.UInt32 option
+        Default         : 'T option
     }
 
     type StringType = {
@@ -82,7 +82,7 @@ module Program =
             | ListWithKey (``member``, ty, key) -> sprintf "%s : Dictionary<%s, %s>" ``member``.Display key.Display ty.Display
     and [<StructuredFormatDisplay("{Display}")>] Type =
     | String    of StringType
-    | UInt32    of UInt32Type
+    | UInt32    of NumericType<uint32>
     | Class     of ContainerDefinition
     with
         member this.Display =
