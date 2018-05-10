@@ -25,6 +25,7 @@ It is used as follows:
 1. In the main body of the configuration, they use the custom `apply-group` to reference that data:
 
    ```xml
+
    <system>
      <protocols>
        <bgp>
@@ -34,11 +35,13 @@ It is used as follows:
        </bgp>
      </protocols>
    </system>
+
    ```
 
 The `apply-group` construct is defined in the `apply-advanced` grouping as follows:
 
-```yang
+```YANG
+
 grouping apply-advanced {
     description "Apply advanced configuration logic";
     leaf-list apply-groups {
@@ -50,6 +53,7 @@ grouping apply-advanced {
         type string;
     }
 }
+
 ```
 
 This construct is non-standard, i.e. the application of the extra configuration parameters is not part of the `YANG` standard.
@@ -60,16 +64,17 @@ why, for example, the group definition does not include in its hierarchy the `sy
 This vendor extension should not affect type generation or configuration parsing. However, we will
 need an extra custom step to merge the various configuration parameters.
 
-_TODO:_ Unclear how to present the merged information to the user.
+TODO: Unclear how to present the merged information to the user.
 
-_TODO:_ Should we assume that if the same configuration appears both in the group
-        and in the proper configuration, the values in the latter win?
+TODO: Should we assume that if the same configuration appears both in the group
+      and in the proper configuration, the values in the latter win?
 
 ## Extension: `junos:must`
 
 The `junos:must` extension define conditions on the configuration.
 
 ```YANG
+
 container interfaces {
 
 }
@@ -83,9 +88,10 @@ container mobile-flow-tap {
         }
     }
 }
+
 ```
 
-_TODO:_ Better example with configuration data as well.
+TODO: Better example with configuration data as well.
 
 In the must statement the `$$` probably expands to the name (value)
 associated with `interface-name` (which is of type string in this example).
@@ -98,14 +104,14 @@ Probably, the `interfaces` container is resolved by navigating up the
 configuration tree. However, the `inteface_name` is a bit more tricky,
 since the `interfaces` container stores more things than just interfaces.
 
-_TODO:_ To enforce that rule, we probably need a post-processing rule.
-There is no guarantee (I believe) that, e.g., the definition of
-`mobile-flow-tap` (above) will appear after the definition of the interfaces.
+TODO: To enforce that rule, we probably need a post-processing rule.
+      There is no guarantee (I believe) that, e.g., the definition of
+      `mobile-flow-tap` (above) will appear after the definition of the interfaces.
 
-_TODO:_ It would also be nice to be able to point from the `interface-name` leaf
-to the object that corresponds to the interface. That pointer may need
-to be patched later. However, we will need to create a member that points
-to the interface. Moreover, that member should be of the appropriate type.
-Observe that finding the correct type for the interface in the example,
-may be tricky, because the algorithm to identify definition-use statements
-does not consider such locations.
+TODO: It would also be nice to be able to point from the `interface-name` leaf
+      to the object that corresponds to the interface. That pointer may need
+      to be patched later. However, we will need to create a member that points
+      to the interface. Moreover, that member should be of the appropriate type.
+      Observe that finding the correct type for the interface in the example,
+      may be tricky, because the algorithm to identify definition-use statements
+      does not consider such locations.
