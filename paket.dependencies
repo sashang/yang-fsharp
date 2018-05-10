@@ -8,6 +8,7 @@ nuget MSTest.TestAdapter
 nuget MSTest.TestFramework
 nuget NLog
 nuget OpenCover
+nuget Pandoc.Windows
 nuget ReportGenerator
 nuget System.Collections.Immutable
 nuget FSharp.Data

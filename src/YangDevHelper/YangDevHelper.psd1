@@ -61,6 +61,7 @@
     FunctionsToExport = @(
         'Get-UniqueModels',
         'Get-WorkItems',
+        'New-Notes',
         'Show-CodeCoverage',
         'Show-Cloc'
     )
