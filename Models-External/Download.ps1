@@ -39,4 +39,26 @@ foreach($repo in $repositories) {
     }
 }
 
+#
+# Special treatment
+#
+
+# Polatis
+$url = "http://www.polatis.com/yang/"
+$directory = "Polatis"
+$links = (Invoke-WebRequest -Uri $url).Links
+$links = $links | Where-Object -Property href -Like -Value "*.yang"
+$toDownload = $links | Select-Object -Property @{Label='href'; Expression={@{$true=$_.href;$false=$url+$_.href}[$_.href.StartsWith('http')]}}
+
+if (-not (Test-Path -Path $directory -PathType Container)) {
+    New-Item -Name $directory -ItemType Directory -Force
+}
+$toDownload | ForEach-Object -Process {
+    $modelUrl = $_.href
+    $name = $modelUrl.Substring($modelUrl.LastIndexOf('/') + 1)
+    $fullPath = Join-Path -Path $directory -ChildPath $name
+    # We force download here, even if the files exist. It could take some effort to check whether we have updated versions.
+    Invoke-WebRequest -Uri $modelUrl -OutFile $fullPath
+}
+
 Pop-Location
