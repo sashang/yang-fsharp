@@ -1,20 +1,36 @@
-source https://nuget.org/api/v2
+generate_load_scripts: true
 
-nuget FAKE
-nuget FParsec-Big-Data-Edition
-nuget FSharp.QueryProvider
-nuget MSTest.TestAdapter
-nuget MSTest.TestFramework
-nuget NLog
-nuget OpenCover
-nuget ReportGenerator
+source https://nuget.org/api/v2
+license_download: true
+
 nuget System.Collections.Immutable
+nuget FSharp.Core 4.5.0
 nuget FSharp.Data
 nuget FSharp.Data.TypeProviders
+nuget FSharp.QueryProvider
+
+nuget FParsec-Big-Data-Edition
+nuget NLog
+
+nuget OpenCover
+nuget ReportGenerator
 nuget TestRunner
+nuget MSTest.TestAdapter
+nuget MSTest.TestFramework
 nuget xunit
 nuget xunit.runner.console
 
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
 github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypesTesting.fs
+
+group netcorebuild
+    redirects: off
+    source https://nuget.org/api/v2
+
+    nuget FAKE prelease
+    nuget Fake.Core.Target
+    nuget Fake.IO.FileSystem
+    nuget Fake.DotNet.MsBuild
+    nuget Fake.DotNet.Testing.XUnit2
+    nuget Fake.DotNet.Testing.MSTest

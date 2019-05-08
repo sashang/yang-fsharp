@@ -18,6 +18,7 @@ $codeCoverTool = Join-Path -Path $packageDir -ChildPath "OpenCover" |
 
 $reportTool = Join-Path -Path $packageDir -ChildPath "ReportGenerator" |
               Join-Path -ChildPath "tools" |
+              Join-Path -ChildPath "net47" |
               Join-Path -ChildPath "ReportGenerator.exe"
 
 $reportDirectory = Join-Path -Path $rootDir -ChildPath "Reports"

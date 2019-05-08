@@ -1,10 +1,16 @@
-#r "packages/FAKE/tools/FakeLib.dll"
-open Fake.MSTest
+#r "paket: groupref netcorebuild //"
+#load "./.fake/build.fsx/intellisense.fsx"
+
 open System.Diagnostics
-open Fake
-open Fake.Testing.XUnit2
 open System.IO
 open System.Text
+open Fake.Core
+open Fake.Core.TargetOperators
+open Fake.IO
+open Fake.IO.Globbing.Operators
+open Fake.DotNet
+open Fake.DotNet.Testing.XUnit2
+
 
 // TODO: Strategy for compiling and testing
 // The following is a bit messy. We compile both debug and release versions.
@@ -22,6 +28,8 @@ let testDirResults = Path.Combine(__SOURCE_DIRECTORY__, "Reports")
 let packagesDir = Path.Combine(__SOURCE_DIRECTORY__, "packages")
 
 let exampleTypesDirectory = Path.Combine(__SOURCE_DIRECTORY__, "src", "TypeTests")
+
+let buildMode = Environment.environVarOrDefault "buildMode" "Release"
 
 //
 // Helper scripts
@@ -41,6 +49,7 @@ let CompileFsx (filename : string, debug : bool) =
   //     FscHelper.Debug       true
   //   ] [ filename ]
 
+  let info = FileInfo(filename)
   let outputFile = Path.ChangeExtension(filename, "dll")
 
   // TODO: Do not compile fsx if output already exists and is recent
@@ -50,57 +59,111 @@ let CompileFsx (filename : string, debug : bool) =
   if debug then
     args.Append(" -d:DEBUG") |> ignore
 
-  let result = ExecProcess (fun info ->
-    info.FileName <- "fsc"
-    info.WorkingDirectory <- exampleTypesDirectory
-    info.Arguments <- sprintf @"%s %s" (args.ToString()) filename) (System.TimeSpan.FromMinutes 5.0)
+  Shell.pushd info.DirectoryName
+
+  let result =
+    let p = new Process()
+    p.StartInfo.FileName <- "fsc"
+    p.StartInfo.WorkingDirectory <- info.DirectoryName
+    p.StartInfo.Arguments <- sprintf @"%s %s" (args.ToString()) filename
+
+    if not (p.Start()) then
+      Trace.traceError (sprintf "Cannot start F# compiler on %s" filename)
+      raise <| MSBuildException(sprintf "Fsc: compiler failed to start for %s" filename, [ ])
+
+    let timeout = System.TimeSpan.FromMinutes 5.0
+    p.WaitForExit(timeout.TotalMilliseconds |> int) |> ignore
+    p.ExitCode
 
   if result <> 0 then
-    traceError (sprintf "Error compiling example type in file: %s" filename)
-    raise <| BuildException(sprintf "Fsc: compile failed for %s with exit code" filename, [ string result ])
+    Trace.traceError (sprintf "Error compiling example type in file: %s (error: %d)" filename result)
+    raise <| MSBuildException(sprintf "Fsc: compile failed for %s with exit code" filename, [ string result ])
 
   if debug then
-    Fake.FileHelper.CopyFile testDir outputFile
+    Shell.copyFile testDir outputFile
   else
-    Fake.FileHelper.CopyFile buildDir outputFile
+    Shell.copyFile buildDir outputFile
 
+  Shell.popd ()
   filename
+
+let setDebugParams (defaults : MSBuildParams) =
+  { defaults with
+      Verbosity   = Some(Quiet)
+      Targets     = ["Build"]
+      Properties  =
+        [
+          "Optimize", "False"
+          "DebugSymbols", "True"
+          "Configuration", "Debug"
+        ]
+  }
+
+let setReleaseParams (defaults : MSBuildParams) =
+  { defaults with
+      Verbosity   = Some(Quiet)
+      Targets     = ["Build"]
+      Properties  =
+        [
+          "Optimize", "False"
+          "DebugSymbols", "True"
+          "Configuration", "Release"
+        ]
+  }
+
+let setParams (defaults : MSBuildParams) =
+  { defaults with
+      Verbosity   = Some(Quiet)
+      Targets     = ["Build"]
+      Properties  =
+        [
+          "Optimize", "False"
+          "DebugSymbols", "True"
+          "Configuration", buildMode
+        ]
+  }
 
 //
 // Targets
 //
-Target "Clean" (fun _ ->
+Target.create "Clean" (fun _ ->
     // Clean release and test directories
-    CleanDir buildDir
-    CleanDir testDir
-    CleanDir testDirResults
+    Shell.cleanDir buildDir
+    Shell.cleanDir testDir
+    Shell.cleanDir testDirResults
 
     // Delete generated types
-    Directory.GetFiles(exampleTypesDirectory, "*.dll") |> DeleteFiles
+    Directory.GetFiles(exampleTypesDirectory, "*.dll") |> File.deleteAll
 )
 
-Target "Build" (fun _ ->
+Target.create "Build" (fun _ ->
     !! "src/YANG/YANG.sln"
-      |> MSBuildRelease buildDir "Build"
-      |> Log "AppBuild-Output:"
+      |> Fake.DotNet.MSBuild.runRelease id buildDir "Build"
+      |> Trace.logItems "AppBuild-Output:"
 )
 
-Target "QuickBuild" (fun _ ->
+Target.create "BuildDebug" (fun _ ->
     !! "src/YANG/YANG.sln"
-      |> MSBuildRelease buildDir "Build"
-      |> Log "AppBuild-Output:"
+      |> Fake.DotNet.MSBuild.runDebug id testDir "Build"
+      |> Trace.logItems "AppBuild-Output:"
+)
+
+Target.create "QuickBuild" (fun _ ->
+    !! "src/YANG/YANG.sln"
+      |> Fake.DotNet.MSBuild.runRelease id buildDir "Build"
+      |> Trace.logItems "AppBuild-Output:"
 )
 
 // We want to build all unit tests, and the type generator.
-Target "BuildTest" (fun _ ->
+Target.create "BuildTest" (fun _ ->
     !! "src/**/*.Tests.*.fsproj"
-      |> MSBuildDebug testDir "Build"
-      |> Log "TestBuild-Output:"
+      |> Fake.DotNet.MSBuild.runDebug id testDir "Build"
+      |> Trace.logItems "TestBuild-Output:"
 )
 
-Target "Test" (fun _ ->
+Target.create "Test" (fun _ ->
     !! (testDir + "/*.Tests.xunit.dll")
-      |> xUnit2 (fun p ->
+      |> Testing.XUnit2.run (fun p ->
         {
             p with
                 HtmlOutputPath = Some (Path.Combine(testDirResults, "YANG.tests.result.html"))
@@ -109,28 +172,28 @@ Target "Test" (fun _ ->
       )
 )
 
-Target "BuildDebugTypeGenerator" ( fun _ ->
+Target.create "BuildDebugTypeGenerator" ( fun _ ->
     !! "src/YANG/Generator/Generator.fsproj"
-      |> MSBuildDebug testDir "Build"
-      |> Log "TestBuild-Type Generator Output:"
+      |> Fake.DotNet.MSBuild.runDebug id testDir "Build"
+      |> Trace.logItems "TestBuild-Type Generator Output:"
 )
 
-Target "GenerateTypesForTesting" (fun _ ->
+Target.create "GenerateTypesForTesting" (fun _ ->
   Directory.GetFiles(exampleTypesDirectory, "*.fsx")
   |> List.ofArray
   |> List.iter (fun filename ->
-    [ CompileFsx (filename, false) ] |> Log (sprintf "Compiling (debug)   : %s" filename)
-    [ CompileFsx (filename, true)  ] |> Log (sprintf "Compiling (release) : %s" filename)
+    [ CompileFsx (filename, false) ] |> Trace.logItems  (sprintf "Compiling (debug)   : %s\n" filename)
+    [ CompileFsx (filename, true)  ] |> Trace.logItems  (sprintf "Compiling (release) : %s\n" filename)
   )
 )
 
-Target "BuildCSharpTests" (fun _ ->
+Target.create "BuildCSharpTests" (fun _ ->
   !! "src/TypeTestsFromCSharp/TypeTestsFromCSharp.sln"
-  |> MSBuildDebug testDir "Build"
-  |> Log "TestBuild-Build C# unit tests"
+  |> Fake.DotNet.MSBuild.runDebug id testDir "Build"
+  |> Trace.logItems "TestBuild-Build C# unit tests"
 )
 
-Target "TestGeneratedTypes" (fun _ ->
+Target.create "TestGeneratedTypes" (fun _ ->
   let fsharpTests =
     Directory.GetFiles(exampleTypesDirectory, "*.fsx")
     |> Seq.map (fun filename ->
@@ -141,7 +204,7 @@ Target "TestGeneratedTypes" (fun _ ->
     )
 
   fsharpTests
-    |> xUnit2 (fun p ->
+    |> Testing.XUnit2.run (fun p ->
       {
           p with
               HtmlOutputPath = Some (Path.Combine(testDirResults, "Generator.tests.result.html"))
@@ -150,11 +213,11 @@ Target "TestGeneratedTypes" (fun _ ->
     )
 )
 
-Target "TestCSharpTypes" (fun _ ->
+Target.create "TestCSharpTypes" (fun _ ->
   let csharpReportDir = Path.Combine(testDirResults, "CSharpUnitTests")
-  FileUtils.mkdir csharpReportDir
+  Shell.mkdir csharpReportDir
   !! Path.Combine(testDir, "Yang.Examples.CSharp.Tests.dll")
-    |> MSTest (fun p ->
+    |> Testing.MSTest.exec (fun p ->
       { p with
           // TODO: Can we get the MSTest.exe from nuget.org?
           ToolPath = Path.Combine(System.Environment.GetEnvironmentVariable("DevEnvDir"), "MSTest.exe")
@@ -162,25 +225,29 @@ Target "TestCSharpTypes" (fun _ ->
       })
 )
 
-Target "Default" (fun _ ->
-    trace "Start building YANG parser and type generator"
+Target.create "Default" (fun _ ->
+    Trace.log "Start building YANG parser and type generator"
+)
+
+Target.create "All" (fun _ ->
+    Trace.log "Build and test everything from scratch"
 )
 
 //
 // Dependencies
 //
-"Clean"
-  ==> "Build"
+"Build"
   ==> "BuildTest"
   ==> "Test"
+  ==> "BuildDebugTypeGenerator"
   ==> "GenerateTypesForTesting"
   ==> "BuildCSharpTests"
   ==> "TestCSharpTypes"
   ==> "Default"
-
-"BuildDebugTypeGenerator"
-  ==> "GenerateTypesForTesting"
   ==> "TestGeneratedTypes"
-  ==> "TestCSharpTypes"
 
-RunTargetOrDefault "Default"
+"GenerateTypesForTesting" ==> "BuildDebug"
+"Clean" ==> "All"
+"TestGeneratedTypes" ==> "All"
+
+Target.runOrDefaultWithArguments "Default"

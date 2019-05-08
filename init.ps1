@@ -4,12 +4,20 @@ param()
 $Env:ROOTDIR = $PSScriptRoot
 
 # Make sure that paket is available
-$paket = Join-Path -Path $PSScriptRoot -ChildPath ".paket" | `
-         Join-Path -ChildPath "paket.exe"
+$paketDir = Join-Path -Path $PSScriptRoot -ChildPath ".paket"
+$paket = Join-Path -Path $paketDir -ChildPath "paket.exe"
 
 if (-not (Test-Path -Path $paket)) {
     Write-Warning -Message "Downloading paket.exe"
     & "$PSScriptRoot\.paket\paket.bootstrapper.exe"
+}
+
+$paketCommand = Get-Command -Name paket.exe -ErrorAction SilentlyContinue
+if ($null -eq $paketCommand) {
+    $Env:PATH += ";$paketDir"
+}
+elseif (-not ($paketCommand.Source.Equals($paket, [StringComparison]::InvariantCultureIgnoreCase))) {
+    $Env:PATH = "$paketDir;" + $Env:PATH
 }
 
 # Make sure that npm is available; this is used to put some structure in the commit messages
@@ -72,6 +80,15 @@ if ($generate_scripts) {
     $dependencies_hash.Hash | Out-File -Encoding ascii -FilePath $load_script_info
 }
 
+$fakePath = Join-Path -Path $PSScriptRoot -ChildPath "tools" | Join-Path -ChildPath "fake"
+$fakeExecutable = Join-Path -Path $fakePath -ChildPath "fake.exe"
+if (-not (Test-Path -Path $fakeExecutable)) {
+    dotnet tool install fake-cli --tool-path $fakePath
+}
+
+$Env:FakePath = $fakePath
+$Env:FakeExecutable = $fakeExecutable
+
 #
 # Helper cmdlets
 #
@@ -83,7 +100,7 @@ function global:Build {
 
 function global:qb {
     Push-Location -Path $PSScriptRoot
-    .\packages\FAKE\tools\Fake.exe build.fsx QuickBuild
+    . "$Env:FakeExecutable" run build.fsx -t QuickBuild
     Pop-Location
 }
 

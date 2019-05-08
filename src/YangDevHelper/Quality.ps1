@@ -89,7 +89,13 @@ function Show-CodeCoverage {
             "-targetargs:`"$args`""
         )
 
-        . "$codeCoverTool" @arguments
+        Try {
+            Push-Location -Path $_.DirectoryName
+            . "$codeCoverTool" @arguments
+        }
+        Finally {
+            Pop-Location
+        }
     }
 
     # Run the tests in the type provider examples
