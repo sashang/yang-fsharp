@@ -51,7 +51,8 @@ module Linkage =
         <|> (parse_unknown_statement        |>> ImportBodyStatement.Unknown)
 
     let parse_import_statement<'a> : Parser<ImportStatement, 'a> =
-        make_statement_parser_generic "import" Identifier.parse_identifier parse_import_body_statement
+        make_statement_parser_generic "import" parse_identifier parse_import_body_statement
+        |>> ImportStatement
 
     let parse_include_body_statement<'a> : Parser<IncludeBodyStatement, 'a> =
             (parse_revision_date_statement  |>> IncludeBodyStatement.RevisionDate)
@@ -60,7 +61,8 @@ module Linkage =
         <|> (parse_unknown_statement        |>> IncludeBodyStatement.Unknown)
 
     let parse_include_statement<'a> : Parser<IncludeStatement, 'a> =
-        make_statement_parser_optional_generic "include" Identifier.parse_identifier parse_include_body_statement
+        make_statement_parser_optional_generic "include" parse_identifier parse_include_body_statement
+        |>> IncludeStatement
 
     let parse_linkage_statement<'a> : Parser<LinkageBodyStatement, 'a> =
             (parse_import_statement     |>> LinkageBodyStatement.Import)

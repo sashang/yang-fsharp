@@ -7,6 +7,9 @@ module Parser =
     open FParsec
     open Yang.Model.Statements
 
+    let Initialize () =
+        GenericParser.initialize ()
+
     /// <summary>
     /// Reads a YANG model from a file and removes all comments.
     /// (It does NOT parse the statements --- just reads the file)
@@ -30,3 +33,8 @@ module Parser =
         | Failure (message, _, _)   ->
             raise (YangParserException (sprintf "Failed to parse model, error: %s" message))
 
+    let ParseFile (filename : string) =
+        let content = ReadAndClean filename
+        // TODO: Do we need to call the generic statement initializer here?
+        GenericParser.initialize()
+        apply_parser (wse >>. Module.parse_module_or_submodule) content

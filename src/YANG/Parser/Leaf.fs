@@ -38,10 +38,12 @@ module Leaf =
     //                        "}" stmtsep
 
     let parse_leaf_body_statement<'a> : Parser<LeafBodyStatement, 'a> =
-        // TODO: fill in the rest of the statements for LeafBodyStatement
         // TODO: Enforce the cardinality constraints for LeafBodyStatement
-            (Types.parse_type_statement     |>> LeafBodyStatement.Type)
+            (parse_when_statement           |>> LeafBodyStatement.When)
+        <|> (Expressions.parse_if_feature_statement |>> LeafBodyStatement.IfFeature)
+        <|> (Types.parse_type_statement     |>> LeafBodyStatement.Type)
         <|> (parse_units_statement          |>> LeafBodyStatement.Units)
+        <|> (parse_must_statement           |>> LeafBodyStatement.Must)
         <|> (parse_default_statement        |>> LeafBodyStatement.Default)
         <|> (parse_config_statement         |>> LeafBodyStatement.Config)
         <|> (parse_mandatory_statement      |>> LeafBodyStatement.Mandatory)
@@ -51,7 +53,8 @@ module Leaf =
         <|> (parse_unknown_statement        |>> LeafBodyStatement.Unknown)
 
     let parse_leaf_statement<'a> : Parser<LeafStatement, 'a> =
-        make_statement_parser_generic "leaf" Identifier.parse_identifier parse_leaf_body_statement
+        make_statement_parser_generic "leaf" parse_identifier parse_leaf_body_statement
+        |>> LeafStatement
 
 module LeafList =
     open FParsec
@@ -80,15 +83,21 @@ module LeafList =
     let private parse_leaf_body_statement<'a> : Parser<LeafListBodyStatement, 'a> =
         // TODO: fill in the missing statements for LeafListBodyStatement
         // TODO: Enforce the cardinality constraints for LeafListBodyStatement
-            (Types.parse_type_statement     |>> LeafListBodyStatement.Type)
+            (parse_when_statement           |>> LeafListBodyStatement.When)
+        <|> (Expressions.parse_if_feature_statement |>> LeafListBodyStatement.IfFeature)
+        <|> (Types.parse_type_statement     |>> LeafListBodyStatement.Type)
         <|> (parse_units_statement          |>> LeafListBodyStatement.Units)
+        <|> (parse_must_statement           |>> LeafListBodyStatement.Must)
         <|> (parse_default_statement        |>> LeafListBodyStatement.Default)
-        <|> (parse_min_elemenets_statement  |>> LeafListBodyStatement.MinElements)
+        <|> (parse_config_statement         |>> LeafListBodyStatement.Config)
+        <|> (parse_min_elements_statement   |>> LeafListBodyStatement.MinElements)
         <|> (parse_max_elements_statement   |>> LeafListBodyStatement.MaxElements)
         <|> (parse_ordered_by_statement     |>> LeafListBodyStatement.OrderedBy)
         <|> (parse_status_statement         |>> LeafListBodyStatement.Status)
         <|> (parse_description_statement    |>> LeafListBodyStatement.Description)
+        <|> (parse_reference_statement      |>> LeafListBodyStatement.Reference)
         <|> (parse_unknown_statement        |>> LeafListBodyStatement.Unknown)
 
     let parse_leaf_list_statement<'a> : Parser<LeafListStatement, 'a> =
         make_statement_parser_generic "leaf-list" Identifier.parse_identifier parse_leaf_body_statement
+        |>> LeafListStatement

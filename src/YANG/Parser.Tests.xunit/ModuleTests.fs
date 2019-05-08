@@ -64,3 +64,33 @@ module example-system {
         Assert.Empty(m.Body)
 
     // TODO: add more module tests
+
+    [<Fact>]
+    let ``parse simple submodule`` () =
+        let input = """submodule openconfig-mpls-igp {
+
+  yang-version "1";
+
+  belongs-to "openconfig-mpls" {
+    prefix "mpls";
+  }
+}"""
+        let submodule = FParsecHelper.apply parse_submodule input
+        Assert.Equal("openconfig-mpls-igp", submodule.Name.Value)
+        let (YangVersionStatement (version, yve), (BelongsToStatement (belongs_to, bte)), extra) = submodule.Header
+        Assert.Equal(1, version.Major)
+        Assert.Equal(0, version.Minor)
+        Assert.True(yve.IsNone)
+
+        Assert.Equal("openconfig-mpls", belongs_to.Value)
+        Assert.Equal(1, bte.Length)
+        let prefix = bte.Head
+        Assert.True(BelongsToBodyStatement.IsPrefix prefix)
+        let p = BelongsToBodyStatement.AsPrefix prefix
+        Assert.True(p.IsSome)
+        let (PrefixStatement (pp, pe)) = p.Value
+        Assert.Equal("mpls", pp)
+        Assert.True(pe.IsNone)
+        Assert.Equal(0, submodule.Body.Length)
+
+    // TODO: add tests for submodules

@@ -26,10 +26,84 @@ module Utilities =
     /// Operator to aid the debugging of parsers
     let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
         fun stream ->
-            printfn "%A: Entering %s" stream.Position label
+            printfn "(Ln: %03d, Col: %03d): Entering %s" stream.Position.Line stream.Position.Column label
             let reply = p stream
-            printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
+            printfn "(Ln: %03d, Col: %03d): Leaving %s (%A)" stream.Position.Line stream.Position.Column label reply.Status
             reply
+
+    let private pip_error_transform (errors : ErrorMessageList) =
+        let pip_error = FParsec.ErrorMessage.ExpectedString("parser-in-parser: inner parser did not consume entire input string")
+        if errors.Head <> null then
+            match errors.Head with
+            | :? FParsec.ErrorMessage.Expected as expected ->
+                if expected.Label = "end of input" then
+                    Reply(Error, ErrorMessageList(pip_error, errors))
+                else Reply(Error, errors)
+            | _ -> Reply(Error, errors)
+        else Reply(Error, errors)
+
+    /// Parser-in-parser: read a string with a string parser, and apply a second
+    /// parser on the string read.
+    let pip<'a, 'b> (outer : Parser<string, 'a>) (inner : Parser<'b, 'a>) =
+        // TODO: Proper testing of parser-in-parser
+        // TODO: Do we need to back-trace in parser-in-parser when failure to parse? If so, where?
+        // TODO: Make sure that the inside parser in pip consumes the entire input provided by the first parser.
+        fun (stream : CharStream<'a>) ->
+            let state = stream.State
+            let input = outer stream
+            if input.Status = Ok then
+                let str = input.Result
+                let cs  = new CharStream<'a>(str, 0, str.Length)
+                let output = (inner .>> eof) cs
+                if output.Status = Ok then
+                    Reply output.Result
+                else
+                    stream.BacktrackTo(state)
+                    pip_error_transform output.Error
+            else
+                stream.BacktrackTo(state)
+                Reply (Error, input.Error)
+
+    /// Parser-in-parser and transform: read a string with a string parser, transform it,
+    /// and apply the transformed string to a second parser.
+    let pipt<'a, 'b> (outer : Parser<string, 'a>) (transform : string -> string) (inner : Parser<'b, 'a>) =
+        // TODO: Proper testing of pipt
+        // TODO: Do we need to back-trace in pipt when failure to parse? If so, where?
+        // TODO: Make sure that the inside parser in pipt consumes the entire input provided by the first parser.
+        fun (stream : CharStream<'a>) ->
+            let state = stream.State
+            let input = outer stream
+            if input.Status = Ok then
+                let str = transform input.Result
+                let cs  = new CharStream<'a>(str, 0, str.Length)
+                let output = (inner .>> eof) cs
+                if output.Status = Ok then
+                    Reply output.Result
+                else
+                    stream.BacktrackTo(state)
+                    pip_error_transform output.Error
+            else
+                stream.BacktrackTo(state)
+                Reply (Error, input.Error)
+
+    /// Parses the next YANG string and checks whether it matches an expected value.
+    /// It is similar to pstring, but works on YANG strings
+    let pip_pstring<'a, 'b> (outer : Parser<string, 'a>) (expected : string) =
+        // TODO: Proper testing of pip_pstring
+        // TODO: Do we need to back-trace in pipt when failure to parse? If so, where?
+        // TODO: Make sure that the inside parser in pipt consumes the entire input provided by the first parser.
+        fun (stream : CharStream<'a>) ->
+            let state = stream.State
+            let input = outer stream
+            if input.Status = Ok then
+                let str = input.Result
+                if str = expected then
+                    Reply expected
+                else
+                    Reply (Error, ErrorMessageList (ErrorMessage.Expected expected))
+            else
+                stream.BacktrackTo(state)
+                Reply (Error, input.Error)
 
     /// try_parse_sequence parser1 parser2: Apply parser1 then parser2. If either fails backtrack the stream.
     /// Both of the parsers will be tried, and the combined parser will succeed if either of parser1 or parser2

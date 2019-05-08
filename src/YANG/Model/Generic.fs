@@ -22,7 +22,8 @@ module Generic =
 
     /// A short representation of the identity of a generic statement
     [<StructuredFormatDisplay("{AsString}")>]
-    type StatementLabel = | StatementLabel of Keyword:string * Argument:(string option)
+    [<Struct>]
+    type StatementLabel = StatementLabel of Keyword:string * Argument:(string option)
     with
         member this.AsString =
             let (StatementLabel (keyword, argument)) = this
@@ -34,7 +35,8 @@ module Generic =
 
     /// The unique id of the statement in the model
     [<StructuredFormatDisplay("{AsString}")>]
-    type StatementId    = | StatementId of (StatementLabel list)
+    [<Struct>]
+    type StatementId    = StatementId of (StatementLabel list)
     with
         member this.AsString =
             let (StatementId path) = this

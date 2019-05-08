@@ -7,6 +7,7 @@ namespace Yang.Model
 module Statements =
     open System
     open Arguments
+    open NLog
 
     (* The following captures the main part of the YANG model.
      * It tries to be reasonable close to [RFC 7950, Section 14, pp.184-210].
@@ -28,7 +29,7 @@ module Statements =
      * reasonable).
      *
      * The model requires in many cases that the cardinality of a particular statement in a block is one or more.
-     * It is not particularly convenient to define lists that have at least one item, and we instead use lists.
+     * It is not particularly convenient to define lists that havPe at least one item, and we instead use lists.
      * The caller/user needs to verify cardinality --- in other words, cardinality constraints are not enforced
      * below.
      *
@@ -38,9 +39,34 @@ module Statements =
      *)
 
      // TODO: Remove/fix pretty printing functionality from this file; use other version.
+     // TODO: Name items of *Statement definitions. Use the new syntax as well.
+
+    /// Logger for this module
+    let private _logger = LogManager.GetCurrentClassLogger()
+
+    let private throw fmt =
+        let do_throw (message : string) =
+            _logger.Error message
+            raise (YangModelException message)
+        Printf.ksprintf do_throw fmt
+
+    let private warn fmt = Printf.ksprintf _logger.Warn fmt
+    let private debug fmt = Printf.ksprintf _logger.Debug fmt
+    let private trace fmt = Printf.ksprintf _logger.Trace fmt
+    let private error fmt = Printf.ksprintf _logger.Error fmt
+
+#if INTERACTIVE
+    // The following are used only in interactive (fsi) to help with enabling disabling
+    // logging for particular modules.
+
+    type internal Marker = interface end
+    let _full_name = typeof<Marker>.DeclaringType.FullName
+    let _name = typeof<Marker>.DeclaringType.Name
+#endif
+
 
     /// Available Yang statement definitions
-    [<StructuredFormatDisplay("{PrettyPrint}")>]
+    // TODO: Fix printing: [<StructuredFormatDisplay("{PrettyPrint}")>]
     type Statement =
     | Action        of ActionStatement
     | AnyData       of AnyDataStatement
@@ -115,83 +141,84 @@ module Statements =
     | YangVersion   of YangVersionStatement
     | YinElement    of YinElementStatement
     | Unknown       of UnknownStatement
-    with
-        member this.PrettyPrint     = StatementPrinter.Print this
-        override this.ToString()    = this.PrettyPrint
+    // TODO: Fix pretty printing of Statement
+    //with
+    //    member this.PrettyPrint     = StatementPrinter.Print this
+    //    override this.ToString()    = this.PrettyPrint
 
     /// Short name for the extra statements that may appear
     and ExtraStatements         = Statement list option
 
     and ActionBodyStatement     =
-    | IfFeature     of IfFeatureStatement
-    | Status        of StatusStatement
-    | Description   of DescriptionStatement
-    | Reference     of ReferenceStatement
-    | TypeDef       of TypeDefStatement
-    | Grouping      of GroupingStatement
-    | Input         of InputStatement
-    | Output        of OutputStatement
-    | Unknown       of UnknownStatement
+    | IfFeature     of IfFeature:   IfFeatureStatement
+    | Status        of Status:      StatusStatement
+    | Description   of Description: DescriptionStatement
+    | Reference     of Reference:   ReferenceStatement
+    | TypeDef       of TypeDef:     TypeDefStatement
+    | Grouping      of Grouping:    GroupingStatement
+    | Input         of Input:       InputStatement
+    | Output        of Output:      OutputStatement
+    | Unknown       of Unknown:     UnknownStatement
     /// Captures the 'action-stmt' statement from [RFC 7950, p. 200]
-    and ActionStatement         = Identifier            * (ActionBodyStatement list option)
+    and [<Struct>] ActionStatement         = ActionStatement of Identifier * (ActionBodyStatement list option)
     and AnyDataBodyStatement    =
-    | When          of WhenStatement
-    | IfFeature     of IfFeatureStatement
-    | Must          of MustStatement
-    | Config        of ConfigStatement
-    | Mandatory     of MandatoryStatement
-    | Status        of StatusStatement
-    | Description   of DescriptionStatement
-    | Reference     of ReferenceStatement
-    | Unknown       of UnknownStatement
+    | When          of When:        WhenStatement
+    | IfFeature     of IfFeature:   IfFeatureStatement
+    | Must          of Must:        MustStatement
+    | Config        of Config:      ConfigStatement
+    | Mandatory     of Mandatory:   MandatoryStatement
+    | Status        of Status:      StatusStatement
+    | Description   of Description: DescriptionStatement
+    | Reference     of Reference:   ReferenceStatement
+    | Unknown       of Unknown:     UnknownStatement
     /// Captures the 'anydata-stmt' statement from [RFC 7950, p. 197]
-    and AnyDataStatement        = Identifier            * (AnyDataBodyStatement list option)
+    and [<Struct>] AnyDataStatement        = AnyDataStatement of Identifier * (AnyDataBodyStatement list option)
     and AnyXmlBodyStatement     =
-    | When          of WhenStatement
-    | IfFeature     of IfFeatureStatement
-    | Must          of MustStatement
-    | Config        of ConfigStatement
-    | Mandatory     of MandatoryStatement
-    | Status        of StatusStatement
-    | Description   of DescriptionStatement
-    | Reference     of ReferenceStatement
-    | Unknown       of UnknownStatement
+    | When          of When:        WhenStatement
+    | IfFeature     of IfFeature:   IfFeatureStatement
+    | Must          of Must:        MustStatement
+    | Config        of Config:      ConfigStatement
+    | Mandatory     of Mandatory:   MandatoryStatement
+    | Status        of Status:      StatusStatement
+    | Description   of Description: DescriptionStatement
+    | Reference     of Reference:   ReferenceStatement
+    | Unknown       of Unknown:     UnknownStatement
     /// Captures the 'anyxml-stmt' statement from [RFC 7950, p. 197]
-    and AnyXmlStatement         = Identifier            * (AnyXmlBodyStatement list option)
-    and ArgumentBodyStatement   =
-    | YinElement    of YinElementStatement
-    | Unknown       of UnknownStatement
+    and [<Struct>] AnyXmlStatement         = AnyXmlStatement of Identifier * (AnyXmlBodyStatement list option)
+    and [<Struct>] ArgumentBodyStatement   =
+    | YinElement    of Yin:         YinElementStatement
+    | Unknown       of Unknown:     UnknownStatement
     /// Captures the 'argument-stmt' statement from [RFC 7950, p. 187]
-    and ArgumentStatement       = Identifier            * (ArgumentBodyStatement list option)
+    and [<Struct>] ArgumentStatement       = ArgumentStatement of Identifier * (ArgumentBodyStatement list option)
     and AugmentBodyStatement    =
-    | When          of WhenStatement
-    | IfFeature     of IfFeatureStatement
-    | Status        of StatusStatement
-    | Description   of DescriptionStatement
-    | Reference     of ReferenceStatement
+    | When          of When:        WhenStatement
+    | IfFeature     of IfFeature:   IfFeatureStatement
+    | Status        of Status:      StatusStatement
+    | Description   of Description: DescriptionStatement
+    | Reference     of Reference:   ReferenceStatement
     // data-def-stmt
-    | Container     of ContainerStatement
-    | Leaf          of LeafStatement
-    | LeafList      of LeafListStatement
-    | List          of ListStatement
-    | Choice        of ChoiceStatement
-    | AnyData       of AnyDataStatement
-    | AnyXml        of AnyXmlStatement
-    | Uses          of UsesStatement
+    | Container     of Container:   ContainerStatement
+    | Leaf          of Leaf:        LeafStatement
+    | LeafList      of LeafList:    LeafListStatement
+    | List          of List:        ListStatement
+    | Choice        of Choice:      ChoiceStatement
+    | AnyData       of AnyData:     AnyDataStatement
+    | AnyXml        of AnyXml:      AnyXmlStatement
+    | Uses          of Uses:        UsesStatement
     // End of data-def-stmt
-    | Case          of CaseStatement
-    | Action        of ActionStatement
-    | Notification  of NotificationStatement
-    | Unknown       of UnknownStatement
+    | Case          of Case:        CaseStatement
+    | Action        of Action:      ActionStatement
+    | Notification  of Notification:NotificationStatement
+    | Unknown       of Unknown:     UnknownStatement
     /// Captures the 'augment-stmt' statement from [RFC 7950, p. 199]
-    and AugmentStatement        = Augment               * (AugmentBodyStatement list)
+    and [<Struct>] AugmentStatement        = AugmentStatement of Augment * (AugmentBodyStatement list)
     /// Captures the 'base-stmt' statement from [RFC 7950, p. 187]
-    and BaseStatement           = IdentifierReference   * ExtraStatements
-    and BelongsToBodyStatement  =
-    | Prefix        of PrefixStatement
-    | Unknown       of UnknownStatement
+    and [<Struct>] BaseStatement           = BaseStatement of IdentifierReference * ExtraStatements
+    and [<Struct>] BelongsToBodyStatement  =
+    | Prefix        of Prefix:      PrefixStatement
+    | Unknown       of Unknown:     UnknownStatement
     /// Captures the 'belongs-to-stmt' statement from [RFC 7950, p. 186]
-    and BelongsToStatement      = Identifier    * (BelongsToBodyStatement list)
+    and [<Struct>] BelongsToStatement      = BelongsToStatement of Identifier * (BelongsToBodyStatement list)
     and BitBodyStatement        =
     | IfFeature     of IfFeatureStatement
     | Position      of PositionStatement
@@ -200,7 +227,7 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'bit-stmt' statement from [RFC 7950, p. 191]
-    and BitStatement            = Identifier    * (BitBodyStatement list option)
+    and [<Struct>] BitStatement            = BitStatement of Identifier        * (BitBodyStatement list option)
     and CaseBodyStatement       =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -219,7 +246,7 @@ module Statements =
     // End of data-def-stmt
     | Unknown       of UnknownStatement
     /// Captures the 'case-stmt' statement from [RFC 7950, p. 196].
-    and CaseStatement           = Identifier    * (CaseBodyStatement list option)
+    and [<Struct>] CaseStatement           = CaseStatement of Identifier    * (CaseBodyStatement list option)
     and ChoiceBodyStatement     =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -241,11 +268,11 @@ module Statements =
     | Case          of CaseStatement
     | Unknown       of UnknownStatement
     /// Captures the 'choice-stmt' statement from [RFC 7950, p. 196].
-    and ChoiceStatement         = Identifier    * (ChoiceBodyStatement list option)
+    and [<Struct>] ChoiceStatement         = ChoiceStatement     of Identifier    * (ChoiceBodyStatement list option)
     /// Captures the 'config-stmt' statement from [RFC 7950, p. 191]
-    and ConfigStatement         = bool          * ExtraStatements
+    and [<Struct>] ConfigStatement         = ConfigStatement     of bool          * ExtraStatements
     /// Captures the 'contact-stmt' statement from [RFC 7950, p. 186]
-    and ContactStatement        = string        * ExtraStatements
+    and [<Struct>] ContactStatement        = ContactStatement    of string        * ExtraStatements
     and ContainerBodyStatement  =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -271,11 +298,11 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the 'container-stmt' statement from [RFC 7950, p. 193].
-    and ContainerStatement      = Identifier    * (ContainerBodyStatement list option)
+    and [<Struct>] ContainerStatement      = ContainerStatement of Identifier    * (ContainerBodyStatement list option)
     /// Captures the 'default-stmt' statement from [RFC 7950, p. 190]
-    and DefaultStatement        = string        * ExtraStatements
+    and [<Struct>] DefaultStatement        = DefaultStatement        of string        * ExtraStatements
     /// Captures the 'description-stmt' statement from [RFC 7950, p. 186]
-    and DescriptionStatement    = string        * ExtraStatements
+    and [<Struct>] DescriptionStatement    = DescriptionStatement    of string        * ExtraStatements
     and DeviateAddBodyStatement =
     | Units         of UnitsStatement
     | Must          of MustStatement
@@ -287,7 +314,7 @@ module Statements =
     | MaxElements   of MaxElementsStatement
     | Unknown       of UnknownStatement
     /// Captures the 'deviate-add-stmt' statement from [RFC 7950, p. 201].
-    and DeviateAddStatement             = DeviateAddBodyStatement list option
+    and [<Struct>] DeviateAddStatement             = DeviateAddStatement of DeviateAddBodyStatement list option
     /// Captures the 'deviate-not-supported-stmt' statement from [RFC 7950, p. 201]; this statement does not take proper arguments.
     and DeviateDeleteBodyStatement      =
     | Units         of UnitsStatement
@@ -296,7 +323,7 @@ module Statements =
     | Default       of DefaultStatement
     | Unknown       of UnknownStatement
     /// Captures the 'deviate-delete-stmt' statement from [RFC 7950, p. 201].
-    and DeviateDeleteStatement          = DeviateDeleteBodyStatement list option
+    and [<Struct>] DeviateDeleteStatement          = DeviateDeleteStatement of DeviateDeleteBodyStatement list option
     and DeviateReplaceBodyStatement     =
     | Type          of TypeStatement
     | Units         of UnitsStatement
@@ -307,9 +334,9 @@ module Statements =
     | MaxElements   of MaxElementsStatement
     | Unknown       of UnknownStatement
     /// Captures the 'deviate-replace-stmt' statement from [RFC 7950, p. 202].
-    and DeviateReplaceStatement         = DeviateReplaceBodyStatement list option
+    and [<Struct>] DeviateReplaceStatement         = DeviateReplaceStatement of DeviateReplaceBodyStatement list option
     /// Captures the 'deviate-not-supported-stmt' statement from [RFC 7950, p. 201].
-    and DeviateNotSupportedStatement    = ExtraStatements
+    and [<Struct>] DeviateNotSupportedStatement    = DeviateNotSupportedStatement of ExtraStatements
     and DeviationBodyStatement  =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
@@ -319,7 +346,7 @@ module Statements =
     | DeviateDelete         of DeviateDeleteStatement
     | Unknown               of UnknownStatement
     /// Captures the 'deviation-stmt' statement from [RFC 7950, p. 201].
-    and DeviationStatement      = Deviation     * (DeviationBodyStatement list option)
+    and [<Struct>] DeviationStatement      = DeviationStatement of Deviation     * (DeviationBodyStatement list)
     and EnumBodyStatement       =
     | IfFeature     of IfFeatureStatement
     | Value         of ValueStatement
@@ -328,11 +355,11 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'enum-stmt' statement from [RFC 7950, p. 190].
-    and EnumStatement           = string        * (EnumBodyStatement list option)
+    and [<Struct>] EnumStatement           = EnumStatement of string * (EnumBodyStatement list option)
     /// Captures the 'error-app-tag-stmt' statement from [RFC 7950, p. 192].
-    and ErrorAppTagStatement    = string        * ExtraStatements
+    and [<Struct>] ErrorAppTagStatement    = ErrorAppTagStatement of string * ExtraStatements
     /// Captures the 'error-message-stmt' statement from [RFC 7950, p. 192].
-    and ErrorMessageStatement   = string        * ExtraStatements
+    and [<Struct>] ErrorMessageStatement   = ErrorMessageStatement of string * ExtraStatements
     and ExtensionBodyStatement  =
     | Argument      of ArgumentStatement
     | Status        of StatusStatement
@@ -340,7 +367,7 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'extension-stmt' statement from [RFC 7950, p. 192].
-    and ExtensionStatement      = Identifier            * (ExtensionBodyStatement list option)
+    and [<Struct>] ExtensionStatement      = ExtensionStatement of Identifier * (ExtensionBodyStatement list option)
     and FeatureBodyStatement    =
     | IfFeature     of IfFeatureStatement
     | Status        of StatusStatement
@@ -348,9 +375,9 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'feature-stmt' statement from [RFC 7950, p. 187].
-    and FeatureStatement        = Identifier            * (FeatureBodyStatement list option)
+    and [<Struct>] FeatureStatement        = FeatureStatement of Identifier * (FeatureBodyStatement list option)
     /// Captures the 'fraction-digits-stmt' statement from [RFC 7950, p. 189].
-    and FractionDigitsStatement = byte                  * ExtraStatements
+    and [<Struct>] FractionDigitsStatement = FractionDigitsStatement of byte * ExtraStatements
     and GroupingBodyStatement =
     | Status        of StatusStatement
     | Description   of DescriptionStatement
@@ -371,7 +398,7 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the 'grouping-stmt' statement from [RFC 7950, p. 193]
-    and GroupingStatement       = Identifier            * (GroupingBodyStatement list option)
+    and [<Struct>] GroupingStatement       = GroupingStatement of Identifier * (GroupingBodyStatement list option)
     and IdentityBodyStatement   =
     | IfFeature     of IfFeatureStatement
     | Base          of BaseStatement
@@ -379,21 +406,21 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and IdentityStatement       = Identifier            * (IdentityBodyStatement list option)
-    and IfFeatureStatement      = IfFeatureExpression   * ExtraStatements
+    and [<Struct>] IdentityStatement       = IdentityStatement of Identifier * (IdentityBodyStatement list option)
+    and [<Struct>] IfFeatureStatement      = IfFeatureStatement of Expression * ExtraStatements
     and ImportBodyStatement     =
     | Prefix        of PrefixStatement
     | RevisionDate  of RevisionDateStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and ImportStatement         = Identifier * (ImportBodyStatement list)
+    and [<Struct>] ImportStatement         = ImportStatement of Identifier * (ImportBodyStatement list)
     and IncludeBodyStatement    =
     | RevisionDate  of RevisionDateStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and IncludeStatement        = Identifier    * (IncludeBodyStatement list option)
+    and [<Struct>] IncludeStatement        = IncludeStatement of Identifier * (IncludeBodyStatement list option)
     and InputBodyStatement      =
     | Must          of MustStatement
     | TypeDef       of TypeDefStatement
@@ -410,8 +437,8 @@ module Statements =
     // End of data-def-stmt
     | Unknown       of UnknownStatement
     /// Captures the 'input-stmt' statement from [RFC 7950, p. 200]
-    and InputStatement          = InputBodyStatement list
-    and KeyStatement            = Key           * ExtraStatements
+    and [<Struct>] InputStatement          = InputStatement of InputBodyStatement list
+    and [<Struct>] KeyStatement            = KeyStatement of Key * ExtraStatements
     and LeafBodyStatement       =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -425,7 +452,7 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and LeafStatement           = Identifier    * (LeafBodyStatement list)
+    and [<Struct>] LeafStatement           = LeafStatement of Identifier    * (LeafBodyStatement list)
     and LeafListBodyStatement   =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -441,14 +468,14 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and LeafListStatement       = Identifier    * (LeafListBodyStatement list)
+    and [<Struct>] LeafListStatement       = LeafListStatement of Identifier * (LeafListBodyStatement list)
     and LengthBodyStatement     =
     | ErrorMessage  of ErrorMessageStatement
     | ErrorAppTag   of ErrorAppTagStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and LengthStatement         = Length        * (LengthBodyStatement list option)
+    and [<Struct>] LengthStatement         = LengthStatement of Length * (LengthBodyStatement list option)
     and ListBodyStatement       =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -478,19 +505,19 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the 'list-stmt' statement from [RFC 7950, p. 195]
-    and ListStatement           = Identifier    * (ListBodyStatement list)
-    and MandatoryStatement      = bool          * ExtraStatements
-    and MaxElementsStatement    = MaxValue      * ExtraStatements
-    and MinElementsStatement    = MinValue      * ExtraStatements
-    and ModifierStatement       = Modifier      * ExtraStatements
+    and [<Struct>] ListStatement           = ListStatement           of Identifier   * (ListBodyStatement list)
+    and [<Struct>] MandatoryStatement      = MandatoryStatement      of bool         * ExtraStatements
+    and [<Struct>] MaxElementsStatement    = MaxElementsStatement    of MaxValue     * ExtraStatements
+    and [<Struct>] MinElementsStatement    = MinElementsStatement    of MinValue     * ExtraStatements
+    and [<Struct>] ModifierStatement       = ModifierStatement       of Modifier     * ExtraStatements
     and MustBodyStatement       =
     | ErrorMessage  of ErrorMessageStatement
     | ErrorAppTag   of ErrorAppTagStatement
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and MustStatement           = string        * (MustBodyStatement list option)
-    and NamespaceStatement      = Uri           * ExtraStatements
+    and [<Struct>] MustStatement           = MustStatement       of string        * (MustBodyStatement list option)
+    and [<Struct>] NamespaceStatement      = NamespaceStatement  of Uri           * ExtraStatements
     and NotificationBodyStatement =
     | IfFeature     of IfFeatureStatement
     | Must          of MustStatement
@@ -511,9 +538,9 @@ module Statements =
     // End of data-def-stmt
     | Unknown       of UnknownStatement
     /// Captures the 'notification-stmt' statement from [RFC 7950, p. 200]
-    and NotificationStatement   = Identifier    * (NotificationBodyStatement list option)
-    and OrderedByStatement      = OrderedBy     * ExtraStatements
-    and OrganizationStatement   = string        * ExtraStatements
+    and [<Struct>] NotificationStatement   = NotificationStatement   of Identifier    * (NotificationBodyStatement list option)
+    and [<Struct>] OrderedByStatement      = OrderedByStatement      of OrderedBy     * ExtraStatements
+    and [<Struct>] OrganizationStatement   = OrganizationStatement   of string        * ExtraStatements
     and OutputBodyStatement     =
     | Must          of MustStatement
     | TypeDef       of TypeDefStatement
@@ -530,8 +557,8 @@ module Statements =
     // End of data-def-stmt
     | Unknown       of UnknownStatement
     /// Captures the 'output-stmt' statement from [RFC 7950, p. 200]
-    and OutputStatement         = OutputBodyStatement list
-    and PathStatement           = (Path list)   * ExtraStatements
+    and [<Struct>] OutputStatement         = OutputStatement of OutputBodyStatement list
+    and [<Struct>] PathStatement           = PathStatement   of Path          * ExtraStatements
     and PatternBodyStatement    =
     | Modifier      of ModifierStatement
     | ErrorMessage  of ErrorMessageStatement
@@ -539,10 +566,10 @@ module Statements =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and PatternStatement        = string        * (PatternBodyStatement list option)
-    and PositionStatement       = uint32        * ExtraStatements
-    and PrefixStatement         = string        * ExtraStatements
-    and PresenceStatement       = string        * ExtraStatements
+    and [<Struct>] PatternStatement        = PatternStatement    of string        * (PatternBodyStatement list option)
+    and [<Struct>] PositionStatement       = PositionStatement   of uint32        * ExtraStatements
+    and [<Struct>] PrefixStatement         = PrefixStatement     of string        * ExtraStatements
+    and [<Struct>] PresenceStatement       = PresenceStatement   of string        * ExtraStatements
     and RangeBodyStatement      =
     | ErrorMessage  of ErrorMessageStatement
     | ErrorAppTag   of ErrorAppTagStatement
@@ -550,8 +577,8 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'range-stmt' statement from [RFC 7950, p. 189]
-    and RangeStatement          = Range     * (RangeBodyStatement list option)
-    and ReferenceStatement      = string    * ExtraStatements
+    and [<Struct>] RangeStatement          = RangeStatement      of Range     * (RangeBodyStatement list option)
+    and [<Struct>] ReferenceStatement      = ReferenceStatement  of string    * ExtraStatements
     and RefineBodyStatement     =
     | IfFeature     of IfFeatureStatement
     | Must          of MustStatement
@@ -565,14 +592,14 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'refine-stmt' statement from [RFC 7950, p. 198]
-    and RefineStatement         = Refine    * (RefineBodyStatement list option)
+    and [<Struct>] RefineStatement         = RefineStatement of Refine    * (RefineBodyStatement list option)
     and RevisionBodyStatement   =
     | Description   of DescriptionStatement
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
-    and RevisionStatement       = Arguments.Date    * (RevisionBodyStatement list option)
-    and RevisionDateStatement   = Arguments.Date    * ExtraStatements
-    and RequireInstanceStatement = bool             * ExtraStatements
+    and [<Struct>] RevisionStatement        = RevisionStatement           of Arguments.Date   * (RevisionBodyStatement list option)
+    and [<Struct>] RevisionDateStatement    = RevisionDateStatement       of Arguments.Date   * ExtraStatements
+    and [<Struct>] RequireInstanceStatement = RequireInstanceStatement   of bool             * ExtraStatements
     and RpcBodyStatement        =
     | IfFeature     of IfFeatureStatement
     | Status        of StatusStatement
@@ -584,8 +611,8 @@ module Statements =
     | Output        of OutputStatement
     | Unknown       of UnknownStatement
     /// Captures the 'rpc-stmt' statement from [RFC 7950, p. 199]
-    and RpcStatement            = Identifier        * (RpcBodyStatement list option)
-    and StatusStatement         = Status            * ExtraStatements
+    and [<Struct>] RpcStatement            = RpcStatement of Identifier        * (RpcBodyStatement list option)
+    and [<Struct>] StatusStatement         = StatusStatement  of Status            * ExtraStatements
     and TypeBodyStatement       =
     | NumericalRestrictions             of NumericalRestrictions
     | Decimal64Specification            of Decimal64Specification
@@ -597,10 +624,11 @@ module Statements =
     | BitsSpecification                 of BitsSpecification
     | UnionSpecification                of UnionSpecification
     | BinarySpecification               of BinarySpecification
+    | UnknownTypeSpecification          of Statement list
     /// Captures the 'type-stmt' statement from [RFC 7950, p. 188].
     /// The definition assumes a number of unknown statements (from the stmtsep),
     /// followed by zero or one type-body-stmts.
-    and TypeStatement           = IdentifierReference   * (TypeBodyStatement option) * (UnknownStatement list option)
+    and [<Struct>] TypeStatement           = TypeStatement of IdentifierReference   * (TypeBodyStatement option)
     and TypeDefBodyStatement    =
     | Type          of TypeStatement
     | Units         of UnitsStatement
@@ -610,11 +638,11 @@ module Statements =
     | Reference     of ReferenceStatement
     | Unknown       of UnknownStatement
     /// Captures the 'typedef-stmt' statement from [RFC 7950, p. 188].
-    and TypeDefStatement        = Identifier        * (TypeDefBodyStatement list)
+    and [<Struct>] TypeDefStatement        = TypeDefStatement of Identifier        * (TypeDefBodyStatement list)
     /// Captures the type-stmt [RFC 7950, p.188]. If there are unknown statements, then they precede the TypeBodyStatement
-    and UniqueStatement         = Unique            * ExtraStatements
+    and [<Struct>] UniqueStatement         = UniqueStatement of Unique            * ExtraStatements
     // TODO: Expand the Units type to map to standard units provided by F#
-    and UnitsStatement          = string            * ExtraStatements
+    and [<Struct>] UnitsStatement          = UnitsStatement of string            * ExtraStatements
     and UsesBodyStatement       =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -625,7 +653,7 @@ module Statements =
     | UsesAugment   of UsesAugmentStatement
     | Unknown       of UnknownStatement
     /// Captures the uses-stmt [RFC 7950, p.197].
-    and UsesStatement           = IdentifierReference   * (UsesBodyStatement list option)
+    and [<Struct>] UsesStatement           = UsesStatement of IdentifierReference   * (UsesBodyStatement list option)
     and UsesAugmentBodyStatement =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
@@ -647,15 +675,15 @@ module Statements =
     | Notification  of NotificationStatement
     | Unknown       of UnknownStatement
     /// Captures the uses-augment-stmt [RFC 7950, p.198].
-    and UsesAugmentStatement    = UsesAugment       * (UsesAugmentBodyStatement list)
-    and ValueStatement          = int64             * ExtraStatements
-    and WhenBodyStatement       =
-    | Description   of DescriptionStatement
-    | Reference     of ReferenceStatement
-    | Unknown       of UnknownStatement
-    and WhenStatement           = string            * (WhenBodyStatement list option)
-    and YangVersionStatement    = Version           * ExtraStatements
-    and YinElementStatement     = bool              * ExtraStatements
+    and [<Struct>] UsesAugmentStatement    = UsesAugmentStatement    of UsesAugment       * (UsesAugmentBodyStatement list)
+    and [<Struct>] ValueStatement          = ValueStatement          of int64             * ExtraStatements
+    and [<Struct>] WhenBodyStatement       =
+    | Description   of Description:DescriptionStatement
+    | Reference     of Reference:ReferenceStatement
+    | Unknown       of Unknown:UnknownStatement
+    and [<Struct>] WhenStatement           = WhenStatement           of string            * (WhenBodyStatement list option)
+    and [<Struct>] YangVersionStatement    = YangVersionStatement    of Version           * ExtraStatements
+    and [<Struct>] YinElementStatement     = YinElementStatement     of bool              * ExtraStatements
 
     (* DataDef should be replaced by the following:
     // data-def-stmt
@@ -695,15 +723,15 @@ module Statements =
      *)
 
     /// This captures all user defined statements; [RFC 7950, p. 202]
-    and UnknownStatement        = IdentifierWithPrefix * (string option) * ExtraStatements
+    and [<Struct>] UnknownStatement        = UnknownStatement of IdentifierWithPrefix * (string option) * ExtraStatements
 
     // The following types are used in the definition of the module and sub-module statements
 
     and ModuleHeaderStatements      = YangVersionStatement * NamespaceStatement * PrefixStatement * (UnknownStatement list option)
     and SubmoduleHeaderStatements   = YangVersionStatement * BelongsToStatement * (UnknownStatement list option)
-    and LinkageBodyStatement        =
-    | Import        of ImportStatement
-    | Include       of IncludeStatement
+    and [<Struct>] LinkageBodyStatement        =
+    | Import        of Import:      ImportStatement
+    | Include       of Include:     IncludeStatement
     and LinkageStatements           = LinkageBodyStatement list
     and MetaBodyStatement           =
     | Organization  of OrganizationStatement
@@ -755,25 +783,61 @@ module Statements =
     and StatementPrinter ()         =
         class
             static let mutable StatementPrinterImplementation : (Statement -> string) option = None
+            static let default_printer = typeof<obj>.GetMethod("ToString")
+            static member IsCustomPrinterAvailable = StatementPrinterImplementation.IsSome
             static member Set (printer : Statement -> string) = StatementPrinterImplementation <- Some printer
+            static member Reset () = StatementPrinterImplementation <- None
             static member Print (st : Statement) =
                 match StatementPrinterImplementation with
-                | None          -> sprintf "%A" st
+                | None          -> default_printer.Invoke(st, [| |]) :?> string
                 | Some printer  -> printer st
         end
 
     // Helper types that are not exported as statements
 
-    and BinarySpecification             = LengthStatement option
-    and BitsSpecification               = BitStatement list
-    and Decimal64Specification          = FractionDigitsStatement   * (RangeStatement option)
-    and EnumSpecification               = EnumStatement list
-    and IdentityRefSpecification        = BaseStatement list
-    and InstanceIdentifierSpecification = RequireInstanceStatement option
-    and LeafRefSpecification            = PathStatement             * (RequireInstanceStatement option)
-    and NumericalRestrictions           = RangeStatement
-    and StringRestrictions              = (LengthStatement option)  * (PatternStatement list)
-    and UnionSpecification              = TypeStatement list
+    and [<Struct>] BinaryBodySpecification         =
+    | Length            of Length:      LengthStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and BinarySpecification             = BinaryBodySpecification list
+    and [<Struct>] BitsBodySpecification           =
+    | Bit               of Bit:         BitStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and BitsSpecification               = BitsBodySpecification list
+    and [<Struct>] Decimal64BodySpecification      =
+    | FractionDigits    of Fraction:    FractionDigitsStatement
+    | Range             of Range:       RangeStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and Decimal64Specification          = Decimal64BodySpecification list
+    and [<Struct>] EnumBodySpecification           =
+    | Enum              of Enum:        EnumStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and EnumSpecification               = EnumBodySpecification list
+    and [<Struct>] IdentityRefBodySpecification    =
+    | Base              of Base:        BaseStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and IdentityRefSpecification        = IdentityRefBodySpecification list
+    and [<Struct>] InstanceIdentifierBodySpecification =
+    | RequireInstance   of Require:     RequireInstanceStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and InstanceIdentifierSpecification = InstanceIdentifierBodySpecification list
+    and [<Struct>] LeafRefBodySpecification        =
+    | Path              of Path:        PathStatement
+    | Require           of Require:     RequireInstanceStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and LeafRefSpecification            = LeafRefBodySpecification list
+    and [<Struct>] NumericalBodyRestrictions       =
+    | Range             of Range:       RangeStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and NumericalRestrictions           = NumericalBodyRestrictions list
+    and [<Struct>] StringBodyRestrictions          =
+    | Length            of Length:      LengthStatement
+    | Pattern           of Pattern:     PatternStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and StringRestrictions              = StringBodyRestrictions list
+    and [<Struct>] UnionBodySpecification          =
+    | Type              of Type:        TypeStatement
+    | Unknown           of Unknown:     UnknownStatement
+    and UnionSpecification              = UnionBodySpecification list
 
     (*
      * End of Statement and related definitions
@@ -835,6 +899,17 @@ module Statements =
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module AugmentBodyStatement =
 
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> AugmentBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> AugmentBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> AugmentBodyStatement.LeafList     st
+        | BodyStatement.List          st -> AugmentBodyStatement.List         st
+        | BodyStatement.Choice        st -> AugmentBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> AugmentBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> AugmentBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> AugmentBodyStatement.Uses         st
+        | _ as th -> throw "Invalid transformation to type AugmentBodyStatement from %A" th
+
         let Translate = function
         | AugmentBodyStatement.When          st -> Statement.When           st
         | AugmentBodyStatement.IfFeature     st -> Statement.IfFeature      st
@@ -854,6 +929,42 @@ module Statements =
         | AugmentBodyStatement.Notification  st -> Statement.Notification   st
         | AugmentBodyStatement.Unknown       st -> Statement.Unknown        st
 
+        let IsWhen         = function | AugmentBodyStatement.When         _ -> true | _ -> false
+        let IsIfFeature    = function | AugmentBodyStatement.IfFeature    _ -> true | _ -> false
+        let IsStatus       = function | AugmentBodyStatement.Status       _ -> true | _ -> false
+        let IsDescription  = function | AugmentBodyStatement.Description  _ -> true | _ -> false
+        let IsReference    = function | AugmentBodyStatement.Reference    _ -> true | _ -> false
+        let IsContainer    = function | AugmentBodyStatement.Container    _ -> true | _ -> false
+        let IsLeaf         = function | AugmentBodyStatement.Leaf         _ -> true | _ -> false
+        let IsLeafList     = function | AugmentBodyStatement.LeafList     _ -> true | _ -> false
+        let IsList         = function | AugmentBodyStatement.List         _ -> true | _ -> false
+        let IsChoice       = function | AugmentBodyStatement.Choice       _ -> true | _ -> false
+        let IsAnyData      = function | AugmentBodyStatement.AnyData      _ -> true | _ -> false
+        let IsAnyXml       = function | AugmentBodyStatement.AnyXml       _ -> true | _ -> false
+        let IsUses         = function | AugmentBodyStatement.Uses         _ -> true | _ -> false
+        let IsCase         = function | AugmentBodyStatement.Case         _ -> true | _ -> false
+        let IsAction       = function | AugmentBodyStatement.Action       _ -> true | _ -> false
+        let IsNotification = function | AugmentBodyStatement.Notification _ -> true | _ -> false
+        let IsUnknown      = function | AugmentBodyStatement.Unknown      _ -> true | _ -> false
+
+        let AsWhen         = function | AugmentBodyStatement.When         v -> Some v | _ -> None
+        let AsIfFeature    = function | AugmentBodyStatement.IfFeature    v -> Some v | _ -> None
+        let AsStatus       = function | AugmentBodyStatement.Status       v -> Some v | _ -> None
+        let AsDescription  = function | AugmentBodyStatement.Description  v -> Some v | _ -> None
+        let AsReference    = function | AugmentBodyStatement.Reference    v -> Some v | _ -> None
+        let AsContainer    = function | AugmentBodyStatement.Container    v -> Some v | _ -> None
+        let AsLeaf         = function | AugmentBodyStatement.Leaf         v -> Some v | _ -> None
+        let AsLeafList     = function | AugmentBodyStatement.LeafList     v -> Some v | _ -> None
+        let AsList         = function | AugmentBodyStatement.List         v -> Some v | _ -> None
+        let AsChoice       = function | AugmentBodyStatement.Choice       v -> Some v | _ -> None
+        let AsAnyData      = function | AugmentBodyStatement.AnyData      v -> Some v | _ -> None
+        let AsAnyXml       = function | AugmentBodyStatement.AnyXml       v -> Some v | _ -> None
+        let AsUses         = function | AugmentBodyStatement.Uses         v -> Some v | _ -> None
+        let AsCase         = function | AugmentBodyStatement.Case         v -> Some v | _ -> None
+        let AsAction       = function | AugmentBodyStatement.Action       v -> Some v | _ -> None
+        let AsNotification = function | AugmentBodyStatement.Notification v -> Some v | _ -> None
+        let AsUnknown      = function | AugmentBodyStatement.Unknown      v -> Some v | _ -> None
+
     /// Helper methods for the BelongsToBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module BelongsToBodyStatement =
@@ -861,6 +972,34 @@ module Statements =
         let Translate = function
         | BelongsToBodyStatement.Prefix     st -> Statement.Prefix      st
         | BelongsToBodyStatement.Unknown    st -> Statement.Unknown     st
+
+        let IsPrefix = function
+        | BelongsToBodyStatement.Prefix _   -> true
+        | _                                 -> false
+
+        let IsUnknown = function
+        | BelongsToBodyStatement.Unknown _  -> true
+        | _                                 -> false
+
+        let AsPrefix = function
+        | BelongsToBodyStatement.Prefix prefix  -> Some prefix
+        | _                                     -> None
+
+        let AsUnknown = function
+        | BelongsToBodyStatement.Unknown unknown    -> Some unknown
+        | _                                         -> None
+
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module BinaryBodySpecification =
+        let Translate = function
+        | BinaryBodySpecification.Length    st  -> Statement.Length     st
+        | BinaryBodySpecification.Unknown   st  -> Statement.Unknown    st
+
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module BitsBodySpecification =
+        let Translate = function
+        | BitsBodySpecification.Bit         st -> Statement.Bit         st
+        | BitsBodySpecification.Unknown     st -> Statement.Unknown     st
 
     /// Helper methods for the BitBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -913,6 +1052,16 @@ module Statements =
             | BodyStatement.LeafList    _   -> true
             | _                             -> false
 
+        let IsUnknown (this : BodyStatement) =
+            match this with
+            | BodyStatement.Unknown     _   -> true
+            | _                             -> false
+
+        let AsUnknown (this : BodyStatement) =
+            match this with
+            | BodyStatement.Unknown unknown -> Some unknown
+            | _                             -> None
+
 
     /// Helper methods for the CaseBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -943,7 +1092,37 @@ module Statements =
         | BodyStatement.AnyData       st -> CaseBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> CaseBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> CaseBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type ContainerBodyStatement from %A" th
+
+        let IsWhen          = function | CaseBodyStatement.When _           -> true | _ -> false
+        let IsIfFeature     = function | CaseBodyStatement.IfFeature _      -> true | _ -> false
+        let IsStatus        = function | CaseBodyStatement.Status _         -> true | _ -> false
+        let IsDescription   = function | CaseBodyStatement.Description _    -> true | _ -> false
+        let IsReference     = function | CaseBodyStatement.Reference _      -> true | _ -> false
+        let IsContainer     = function | CaseBodyStatement.Container _      -> true | _ -> false
+        let IsLeaf          = function | CaseBodyStatement.Leaf _           -> true | _ -> false
+        let IsLeafList      = function | CaseBodyStatement.LeafList _       -> true | _ -> false
+        let IsList          = function | CaseBodyStatement.List _           -> true | _ -> false
+        let IsChoice        = function | CaseBodyStatement.Choice _         -> true | _ -> false
+        let IsAnyData       = function | CaseBodyStatement.AnyData _        -> true | _ -> false
+        let IsAnyXml        = function | CaseBodyStatement.AnyXml _         -> true | _ -> false
+        let IsUses          = function | CaseBodyStatement.Uses _           -> true | _ -> false
+        let IsUnknown       = function | CaseBodyStatement.Unknown _        -> true | _ -> false
+
+        let AsWhen          = function | CaseBodyStatement.When v           -> Some v | _ -> None
+        let AsIfFeature     = function | CaseBodyStatement.IfFeature v      -> Some v | _ -> None
+        let AsStatus        = function | CaseBodyStatement.Status v         -> Some v | _ -> None
+        let AsDescription   = function | CaseBodyStatement.Description v    -> Some v | _ -> None
+        let AsReference     = function | CaseBodyStatement.Reference v      -> Some v | _ -> None
+        let AsContainer     = function | CaseBodyStatement.Container v      -> Some v | _ -> None
+        let AsLeaf          = function | CaseBodyStatement.Leaf v           -> Some v | _ -> None
+        let AsLeafLAst      = function | CaseBodyStatement.LeafList v       -> Some v | _ -> None
+        let AsLAst          = function | CaseBodyStatement.List v           -> Some v | _ -> None
+        let AsChoice        = function | CaseBodyStatement.Choice v         -> Some v | _ -> None
+        let AsAnyData       = function | CaseBodyStatement.AnyData v        -> Some v | _ -> None
+        let AsAnyXml        = function | CaseBodyStatement.AnyXml v         -> Some v | _ -> None
+        let AsUses          = function | CaseBodyStatement.Uses v           -> Some v | _ -> None
+        let AsUnknown       = function | CaseBodyStatement.Unknown v        -> Some v | _ -> None
 
     /// Helper methods for the ChoiceBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -971,8 +1150,7 @@ module Statements =
     /// Helper methods for the ConfigStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module ConfigStatement =
-        let ValueAsString (this : ConfigStatement) =
-            let (v, _) = this
+        let ValueAsString (ConfigStatement (v, _)) =
             if v then "true" else "false"
 
     /// Helper methods for the ContainerBodyStatement type
@@ -1011,7 +1189,7 @@ module Statements =
         | BodyStatement.AnyData       st -> ContainerBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> ContainerBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> ContainerBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type ContainerBodyStatement from %A" th
 
         let IsContainer (this : ContainerBodyStatement) =
             match this with
@@ -1028,6 +1206,12 @@ module Statements =
             | ContainerBodyStatement.LeafList   _   -> true
             | _                                     -> false
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module Decimal64BodySpecification =
+        let Translate = function
+        | Decimal64BodySpecification.FractionDigits st -> Statement.FractionDigits  st
+        | Decimal64BodySpecification.Range          st -> Statement.Range           st
+        | Decimal64BodySpecification.Unknown        st -> Statement.Unknown         st
 
     /// Helper methods for the DeviateAddBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1082,6 +1266,12 @@ module Statements =
         | DeviationBodyStatement.DeviateDelete          st -> Statement.DeviateDelete       st
         | DeviationBodyStatement.Unknown                st -> Statement.Unknown             st
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module EnumBodySpecification =
+        let Translate = function
+        | EnumBodySpecification.Enum    st  -> Statement.Enum       st
+        | EnumBodySpecification.Unknown st  -> Statement.Unknown    st
+
     /// Helper methods for the EnumBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module EnumBodyStatement =
@@ -1104,6 +1294,19 @@ module Statements =
         | ExtensionBodyStatement.Description   st -> Statement.Description  st
         | ExtensionBodyStatement.Reference     st -> Statement.Reference    st
         | ExtensionBodyStatement.Unknown       st -> Statement.Unknown      st
+
+        let IsArgument      = function | ExtensionBodyStatement.Argument    _ -> true | _ -> false
+        let IsStatus        = function | ExtensionBodyStatement.Status      _ -> true | _ -> false
+        let IsDescription   = function | ExtensionBodyStatement.Description _ -> true | _ -> false
+        let IsReference     = function | ExtensionBodyStatement.Reference   _ -> true | _ -> false
+        let IsUnknown       = function | ExtensionBodyStatement.Unknown     _ -> true | _ -> false
+
+        let AsArgument      = function | ExtensionBodyStatement.Argument    v -> Some v | _ -> None
+        let AsStatus        = function | ExtensionBodyStatement.Status      v -> Some v | _ -> None
+        let AsDescription   = function | ExtensionBodyStatement.Description v -> Some v | _ -> None
+        let AsReference     = function | ExtensionBodyStatement.Reference   v -> Some v | _ -> None
+        let AsUnknown       = function | ExtensionBodyStatement.Unknown     v -> Some v | _ -> None
+
 
     /// Helper methods for the FeatureBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1147,7 +1350,7 @@ module Statements =
         | BodyStatement.AnyData       st -> GroupingBodyStatement.AnyData       st
         | BodyStatement.AnyXml        st -> GroupingBodyStatement.AnyXml        st
         | BodyStatement.Uses          st -> GroupingBodyStatement.Uses          st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type GroupingBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type GroupingBodyStatement from %A" th
 
     /// Helper methods for the IdentityBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1160,6 +1363,12 @@ module Statements =
         | IdentityBodyStatement.Description   st -> Statement.Description   st
         | IdentityBodyStatement.Reference     st -> Statement.Reference     st
         | IdentityBodyStatement.Unknown       st -> Statement.Unknown       st
+
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module IdentityRefBodySpecification =
+        let Translate = function
+        | IdentityRefBodySpecification.Base     st -> Statement.Base    st
+        | IdentityRefBodySpecification.Unknown  st -> Statement.Unknown st
 
     /// Helper methods for the ImportBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1186,6 +1395,17 @@ module Statements =
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module InputBodyStatement =
 
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> InputBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> InputBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> InputBodyStatement.LeafList     st
+        | BodyStatement.List          st -> InputBodyStatement.List         st
+        | BodyStatement.Choice        st -> InputBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> InputBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> InputBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> InputBodyStatement.Uses         st
+        | _ as th -> throw "Invalid transformation to type InputBodyStatement from %A" th
+
         let Translate = function
         | InputBodyStatement.Must          st -> Statement.Must             st
         | InputBodyStatement.TypeDef       st -> Statement.TypeDef          st
@@ -1199,6 +1419,12 @@ module Statements =
         | InputBodyStatement.AnyXml        st -> Statement.AnyXml           st
         | InputBodyStatement.Uses          st -> Statement.Uses             st
         | InputBodyStatement.Unknown       st -> Statement.Unknown          st
+
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module InstanceIdentifierBodySpecification =
+        let Translate = function
+        | InstanceIdentifierBodySpecification.RequireInstance   st -> Statement.RequireInstance st
+        | InstanceIdentifierBodySpecification.Unknown           st -> Statement.Unknown         st
 
     /// Helper methods for the LeafBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1257,33 +1483,35 @@ module Statements =
     /// Helper methods for the LeafListBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module LeafListStatement =
-        let private try_find filter (this : LeafListStatement) =
-            let _, statements = this
+        let private try_find filter (LeafListStatement (_, statements)) =
             statements |> List.tryFind filter
-            
+
         let Description = try_find LeafListBodyStatement.IsDescription
         let Type = try_find LeafListBodyStatement.IsType
 
-        let Identifier (this : LeafListStatement) = let (id, _) = this in id
-        let IdentifierAsString (this : LeafListStatement) = let (id, _) = this in id.Value
+        let Identifier (LeafListStatement (id, _))          = id
+        let IdentifierAsString (LeafListStatement (id, _))  = id.Value
+        let Statements (LeafListStatement (_, st))          = st
 
-        let Statements (this : LeafListStatement) = let (_, st) = this in st
-
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module LeafRefBodySpecification =
+        let Translate = function
+        | LeafRefBodySpecification.Path     st -> Statement.Path            st
+        | LeafRefBodySpecification.Require  st -> Statement.RequireInstance st
+        | LeafRefBodySpecification.Unknown  st -> Statement.Unknown         st
 
     /// Helper methods for the LeafStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module LeafStatement =
-        let private try_find filter (this : LeafStatement) =
-            let _, statements = this
+        let private try_find filter (LeafStatement (_, statements)) =
             statements |> List.tryFind filter
-            
+
         let Description = try_find LeafBodyStatement.IsDescription
         let Type = try_find LeafBodyStatement.IsType
 
-        let Identifier (this : LeafStatement) = let (id, _) = this in id
-        let IdentifierAsString (this : LeafStatement) = let (id, _) = this in id.Value
-
-        let Statements (this : LeafStatement) = let (_, st) = this in st
+        let Identifier (LeafStatement (id, _))          = id
+        let IdentifierAsString (LeafStatement (id, _))  = id.Value
+        let Statements (LeafStatement (_, st))          = st
 
 
     /// Helper methods for the LengthBodyStatement type
@@ -1345,7 +1573,60 @@ module Statements =
         | BodyStatement.AnyData       st -> ListBodyStatement.AnyData      st
         | BodyStatement.AnyXml        st -> ListBodyStatement.AnyXml       st
         | BodyStatement.Uses          st -> ListBodyStatement.Uses         st
-        | _ as th -> raise (YangModelException (sprintf "Invalid transformation to type ContainerBodyStatement from %A" th))
+        | _ as th -> throw "Invalid transformation to type ContainerBodyStatement from %A" th
+
+        let IsWhen          = function | ListBodyStatement.When         _ -> true | _ -> false
+        let IsIfFeature     = function | ListBodyStatement.IfFeature    _ -> true | _ -> false
+        let IsMust          = function | ListBodyStatement.Must         _ -> true | _ -> false
+        let IsKey           = function | ListBodyStatement.Key          _ -> true | _ -> false
+        let IsUnique        = function | ListBodyStatement.Unique       _ -> true | _ -> false
+        let IsConfig        = function | ListBodyStatement.Config       _ -> true | _ -> false
+        let IsMinElements   = function | ListBodyStatement.MinElements  _ -> true | _ -> false
+        let IsMaxElements   = function | ListBodyStatement.MaxElements  _ -> true | _ -> false
+        let IsOrderedBy     = function | ListBodyStatement.OrderedBy    _ -> true | _ -> false
+        let IsStatus        = function | ListBodyStatement.Status       _ -> true | _ -> false
+        let IsDescription   = function | ListBodyStatement.Description  _ -> true | _ -> false
+        let IsReference     = function | ListBodyStatement.Reference    _ -> true | _ -> false
+        let IsTypeDef       = function | ListBodyStatement.TypeDef      _ -> true | _ -> false
+        let IsGrouping      = function | ListBodyStatement.Grouping     _ -> true | _ -> false
+        let IsContainer     = function | ListBodyStatement.Container    _ -> true | _ -> false
+        let IsLeaf          = function | ListBodyStatement.Leaf         _ -> true | _ -> false
+        let IsLeafList      = function | ListBodyStatement.LeafList     _ -> true | _ -> false
+        let IsList          = function | ListBodyStatement.List         _ -> true | _ -> false
+        let IsChoice        = function | ListBodyStatement.Choice       _ -> true | _ -> false
+        let IsAnyData       = function | ListBodyStatement.AnyData      _ -> true | _ -> false
+        let IsAnyXml        = function | ListBodyStatement.AnyXml       _ -> true | _ -> false
+        let IsUses          = function | ListBodyStatement.Uses         _ -> true | _ -> false
+        let IsAction        = function | ListBodyStatement.Action       _ -> true | _ -> false
+        let IsNotification  = function | ListBodyStatement.Notification _ -> true | _ -> false
+        let IsUnknown       = function | ListBodyStatement.Unknown      _ -> true | _ -> false
+
+        let AsWhen          = function | ListBodyStatement.When         v -> Some v | _ -> None
+        let AsIfFeature     = function | ListBodyStatement.IfFeature    v -> Some v | _ -> None
+        let AsMust          = function | ListBodyStatement.Must         v -> Some v | _ -> None
+        let AsKey           = function | ListBodyStatement.Key          v -> Some v | _ -> None
+        let AsUnique        = function | ListBodyStatement.Unique       v -> Some v | _ -> None
+        let AsConfig        = function | ListBodyStatement.Config       v -> Some v | _ -> None
+        let AsMinElements   = function | ListBodyStatement.MinElements  v -> Some v | _ -> None
+        let AsMaxElements   = function | ListBodyStatement.MaxElements  v -> Some v | _ -> None
+        let AsOrderedBy     = function | ListBodyStatement.OrderedBy    v -> Some v | _ -> None
+        let AsStatus        = function | ListBodyStatement.Status       v -> Some v | _ -> None
+        let AsDescription   = function | ListBodyStatement.Description  v -> Some v | _ -> None
+        let AsReference     = function | ListBodyStatement.Reference    v -> Some v | _ -> None
+        let AsTypeDef       = function | ListBodyStatement.TypeDef      v -> Some v | _ -> None
+        let AsGrouping      = function | ListBodyStatement.Grouping     v -> Some v | _ -> None
+        let AsContainer     = function | ListBodyStatement.Container    v -> Some v | _ -> None
+        let AsLeaf          = function | ListBodyStatement.Leaf         v -> Some v | _ -> None
+        let AsLeafList      = function | ListBodyStatement.LeafList     v -> Some v | _ -> None
+        let AsList          = function | ListBodyStatement.List         v -> Some v | _ -> None
+        let AsChoice        = function | ListBodyStatement.Choice       v -> Some v | _ -> None
+        let AsAnyData       = function | ListBodyStatement.AnyData      v -> Some v | _ -> None
+        let AsAnyXml        = function | ListBodyStatement.AnyXml       v -> Some v | _ -> None
+        let AsUses          = function | ListBodyStatement.Uses         v -> Some v | _ -> None
+        let AsAction        = function | ListBodyStatement.Action       v -> Some v | _ -> None
+        let AsNotification  = function | ListBodyStatement.Notification v -> Some v | _ -> None
+        let AsUnknown       = function | ListBodyStatement.Unknown      v -> Some v | _ -> None
+
 
     /// Helper methods for the MetaBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1384,7 +1665,7 @@ module Statements =
         let private try_find filter (this : MetaStatements) = this |> List.tryFind filter
 
         /// Get the organization meta information; None if not exists
-        let Organization (this : MetaStatements) = 
+        let Organization (this : MetaStatements) =
             try_find MetaBodyStatement.IsOrganization this
             |> Option.bind (fun s -> match s with | MetaBodyStatement.Organization o -> Some o | _ -> None)
 
@@ -1435,9 +1716,32 @@ module Statements =
         | MustBodyStatement.Reference     st -> Statement.Reference     st
         | MustBodyStatement.Unknown       st -> Statement.Unknown       st
 
+        let IsErrorMessage = function | MustBodyStatement.ErrorMessage _ -> true | _ -> false
+        let IsErrorAppTag  = function | MustBodyStatement.ErrorAppTag  _ -> true | _ -> false
+        let IsDescription  = function | MustBodyStatement.Description  _ -> true | _ -> false
+        let IsReference    = function | MustBodyStatement.Reference    _ -> true | _ -> false
+        let IsUnknown      = function | MustBodyStatement.Unknown      _ -> true | _ -> false
+
+        let AsErrorMessage = function | MustBodyStatement.ErrorMessage v -> Some v | _ -> None
+        let AsErrorAppTag  = function | MustBodyStatement.ErrorAppTag  v -> Some v | _ -> None
+        let AsDescription  = function | MustBodyStatement.Description  v -> Some v | _ -> None
+        let AsReference    = function | MustBodyStatement.Reference    v -> Some v | _ -> None
+        let AsUnknown      = function | MustBodyStatement.Unknown      v -> Some v | _ -> None
+
     /// Helper methods for the NotificationBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module NotificationBodyStatement =
+
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> NotificationBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> NotificationBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> NotificationBodyStatement.LeafList     st
+        | BodyStatement.List          st -> NotificationBodyStatement.List         st
+        | BodyStatement.Choice        st -> NotificationBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> NotificationBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> NotificationBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> NotificationBodyStatement.Uses         st
+        | _ as th -> throw "Invalid transformation to type NotificationBodyStatement from %A" th
 
         let Translate = function
         | NotificationBodyStatement.IfFeature     st -> Statement.IfFeature     st
@@ -1457,9 +1761,27 @@ module Statements =
         | NotificationBodyStatement.Uses          st -> Statement.Uses          st
         | NotificationBodyStatement.Unknown       st -> Statement.Unknown       st
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module NumericalBodyRestrictions =
+        let Translate = function
+        | NumericalBodyRestrictions.Range       st  -> Statement.Range st
+        | NumericalBodyRestrictions.Unknown     st  -> Statement.Unknown st
+
     /// Helper methods for the OutputBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module OutputBodyStatement =
+
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> OutputBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> OutputBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> OutputBodyStatement.LeafList     st
+        | BodyStatement.List          st -> OutputBodyStatement.List         st
+        | BodyStatement.Choice        st -> OutputBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> OutputBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> OutputBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> OutputBodyStatement.Uses         st
+        | _ as th -> throw "Invalid transformation to type InputBodyStatement from %A" th
+
 
         let Translate = function
         | OutputBodyStatement.Must          st -> Statement.Must        st
@@ -1474,6 +1796,32 @@ module Statements =
         | OutputBodyStatement.AnyXml        st -> Statement.AnyXml      st
         | OutputBodyStatement.Uses          st -> Statement.Uses        st
         | OutputBodyStatement.Unknown       st -> Statement.Unknown     st
+
+        let IsMust      = function | OutputBodyStatement.Must       _ -> true | _ -> false
+        let IsTypeDef   = function | OutputBodyStatement.TypeDef    _ -> true | _ -> false
+        let IsGrouping  = function | OutputBodyStatement.Grouping   _ -> true | _ -> false
+        let IsContainer = function | OutputBodyStatement.Container  _ -> true | _ -> false
+        let IsLeaf      = function | OutputBodyStatement.Leaf       _ -> true | _ -> false
+        let IsLeafList  = function | OutputBodyStatement.LeafList   _ -> true | _ -> false
+        let IsList      = function | OutputBodyStatement.List       _ -> true | _ -> false
+        let IsChoice    = function | OutputBodyStatement.Choice     _ -> true | _ -> false
+        let IsAnyData   = function | OutputBodyStatement.AnyData    _ -> true | _ -> false
+        let IsAnyXml    = function | OutputBodyStatement.AnyXml     _ -> true | _ -> false
+        let IsUses      = function | OutputBodyStatement.Uses       _ -> true | _ -> false
+        let IsUnknown   = function | OutputBodyStatement.Unknown    _ -> true | _ -> false
+
+        let AsMust      = function | OutputBodyStatement.Must       v -> Some v | _ -> None
+        let AsTypeDef   = function | OutputBodyStatement.TypeDef    v -> Some v | _ -> None
+        let AsGrouping  = function | OutputBodyStatement.Grouping   v -> Some v | _ -> None
+        let AsContainer = function | OutputBodyStatement.Container  v -> Some v | _ -> None
+        let AsLeaf      = function | OutputBodyStatement.Leaf       v -> Some v | _ -> None
+        let AsLeafList  = function | OutputBodyStatement.LeafList   v -> Some v | _ -> None
+        let AsList      = function | OutputBodyStatement.List       v -> Some v | _ -> None
+        let AsChoice    = function | OutputBodyStatement.Choice     v -> Some v | _ -> None
+        let AsAnyData   = function | OutputBodyStatement.AnyData    v -> Some v | _ -> None
+        let AsAnyXml    = function | OutputBodyStatement.AnyXml     v -> Some v | _ -> None
+        let AsUses      = function | OutputBodyStatement.Uses       v -> Some v | _ -> None
+        let AsUnknown   = function | OutputBodyStatement.Unknown    v -> Some v | _ -> None
 
     /// Helper methods for the PatternBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1540,27 +1888,27 @@ module Statements =
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module RevisionStatement =
         let private try_find filter = function
-        | _, Some statements    -> statements |> List.tryFind filter
-        | _, _                  -> None
+        | Some statements    -> statements |> List.tryFind filter
+        | _                  -> None
 
         let private try_find_all filter = function
-        | _, Some statements    ->
+        | Some statements    ->
             let statements' = statements |> List.filter filter
             if statements'.Length = 0 then None else Some statements'
-        | _, _                  -> None
+        | _                  -> None
 
-        let Version (this : RevisionStatement) = let (v, _) = this in v
+        let Version (RevisionStatement (v, _)) = v
 
-        let Description (this : RevisionStatement) =
-            try_find RevisionBodyStatement.IsDescription this
+        let Description (RevisionStatement (_, body)) =
+            try_find RevisionBodyStatement.IsDescription body
             |> Option.bind (fun o -> match o with | RevisionBodyStatement.Description d -> Some d | _ -> None)
 
-        let Reference   (this : RevisionStatement) =
-            try_find RevisionBodyStatement.IsReference this
+        let Reference   (RevisionStatement (_, body)) =
+            try_find RevisionBodyStatement.IsReference body
             |> Option.bind (fun o -> match o with | RevisionBodyStatement.Reference r -> Some r | _ -> None)
 
-        let Unknown     (this : RevisionStatement) =
-            try_find_all RevisionBodyStatement.IsUnknown this
+        let Unknown     (RevisionStatement (_, body)) =
+            try_find_all RevisionBodyStatement.IsUnknown body
             |> Option.map (List.choose (fun o -> match o with | RevisionBodyStatement.Unknown u -> Some u | _ -> None))
 
     /// Helper methods for the RpcBodyStatement type
@@ -1578,6 +1926,13 @@ module Statements =
         | RpcBodyStatement.Output        st -> Statement.Output st
         | RpcBodyStatement.Unknown       st -> Statement.Unknown st
 
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module StringBodyRestrictions =
+        let Translate = function
+        | StringBodyRestrictions.Length     st -> Statement.Length      st
+        | StringBodyRestrictions.Pattern    st -> Statement.Pattern     st
+        | StringBodyRestrictions.Unknown    st -> Statement.Unknown     st
+
     /// Helper methods for the SubmoduleStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module SubmoduleStatement =
@@ -1585,61 +1940,79 @@ module Statements =
             this.Body
             |> List.map (BodyStatement.Translate)
 
+    // The following appears out of alphabetical order to allow the compilation of the TypeBodyStatement module
+    [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+    module UnionBodySpecification =
+        let Translate = function
+        | UnionBodySpecification.Type       st -> Statement.Type        st
+        | UnionBodySpecification.Unknown    st -> Statement.Unknown     st
+
     /// Helper methods for the TypeBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module TypeBodyStatement =
         open System.Text
 
-        let Print (sb : StringBuilder, _indentation : int) = function
-        // TODO: Fix printing of type restrictions and specifications
-        | TypeBodyStatement.NumericalRestrictions    rs                     ->
-            Printf.bprintf sb "%A" rs
-        | TypeBodyStatement.Decimal64Specification  (fraction, None)        ->
-            Printf.bprintf sb "%A" fraction
-        | TypeBodyStatement.Decimal64Specification  (fraction, Some range)  ->
-            Printf.bprintf sb "%A %A" fraction range
-        | TypeBodyStatement.StringRestrictions      (None, [])              ->
-            ()
-        | TypeBodyStatement.StringRestrictions      (Some length, [])       ->
-            Printf.bprintf sb "%A" length
-        | TypeBodyStatement.StringRestrictions      (None, patterns)        ->
-            patterns |> List.iter (fun pattern -> Printf.bprintf sb "%A " pattern)
-        | TypeBodyStatement.StringRestrictions      (Some length, patterns) ->
-            Printf.bprintf sb "%A" length
-            patterns |> List.iter (fun pattern -> Printf.bprintf sb "%A " pattern)
-        | TypeBodyStatement.EnumSpecification        enums                  ->
-            enums |> List.iter (fun enum -> Printf.bprintf sb "%A " enum)
-        | TypeBodyStatement.LeafRefSpecification    (path, None)            ->
-            Printf.bprintf sb "%A" path
-        | TypeBodyStatement.LeafRefSpecification    (path, requires)        ->
-            Printf.bprintf sb "%A %A" path requires
-        | TypeBodyStatement.IdentityRefSpecification statements             ->
-            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
-        | TypeBodyStatement.InstanceIdentifierSpecification     None        ->
-            ()
-        | TypeBodyStatement.InstanceIdentifierSpecification     requires    ->
-            Printf.bprintf sb "%A" requires
-        | TypeBodyStatement.BitsSpecification statements ->
-            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
-        | TypeBodyStatement.UnionSpecification          statements ->
-            statements |> List.iter (fun statement -> Printf.bprintf sb "%A " statement)
-        | TypeBodyStatement.BinarySpecification  None ->
-            ()
-        | TypeBodyStatement.BinarySpecification  (Some length) ->
-            Printf.bprintf sb "%A" length
+        let Length = function
+        | TypeBodyStatement.NumericalRestrictions           spec    -> spec.Length
+        | TypeBodyStatement.Decimal64Specification          spec    -> spec.Length
+        | TypeBodyStatement.StringRestrictions              spec    -> spec.Length
+        | TypeBodyStatement.EnumSpecification               spec    -> spec.Length
+        | TypeBodyStatement.LeafRefSpecification            spec    -> spec.Length
+        | TypeBodyStatement.IdentityRefSpecification        spec    -> spec.Length
+        | TypeBodyStatement.InstanceIdentifierSpecification spec    -> spec.Length
+        | TypeBodyStatement.BitsSpecification               spec    -> spec.Length
+        | TypeBodyStatement.UnionSpecification              spec    -> spec.Length
+        | TypeBodyStatement.BinarySpecification             spec    -> spec.Length
+        | TypeBodyStatement.UnknownTypeSpecification        spec    -> spec.Length
+
+        let Translate = function
+        | TypeBodyStatement.NumericalRestrictions           spec    -> spec |> List.map NumericalBodyRestrictions.Translate
+        | TypeBodyStatement.Decimal64Specification          spec    -> spec |> List.map Decimal64BodySpecification.Translate
+        | TypeBodyStatement.StringRestrictions              spec    -> spec |> List.map StringBodyRestrictions.Translate
+        | TypeBodyStatement.EnumSpecification               spec    -> spec |> List.map EnumBodySpecification.Translate
+        | TypeBodyStatement.LeafRefSpecification            spec    -> spec |> List.map LeafRefBodySpecification.Translate
+        | TypeBodyStatement.IdentityRefSpecification        spec    -> spec |> List.map IdentityRefBodySpecification.Translate
+        | TypeBodyStatement.InstanceIdentifierSpecification spec    -> spec |> List.map InstanceIdentifierBodySpecification.Translate
+        | TypeBodyStatement.BitsSpecification               spec    -> spec |> List.map BitsBodySpecification.Translate
+        | TypeBodyStatement.UnionSpecification              spec    -> spec |> List.map UnionBodySpecification.Translate
+        | TypeBodyStatement.BinarySpecification             spec    -> spec |> List.map BinaryBodySpecification.Translate
+        | TypeBodyStatement.UnknownTypeSpecification        spec    -> spec
+
+        let AsStringRestrictions = function
+        | TypeBodyStatement.StringRestrictions spec -> Some spec
+        | _                                         -> None
+
+        let AsNumericalRestrictions = function
+        | TypeBodyStatement.NumericalRestrictions spec -> Some spec
+        | _                                         -> None
+
+        let AsDecimal64Specification = function
+        | TypeBodyStatement.Decimal64Specification spec -> Some spec
+        | _                                             -> None
+
 
     /// Helper methods for the TypeDefBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module TypeDefBodyStatement =
 
         let Translate = function
-        | TypeDefBodyStatement.Type          st -> Statement.Type           st
-        | TypeDefBodyStatement.Units         st -> Statement.Units          st
-        | TypeDefBodyStatement.Default       st -> Statement.Default        st
-        | TypeDefBodyStatement.Status        st -> Statement.Status         st
-        | TypeDefBodyStatement.Description   st -> Statement.Description    st
-        | TypeDefBodyStatement.Reference     st -> Statement.Reference      st
-        | TypeDefBodyStatement.Unknown       st -> Statement.Unknown        st
+        | TypeDefBodyStatement.Type         st -> Statement.Type           st
+        | TypeDefBodyStatement.Units        st -> Statement.Units          st
+        | TypeDefBodyStatement.Default      st -> Statement.Default        st
+        | TypeDefBodyStatement.Status       st -> Statement.Status         st
+        | TypeDefBodyStatement.Description  st -> Statement.Description    st
+        | TypeDefBodyStatement.Reference    st -> Statement.Reference      st
+        | TypeDefBodyStatement.Unknown      st -> Statement.Unknown        st
+
+        let FromStatement = function
+        | Statement.Type                    st -> TypeDefBodyStatement.Type         st
+        | Statement.Units                   st -> TypeDefBodyStatement.Units        st
+        | Statement.Default                 st -> TypeDefBodyStatement.Default      st
+        | Statement.Status                  st -> TypeDefBodyStatement.Status       st
+        | Statement.Description             st -> TypeDefBodyStatement.Description  st
+        | Statement.Reference               st -> TypeDefBodyStatement.Reference    st
+        | Statement.Unknown                 st -> TypeDefBodyStatement.Unknown      st
+        | _ as input  -> throw "Cannot translate to TypeDef body statement from: %A" input
 
     /// Helper methods for the UnknownStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -1663,6 +2036,17 @@ module Statements =
     /// Helper methods for the UsesAugmentBodyStatement type
     [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
     module UsesAugmentBodyStatement =
+
+        let FromDataDefinition = function
+        | BodyStatement.Container     st -> UsesAugmentBodyStatement.Container    st
+        | BodyStatement.Leaf          st -> UsesAugmentBodyStatement.Leaf         st
+        | BodyStatement.LeafList      st -> UsesAugmentBodyStatement.LeafList     st
+        | BodyStatement.List          st -> UsesAugmentBodyStatement.List         st
+        | BodyStatement.Choice        st -> UsesAugmentBodyStatement.Choice       st
+        | BodyStatement.AnyData       st -> UsesAugmentBodyStatement.AnyData      st
+        | BodyStatement.AnyXml        st -> UsesAugmentBodyStatement.AnyXml       st
+        | BodyStatement.Uses          st -> UsesAugmentBodyStatement.Uses         st
+        | _ as th -> throw "Invalid transformation to type UsesAugmentBodyStatement from %A" th
 
         let Translate = function
         | UsesAugmentBodyStatement.When          st -> Statement.When           st
@@ -1702,81 +2086,81 @@ module Statements =
         /// and the caller will need to apply per-statement processing to retrieve those statements.
         let Options (this : Statement) =
             match this with
-            | Statement.Base                (_, options)
-            | Statement.Config              (_, options)
-            | Statement.Contact             (_, options)
-            | Statement.Default             (_, options)
-            | Statement.Description         (_, options)
-            | Statement.DeviateNotSupported options
-            | Statement.ErrorAppTag         (_, options)
-            | Statement.ErrorMessage        (_, options)
-            | Statement.FractionDigits      (_, options)
-            | Statement.IfFeature           (_, options)
-            | Statement.Key                 (_, options)
-            | Statement.Mandatory           (_, options)
-            | Statement.MaxElements         (_, options)
-            | Statement.MinElements         (_, options)
-            | Statement.Modifier            (_, options)
-            | Statement.Namespace           (_, options)
-            | Statement.OrderedBy           (_, options)
-            | Statement.Organization        (_, options)
-            | Statement.Path                (_, options)
-            | Statement.Position            (_, options)
-            | Statement.Prefix              (_, options)
-            | Statement.Presence            (_, options)
-            | Statement.Reference           (_, options)
-            | Statement.RevisionDate        (_, options)
-            | Statement.RequireInstance     (_, options)
-            | Statement.Status              (_, options)
-            | Statement.Units               (_, options)
-            | Statement.Unique              (_, options)
-            | Statement.Value               (_, options)
-            | Statement.YangVersion         (_, options)
-            | Statement.YinElement          (_, options)
+            | Statement.Base                (BaseStatement (_, options))
+            | Statement.Config              (ConfigStatement (_, options))
+            | Statement.Contact             (ContactStatement (_, options))
+            | Statement.Default             (DefaultStatement (_, options))
+            | Statement.Description         (DescriptionStatement (_, options))
+            | Statement.DeviateNotSupported (DeviateNotSupportedStatement options)
+            | Statement.ErrorAppTag         (ErrorAppTagStatement (_, options))
+            | Statement.ErrorMessage        (ErrorMessageStatement (_, options))
+            | Statement.FractionDigits      (FractionDigitsStatement (_, options))
+            | Statement.IfFeature           (IfFeatureStatement (_, options))
+            | Statement.Key                 (KeyStatement (_, options))
+            | Statement.Mandatory           (MandatoryStatement (_, options))
+            | Statement.MaxElements         (MaxElementsStatement (_, options))
+            | Statement.MinElements         (MinElementsStatement (_, options))
+            | Statement.Modifier            (ModifierStatement (_, options))
+            | Statement.Namespace           (NamespaceStatement (_, options))
+            | Statement.OrderedBy           (OrderedByStatement (_, options))
+            | Statement.Organization        (OrganizationStatement (_, options))
+            | Statement.Path                (PathStatement (_, options))
+            | Statement.Position            (PositionStatement (_, options))
+            | Statement.Prefix              (PrefixStatement (_, options))
+            | Statement.Presence            (PresenceStatement (_, options))
+            | Statement.Reference           (ReferenceStatement (_, options))
+            | Statement.RevisionDate        (RevisionDateStatement (_, options))
+            | Statement.RequireInstance     (RequireInstanceStatement (_, options))
+            | Statement.Status              (StatusStatement (_, options))
+            | Statement.Units               (UnitsStatement (_, options))
+            | Statement.Unique              (UniqueStatement (_, options))
+            | Statement.Value               (ValueStatement (_, options))
+            | Statement.YangVersion         (YangVersionStatement (_, options))
+            | Statement.YinElement          (YinElementStatement (_, options))
                 -> options
 
             // The following have custom options; the caller need to treat them specially
-            | Statement.Action              (_, _)
-            | Statement.AnyData             (_, _)
-            | Statement.AnyXml              (_, _)
-            | Statement.Augment             (_, _)
-            | Statement.Argument            (_, _)
-            | Statement.BelongsTo           (_, _)
-            | Statement.Bit                 (_, _)
-            | Statement.Case                (_, _)
-            | Statement.Choice              (_, _)
-            | Statement.Container           (_, _)
+            | Statement.Action              _
+            | Statement.AnyData             _
+            | Statement.AnyXml              _
+            | Statement.Augment             _
+            | Statement.Argument            _
+            | Statement.BelongsTo           _
+            | Statement.Bit                 _
+            | Statement.Case                _
+            | Statement.Choice              _
+            | Statement.Container           _
             | Statement.DeviateAdd          _
             | Statement.DeviateDelete       _
             | Statement.DeviateReplace      _
-            | Statement.Deviation           (_, _)
-            | Statement.Enum                (_, _)
-            | Statement.Extension           (_, _)
-            | Statement.Feature             (_, _)
-            | Statement.Grouping            (_, _)
-            | Statement.Identity            (_, _)
-            | Statement.Import              (_, _)
-            | Statement.Include             (_, _)
+            | Statement.Deviation           _
+            | Statement.Enum                _
+            | Statement.Extension           _
+            | Statement.Feature             _
+            | Statement.Grouping            _
+            | Statement.Identity            _
+            | Statement.Import              _
+            | Statement.Include             _
             | Statement.Input               _
-            | Statement.Leaf                (_, _)
-            | Statement.LeafList            (_, _)
-            | Statement.Length              (_, _)
-            | Statement.List                (_, _)
+            | Statement.Leaf                _
+            | Statement.LeafList            _
+            | Statement.Length              _
+            | Statement.List                _
             | Statement.Module              _
-            | Statement.Must                (_, _)
-            | Statement.Notification        (_, _)
+            | Statement.Must                _
+            | Statement.Notification        _
             | Statement.Output              _
-            | Statement.Pattern             (_, _)
-            | Statement.Range               (_, _)
-            | Statement.Rpc                 (_, _)
-            | Statement.Refine              (_, _)
-            | Statement.Revision            (_, _)
+            | Statement.Pattern             _
+            | Statement.Range               _
+            | Statement.Rpc                 _
+            | Statement.Refine              _
+            | Statement.Revision            _
             | Statement.Submodule           _
-            | Statement.Type                (_, _, _)
-            | Statement.TypeDef             (_, _)
-            | Statement.Uses                (_, _)
-            | Statement.UsesAugment         (_, _)
-            | Statement.When                (_, _)
+            | Statement.Type                _
+            | Statement.TypeDef             _
+            | Statement.Uses                _
+            | Statement.UsesAugment         _
+            | Statement.When                _
                 -> None
 
             | Statement.Unknown _   -> None
@@ -1857,4 +2241,13 @@ module Statements =
             | Statement.When _                  -> "when"
             | Statement.YangVersion _           -> "yang-version"
             | Statement.YinElement _            -> "yin-element"
-            | Statement.Unknown (id, _, _)      -> id.ToString()
+            | Statement.Unknown (UnknownStatement (id, _, _))   -> id.ToString()
+
+        let IsDeviateNotSupported = function | Statement.DeviateNotSupported _ -> true   | _ -> false
+        let AsDeviateNotSupported = function | Statement.DeviateNotSupported v -> Some v | _ -> None
+
+        let IsUses = function | Statement.Uses _ -> true   | _ -> false
+        let AsUses = function | Statement.Uses v -> Some v | _ -> None
+
+        let IsUnknown = function | Statement.Unknown _ -> true   | _ -> false
+        let AsUnknown = function | Statement.Unknown v -> Some v | _ -> None

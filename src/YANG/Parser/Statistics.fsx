@@ -321,3 +321,54 @@ Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("contai
 Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("container", Some "vlan-id"))
 Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("container", Some "family"))
 Yang.Model.Generic.FindAllNodes (juniper, Yang.Model.Generic.Filter.Make("container", Some "inet6"))
+
+
+//
+// Parsing of all modules
+//
+
+open FParsec
+
+let ignore_juniper (filename : string) = if filename.Contains("Juniper") then false else true
+let fand<'T> (fn1 : 'T -> bool) (fn2 : 'T -> bool) = fun (v : 'T) -> (fn1 v) && (fn2 v)
+
+// let filter = ignore_known_incorrect_models
+let filter = fand ignore_known_incorrect_models ignore_juniper
+
+let mutable total = 0
+let mutable correct = 0
+
+#time
+let _ =
+    // It would be good to avoid parsing identical files many times,
+    try_for_all_models filter (
+        fun filename ->
+            total <- total + 1
+            let model = get_external_model filename
+            let root = apply_parser (wse >>. Module.parse_module_or_submodule) model
+            correct <- correct + 1
+            root
+    )
+    |> Seq.choose id
+    |> Seq.toList
+
+
+printfn "Total: %05d, Correct: %05d, Success: %4.3f" total correct ((float correct) / (float total))
+
+// 2018-03-23
+// Real: 00:33:00.883, CPU: 00:32:16.703, GC gen0: 56193, gen1: 14103, gen2: 71
+// Total: 12367, Correct: 04024, Success: 0.325
+//
+// 2018-03-25
+// Real: 00:30:28.246, CPU: 00:29:48.656, GC gen0: 52212, gen1: 14207, gen2: 45
+// Total: 12367, Correct: 11562, Success: 0.935
+// Real: 00:26:17.771, CPU: 00:25:28.890, GC gen0: 51737, gen1: 14022, gen2: 41
+// Total: 12367, Correct: 11580, Success: 0.936
+//
+// 2018-03-26, after running only on unique models
+// Real: 03:35:41.960, CPU: 03:35:24.093, GC gen0: 37605, gen1: 22506, gen2: 153
+// Total: 07742, Correct: 07370, Success: 0.952
+//
+// Real: 11:01:26.054, CPU: 11:00:20.781, GC gen0: 54898, gen1: 39779, gen2: 345
+// Total: 07763, Correct: 07732, Success: 0.996
+

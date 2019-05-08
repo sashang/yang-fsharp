@@ -53,6 +53,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Configuration.fs" />
     <Compile Include="Utilities.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Comments.fs" />
@@ -60,15 +61,21 @@
     <Compile Include="Arguments.fs" />
     <Compile Include="Generic.fs" />
     <Compile Include="Identifier.fs" />
+    <Compile Include="PathArgument.fs" />
+    <Compile Include="RobustParsers.fs" />
     <Compile Include="Statements.fs" />
+    <Compile Include="Expressions.fs" />
+    <Compile Include="ExtraStatements.fs" />
     <Compile Include="Header.fs" />
     <Compile Include="Linkage.fs" />
     <Compile Include="Meta.fs" />
     <Compile Include="Revisions.fs" />
     <Compile Include="Types.fs" />
+    <Compile Include="Deviation.fs" />
     <Compile Include="Leaf.fs" />
     <Compile Include="BodyStatements.fs" />
     <Compile Include="Module.fs" />
+    <Compile Include="GenericParser.fs" />
     <Compile Include="Parser.fs" />
     <None Include="TestFsi.fsx" />
     <None Include="Logging.fsx" />

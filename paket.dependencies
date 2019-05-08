@@ -1,5 +1,6 @@
 source https://nuget.org/api/v2
 
+nuget BrightSword.RoslynWrapper
 nuget FAKE
 nuget FParsec-Big-Data-Edition
 nuget FSharp.QueryProvider
@@ -7,6 +8,7 @@ nuget MSTest.TestAdapter
 nuget MSTest.TestFramework
 nuget NLog
 nuget OpenCover
+nuget Pandoc.Windows
 nuget ReportGenerator
 nuget System.Collections.Immutable
 nuget FSharp.Data

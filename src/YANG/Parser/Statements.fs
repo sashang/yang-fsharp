@@ -5,8 +5,9 @@ namespace Yang.Parser
 [<AutoOpen>]
 module Statements =
     open System
+    open System.Collections.Generic
     open FParsec
-    open Identifier
+    open NLog
     open Yang.Model
 
     // [RFC 7950, p. 202-204]
@@ -36,6 +37,28 @@ module Statements =
 
     // Assumption: every parser starts at a point that is not white-space and
     //             consumes all whitespace (including empty statements) that follow it.
+
+    /// Logger for this module
+    let private _logger = LogManager.GetCurrentClassLogger()
+
+    let private throw fmt =
+        let do_throw (message : string) =
+            _logger.Error message
+            raise (YangParserException message)
+        Printf.ksprintf do_throw fmt
+
+    let private warn fmt = Printf.ksprintf _logger.Warn fmt
+    let private debug fmt = Printf.ksprintf _logger.Debug fmt
+    let private error fmt = Printf.ksprintf _logger.Error fmt
+
+#if INTERACTIVE
+    // The following are used only in interactive (fsi) to help with enabling disabling
+    // logging for particular modules.
+
+    type internal Marker = interface end
+    let _full_name = typeof<Marker>.DeclaringType.FullName
+    let _name = typeof<Marker>.DeclaringType.Name
+#endif
 
     //
     //
@@ -84,8 +107,7 @@ module Statements =
     /// Parser for statements that define the structure of their child block, which is optional
     /// (i.e. it may not exist).
     let inline make_statement_parser_optional keyword argument body =
-        skipString keyword >>. spaces >>.
-        argument .>> spaces .>>.
+        attempt (skipString keyword >>. spaces >>. argument .>> spaces) .>>.
         (
                 (end_of_statement                   |>> (fun _ -> None))
             <|> (begin_block >>. (block body)       |>> Some)
@@ -97,8 +119,7 @@ module Statements =
         (argument   : Parser<'T, 'a>)
         (body       : Parser<'b, 'a>) : Parser<('T * ('b list)), 'a>
         =
-            skipString keyword >>. spaces >>.
-            argument .>> spaces .>>
+            attempt (skipString keyword >>. spaces >>. argument .>> spaces) .>>
             begin_block .>>.
             (block_generic body)
 
@@ -109,12 +130,20 @@ module Statements =
         (argument   : Parser<'T, 'a>)
         (body       : Parser<'b, 'a>) : Parser<('T * ('b list option)), 'a>
         =
-            skipString keyword >>. spaces >>.
-            argument .>> spaces .>>.
+            attempt (skipString keyword >>. spaces >>. argument .>> spaces) .>>.
             (
                     (end_of_statement                       |>> (fun _ -> None))
                 <|> (begin_block >>. (block_generic body)   |>> Some)
             )
+
+    /// Parser for statements that require a child block, and do not have an argument.
+    let inline make_statement_parser_no_argument_generic<'a, 'b>
+        (keyword    : string)
+        (body       : Parser<'b, 'a>) : Parser<('b list), 'a>
+        =
+            attempt (skipString keyword >>. spaces) >>.
+            begin_block >>.
+            (block_generic body)
 
     /// Parses an unknown statement; those have an identifier which includes a prefix
     let inline private unknown_statement<'a> (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
@@ -126,7 +155,7 @@ module Statements =
                   (read_keyword .>>. end_of_statement_or_block parser
                    |>> (fun (argument, body)    -> Some argument, body))
                  )
-            |>> (fun (identifier, (argument, body)) -> Statement.Unknown (identifier, argument, body))
+            |>> (fun (identifier, (argument, body)) -> Statement.Unknown (UnknownStatement (identifier, argument, body)))
 
     let inline private yang_keyword_string_statement<'a> (keyword : string, maker) (parser : Parser<Statement, 'a>) : Parser<Statement, 'a> =
         skipString keyword      >>. spaces  >>.
@@ -146,48 +175,64 @@ module Statements =
     //
     //
 
+    //
+    // Definition of generic parser
+    //
+
+    let mutable generic_parser_generator : Type option = None
+    let generic_parser_implementations = Dictionary<System.Type, obj>()
+
     /// Parses a yang-stmt [RFC 7950, p. 202].
     /// It should be used for parsing rules with no constraints, e.g.
     // inside unknown-statement rules.
-    let inline parse_statement<'a> : Parser<Statement, 'a> =
-        // This parser accepts any type of statement. Typically, it should be used for statements
-        // in unknown statements that have no constraints. Because, of their generality they can
-        // be applied recursively.
+    let parse_statement<'a> =
+        // This statement has many call sites. Each of them will initialize the following variables.
+        // See for example, the number of calls with the following command in interactive:
+        // printfn "Inside parse_statement creation for type %s" typeof<'a>.FullName
 
-        // TODO: parse_statement implementation needs to move after all statement parsers.
-        //       It should be after almost all project files.
-
+        let mutable initialized = false
         let (parse_statement : Parser<Statement, 'a>), (parse_statement_ref : Parser<Statement, 'a> ref) =
             createParserForwardedToRef<Statement, 'a>()
 
-        let inline parse_statement_implementation (input : CharStream<'a>) : Reply<Statement> =
-            let parser =
-                    yang_keyword_string_statement (
-                        "yang-version",
-                        (fun (version, options) ->
-                            let version' = Version.Parse version
-                            YangVersion (version', options)
-                        )) parse_statement
-                <|> yang_keyword_string_statement ("contact", Statement.Contact)            parse_statement
-                <|> yang_keyword_string_statement ("description", Statement.Description)    parse_statement
-                <|> yang_keyword_string_statement ("error-app-tag", Statement.ErrorMessage) parse_statement
-                <|> yang_keyword_string_statement ("error-message", Statement.ErrorMessage) parse_statement
-                <|> yang_keyword_uri_statement    ("namespace", Statement.Namespace)        parse_statement
-                <|> yang_keyword_string_statement ("organization", Statement.Organization)  parse_statement
-                <|> yang_keyword_string_statement ("prefix", Statement.Prefix)              parse_statement
-                <|> yang_keyword_string_statement ("presence", Statement.Presence)          parse_statement
-                <|> yang_keyword_string_statement ("reference", Statement.Reference)        parse_statement
-                <|> unknown_statement parse_statement
+        fun stream ->
+            if initialized = false then
+                let key = typeof<'a>
+                if generic_parser_implementations.ContainsKey(key) then
+                    parse_statement_ref := generic_parser_implementations.[key] :?> Parser<Statement, 'a>
+                    initialized <- true
+                elif generic_parser_generator.IsSome then
+                    debug "Constructing generator for %s" key.FullName
 
-            parser input
+                    let ty = generic_parser_generator.Value
+                    let generic = ty.GetGenericTypeDefinition()
+                    let proper = generic.MakeGenericType(key)
+                    let method = proper.GetMethod("Parser")
+                    let parser = method.Invoke(null, [| |])
+                    generic_parser_implementations.Add(key, parser)
+                    parse_statement_ref := parser :?> Parser<Statement, 'a>
+                    initialized <- true
+                else
+                    error "Cannot find generic parser for type %s and do not know how to construct it" key.FullName
+                    // The call will fail, the user will get the error that the parser is not implemented
 
-        parse_statement_ref := parse_statement_implementation
-        parse_statement
+            let result = !parse_statement_ref stream
+            result
+
+    //
+    // End of definition of generic parser
+    //
 
     /// Parses the rest of statements.
     /// It should be used inside blocks with no constraints, e.g. in unknown statement blocks.
     let parse_many_statements<'a> : Parser<Statement list, 'a> =
         many parse_statement
+
+    let parse_base_statement<'a> : Parser<BaseStatement, 'a> =
+        // [RFC 7950, p. 187]
+        //base-stmt           = base-keyword sep identifier-ref-arg-str
+        //                        stmtend
+        make_statement_parser_optional "base" parse_identifier_reference parse_statement
+        |>> BaseStatement
 
     /// Parses a config statement
     let parse_config_statement<'a> : Parser<ConfigStatement, 'a> =
@@ -197,43 +242,50 @@ module Statements =
         //config-arg-str      = < a string that matches the rule >
         //                        < config-arg >
         //config-arg          = true-keyword / false-keyword
-        make_statement_parser_optional "config" Arguments.parse_boolean parse_statement
+        make_statement_parser_optional "config" parse_boolean parse_statement
+        |>> ConfigStatement
 
     /// Parses a contact statement
     let parse_contact_statement<'a> : Parser<ContactStatement, 'a> =
         // [RFC 7950, p. 186]
         // contact-stmt        = contact-keyword sep string stmtend
         make_statement_parser_optional "contact" Strings.parse_string parse_statement
+        |>> ContactStatement
 
     /// Parses the default statement
     let parse_default_statement<'a> : Parser<DefaultStatement, 'a> =
         // [RFC 7950, p. 186]
         // default-stmt        = default-keyword sep string stmtend
         make_statement_parser_optional "default" Strings.parse_string parse_statement
+        |>> DefaultStatement
 
     /// Parses a description statement
     let parse_description_statement<'a> : Parser<DescriptionStatement, 'a> =
         // [RFC 7950, p. 186]
         // description-stmt    = description-keyword sep string stmtend
         make_statement_parser_optional "description" Strings.parse_string parse_statement
+        |>> DescriptionStatement
 
     /// Parses an error message statement
     let parse_error_app_tag_statement<'a> : Parser<ErrorAppTagStatement, 'a> =
         // [RFC 7950, p. 192]
         // error-app-tag-stmt  = error-app-tag-keyword sep string stmtend
         make_statement_parser_optional "error-app-tag" Strings.parse_string parse_statement
+        |>> ErrorAppTagStatement
 
     /// Parses an error message statement
     let parse_error_message_statement<'a> : Parser<ErrorMessageStatement, 'a> =
         // [RFC 7950, p. 192]
         // error-message-stmt  = error-message-keyword sep string stmtend
         make_statement_parser_optional "error-message" Strings.parse_string parse_statement
+        |>> ErrorMessageStatement
 
     let parse_fraction_digits_statement<'a> : Parser<FractionDigitsStatement, 'a> =
         // [RFC 7950, 189]
         //fraction-digits-stmt = fraction-digits-keyword sep
         //                        fraction-digits-arg-str stmtend
         make_statement_parser_optional "fraction-digits" Arguments.parse_fraction_digits parse_statement
+        |>> FractionDigitsStatement
 
     /// Parses a key statement
     let parse_key_statement<'a> : Parser<KeyStatement, 'a> =
@@ -243,7 +295,7 @@ module Statements =
         //                        < key-arg >
         //key-arg             = node-identifier *(sep node-identifier)
         make_statement_parser_optional "key" Strings.parse_string parse_statement
-        |>> (fun (key, block) -> Arguments.Key.MakeFromString key, block)
+        |>> (fun (key, block) -> KeyStatement (Arguments.KeyFromString key, block))
 
     let parse_mandatory_statement<'a> : Parser<MandatoryStatement, 'a> =
         // [RFC 7950, p. 192]
@@ -253,18 +305,30 @@ module Statements =
         //                        < mandatory-arg >
         //mandatory-arg       = true-keyword / false-keyword
         make_statement_parser_optional "mandatory" Arguments.parse_boolean parse_statement
+        |>> MandatoryStatement
 
     let parse_max_elements_statement<'a> : Parser<MaxElementsStatement, 'a> =
         // [RFC 7950, p. 192]
         //max-elements-stmt   = max-elements-keyword sep
         //                        max-value-arg-str stmtend
-        make_statement_parser_optional "max-elements" Arguments.parse_max_value parse_statement
+        make_statement_parser_optional "max-elements" parse_max_value parse_statement
+        |>> MaxElementsStatement
 
-    let parse_min_elemenets_statement<'a> : Parser<MinElementsStatement, 'a> =
+    let parse_min_elements_statement<'a> : Parser<MinElementsStatement, 'a> =
         // [RFC 7950, p. 192]
         //min-elements-stmt   = min-elements-keyword sep
         //                        min-value-arg-str stmtend
-        make_statement_parser_optional "min-elements" Arguments.parse_min_value parse_statement
+        make_statement_parser_optional "min-elements" parse_min_value parse_statement
+        |>> MinElementsStatement
+
+    let parse_modifier_statement<'a> : Parser<ModifierStatement, 'a> =
+        // [RFC 7950, p. 190]
+        //modifier-stmt       = modifier-keyword sep modifier-arg-str stmtend
+        //modifier-arg-str    = < a string that matches the rule >
+        //                        < modifier-arg >
+        //modifier-arg        = invert-match-keyword
+        make_statement_parser_optional "modifier" Arguments.parse_modifier parse_statement
+        |>> ModifierStatement
 
     /// Parses a reference statement
     let parse_namespace_statement<'a> : Parser<NamespaceStatement, 'a> =
@@ -273,18 +337,38 @@ module Statements =
         //uri-str             = < a string that matches the rule >
         //                      < URI in RFC 3986 >
         make_statement_parser_optional "namespace" (Strings.parse_string |>> Uri) parse_statement
+        |>> NamespaceStatement
 
     let parse_ordered_by_statement<'a> : Parser<OrderedByStatement, 'a> =
         // [RFC 7950, p. 192]
         //ordered-by-stmt     = ordered-by-keyword sep
         //                        ordered-by-arg-str stmtend
-        make_statement_parser_optional "ordered-by" Arguments.parse_ordered_by parse_statement
+        make_statement_parser_optional "ordered-by" parse_ordered_by parse_statement
+        |>> OrderedByStatement
 
     /// Parses an organization statement
     let parse_organization_statement<'a> : Parser<OrganizationStatement, 'a> =
         // [RFC 7950, p. 186]
         // organization-stmt   = organization-keyword sep string stmtend
         make_statement_parser_optional "organization" Strings.parse_string parse_statement
+        |>> OrganizationStatement
+
+    /// Parses a path statement
+    let parse_path_statement<'a> : Parser<PathStatement, 'a> =
+        // [RFC 7950, p. 190]
+        // path-stmt           = path-keyword sep path-arg-str stmtend
+        make_statement_parser_optional "path" parse_path parse_statement
+        |>> PathStatement
+
+    let parse_position_statement<'a> : Parser<PositionStatement, 'a> =
+        // [RFC 7950, p. 191]
+        //position-stmt       = position-keyword sep
+        //                        position-value-arg-str stmtend
+        //position-value-arg-str = < a string that matches the rule >
+        //                        < position-value-arg >
+        //position-value-arg  = non-negative-integer-value
+        make_statement_parser_optional "position" parse_uint32 parse_statement
+        |>> PositionStatement
 
     /// Parses a prefix statement
     let parse_prefix_statement<'a> : Parser<PrefixStatement, 'a> =
@@ -295,25 +379,39 @@ module Statements =
         //prefix-arg          = prefix
         //prefix              = identifier
         make_statement_parser_optional "prefix" Strings.parse_string parse_statement
+        |>> PrefixStatement
 
     /// Parses a presence statement
     let parse_presence_statement<'a> : Parser<PresenceStatement, 'a> =
         // [RFC 7950, p. 192]
         // presence-stmt       = presence-keyword sep string stmtend
         make_statement_parser_optional "presence" Strings.parse_string parse_statement
+        |>> PresenceStatement
 
     /// Parses a reference statement
     let parse_reference_statement<'a> : Parser<ReferenceStatement, 'a> =
         // [RFC 7950, p. 186]
         // reference-stmt      = reference-keyword sep string stmtend
         make_statement_parser_optional "reference" Strings.parse_string parse_statement
+        |>> ReferenceStatement
+
+    let parse_require_instance_statement<'a> : Parser<RequireInstanceStatement, 'a> =
+        // [RFC 7950, p. 190]
+        //require-instance-stmt = require-instance-keyword sep
+        //                        require-instance-arg-str stmtend
+        //require-instance-arg-str = < a string that matches the rule >
+        //                            < require-instance-arg >
+        //require-instance-arg = true-keyword / false-keyword
+        make_statement_parser_optional "require-instance" parse_boolean parse_statement
+        |>> RequireInstanceStatement
 
     let parse_revision_date_statement<'a> : Parser<RevisionDateStatement, 'a> =
         // [RFC 7950, p. 186]
         // revision-date-stmt  = revision-date-keyword sep revision-date stmtend
         // [RFC 7950, p.207]
         // revision-date-keyword    = %s"revision-date"
-        make_statement_parser_optional "revision-date" Arguments.parse_date parse_statement
+        make_statement_parser_optional "revision-date" parse_date parse_statement
+        |>> RevisionDateStatement
 
     let parse_status_statement<'a> : Parser<StatusStatement, 'a> =
         // [RFC 7950, p. 191]
@@ -323,12 +421,14 @@ module Statements =
         //status-arg          = current-keyword /
         //                        obsolete-keyword /
         //                        deprecated-keyword
-        make_statement_parser_optional "status" Arguments.parse_status parse_statement
+        make_statement_parser_optional "status" parse_status parse_statement
+        |>> StatusStatement
 
     let parse_units_statement<'a> : Parser<UnitsStatement, 'a> =
         // [RFC 7950, p. 186]
         // units-stmt          = units-keyword sep string stmtend
         make_statement_parser_optional "units" Strings.parse_string parse_statement
+        |>> UnitsStatement
 
     /// Parses a YANG version information
     let parse_yang_version_statement<'a> : Parser<YangVersionStatement, 'a> =
@@ -338,7 +438,32 @@ module Statements =
         //yang-version-arg-str = < a string that matches the rule >
         //                          < yang-version-arg >
         //yang-version-arg    = "1.1"        skipString "reference" >>. spaces >>.
-        make_statement_parser_optional "yang-version" (Strings.parse_string |>> Version.Parse) parse_statement
+
+        let do_parse_version (input : string) : Version =
+            // Correcting version 1, which is typicall given as 1, instead of 1.0
+            let input' =
+                if input.Contains(".") = false then sprintf "%s.0" input
+                else input
+            Version.Parse input'
+
+        make_statement_parser_optional "yang-version" (Strings.parse_string |>> do_parse_version) parse_statement
+        |>> YangVersionStatement
+
+    let parse_yin_element_statement<'a> : Parser<YinElementStatement, 'a> =
+        // [RFC 7950, p. 187]
+        //yin-element-stmt    = yin-element-keyword sep yin-element-arg-str
+        //                        stmtend
+        //yin-element-arg-str = < a string that matches the rule >
+        //                        < yin-element-arg >
+        //yin-element-arg     = true-keyword / false-keyword
+        make_statement_parser_optional "yin-element" Arguments.parse_boolean parse_statement
+        |>> YinElementStatement
+
+    let parse_unique_statement<'a> : Parser<UniqueStatement, 'a> =
+        // [RFC 7950, p. 195]
+        // unique-stmt         = unique-keyword sep unique-arg-str stmtend
+        make_statement_parser_optional "unique" parse_unique parse_statement
+        |>> UniqueStatement
 
     /// Helper method to parse an unknown statement
     let parse_unknown_statement<'a> : Parser<UnknownStatement, 'a> =
@@ -348,31 +473,72 @@ module Statements =
         .>>. ((end_of_statement_or_block parse_statement
                 |>> (fun body            -> None, body))
                 <|>
-                (read_keyword .>>. end_of_statement_or_block parse_statement
+                (Strings.parse_string .>>
+                 spaces .>>. end_of_statement_or_block parse_statement
                 |>> (fun (argument, body)    -> Some argument, body))
-                )
-        |>> (fun (identifier, (argument, body)) -> identifier, argument, body)
+             )
+        |>> (fun (identifier, (argument, body)) -> UnknownStatement (identifier, argument, body))
 
-    let parse_enum_body_statement<'a> : Parser<EnumBodyStatement, 'a> =
-        // TODO: Fill in the rest cases for EnumBodyStatement
-            (parse_status_statement         |>> EnumBodyStatement.Status)
-        <|> (parse_description_statement    |>> EnumBodyStatement.Description)
-        <|> (parse_reference_statement      |>> EnumBodyStatement.Reference)
-        <|> (parse_unknown_statement        |>> EnumBodyStatement.Unknown)
+    let parse_value_statement<'a> : Parser<ValueStatement, 'a> =
+        // [RFC 7950, p. 193]
+        //value-stmt          = value-keyword sep integer-value-str stmtend
+        //integer-value-str   = < a string that matches the rule >
+        //                        < integer-value >
+        make_statement_parser_optional "value" parse_int64 parse_statement
+        |>> ValueStatement
 
-    let parse_enum_statement<'a> : Parser<EnumStatement, 'a> =
-        // [RFC 7950, p. 190]
-        //enum-stmt           = enum-keyword sep string optsep
+    //
+    // The definitions below depend on some definitions above
+    //
+
+    let parse_argument_body_statement<'a> : Parser<ArgumentBodyStatement, 'a> =
+            (parse_yin_element_statement    |>> ArgumentBodyStatement.YinElement)
+        <|> (parse_unknown_statement        |>> ArgumentBodyStatement.Unknown)
+
+    let parse_argument_statement<'a> : Parser<ArgumentStatement, 'a> =
+        // [RFC 7950, p. 187]
+        //argument-stmt       = argument-keyword sep identifier-arg-str optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            [yin-element-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "argument" parse_identifier parse_argument_body_statement
+        |>> ArgumentStatement
+
+    let parse_belongs_to_body_statement<'a> : Parser<BelongsToBodyStatement, 'a> =
+            (parse_prefix_statement     |>> BelongsToBodyStatement.Prefix)
+        <|> (parse_unknown_statement    |>> BelongsToBodyStatement.Unknown)
+
+    let parse_belongs_to_statement<'a> : Parser<BelongsToStatement, 'a> =
+        // [RFC 7950, p. 186]
+        //belongs-to-stmt     = belongs-to-keyword sep identifier-arg-str
+        //                        optsep
+        //                        "{" stmtsep
+        //                            prefix-stmt
+        //                        "}" stmtsep
+        make_statement_parser_generic "belongs-to" parse_identifier parse_belongs_to_body_statement
+        |>> BelongsToStatement
+
+    let parse_extension_body_statement<'a> : Parser<ExtensionBodyStatement, 'a> =
+            (parse_argument_statement       |>> ExtensionBodyStatement.Argument)
+        <|> (parse_status_statement         |>> ExtensionBodyStatement.Status)
+        <|> (parse_description_statement    |>> ExtensionBodyStatement.Description)
+        <|> (parse_reference_statement      |>> ExtensionBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> ExtensionBodyStatement.Unknown)
+
+    let parse_extension_statement<'a> : Parser<ExtensionStatement, 'a> =
+        // [RFC 7950, p. 187]
+        //extension-stmt      = extension-keyword sep identifier-arg-str optsep
         //                        (";" /
         //                        "{" stmtsep
         //                            ;; these stmts can appear in any order
-        //                            *if-feature-stmt
-        //                            [value-stmt]
+        //                            [argument-stmt]
         //                            [status-stmt]
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "enum" Strings.parse_string parse_enum_body_statement
+        make_statement_parser_optional_generic "extension" parse_identifier parse_extension_body_statement
+        |>> ExtensionStatement
 
     let parse_length_body_statement<'a> : Parser<LengthBodyStatement, 'a> =
             (parse_error_message_statement  |>> LengthBodyStatement.ErrorMessage)
@@ -393,10 +559,34 @@ module Statements =
         //                            [description-stmt]
         //                            [reference-stmt]
         //                        "}") stmtsep
-        make_statement_parser_optional_generic "length" Arguments.parse_length parse_length_body_statement
+        // TODO: Check and enforce cardinality constraints for length-stmt
+        make_statement_parser_optional_generic "length" parse_length parse_length_body_statement
+        |>> LengthStatement
+
+    let parse_must_body_statement<'a> : Parser<MustBodyStatement, 'a> =
+            (parse_error_message_statement  |>> MustBodyStatement.ErrorMessage)
+        <|> (parse_error_app_tag_statement  |>> MustBodyStatement.ErrorAppTag)
+        <|> (parse_description_statement    |>> MustBodyStatement.Description)
+        <|> (parse_reference_statement      |>> MustBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> MustBodyStatement.Unknown)
+
+    let parse_must_statement<'a> : Parser<MustStatement, 'a> =
+        // [RFC 7950, p. 192]
+        //must-stmt           = must-keyword sep string optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [error-message-stmt]
+        //                            [error-app-tag-stmt]
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        make_statement_parser_optional_generic "must" Strings.parse_string parse_must_body_statement
+        |>> MustStatement
 
     let parse_pattern_body_statement<'a> : Parser<PatternBodyStatement, 'a> =
-            (parse_error_message_statement      |>> PatternBodyStatement.ErrorMessage)
+            (parse_modifier_statement           |>> PatternBodyStatement.Modifier)
+        <|> (parse_error_message_statement      |>> PatternBodyStatement.ErrorMessage)
         <|> (parse_error_app_tag_statement      |>> PatternBodyStatement.ErrorAppTag)
         <|> (parse_description_statement        |>> PatternBodyStatement.Description)
         <|> (parse_reference_statement          |>> PatternBodyStatement.Reference)
@@ -415,6 +605,7 @@ module Statements =
         //                            [reference-stmt]
         //                        "}") stmtsep
         make_statement_parser_optional_generic "pattern" Strings.parse_string parse_pattern_body_statement
+        |>> PatternStatement
 
     let parse_range_body_statement<'a> : Parser<RangeBodyStatement, 'a> =
             (parse_error_message_statement   |>> RangeBodyStatement.ErrorMessage)
@@ -437,4 +628,25 @@ module Statements =
         //                        "}") stmtsep
 
         // TODO: Unit tests for range statement
-        make_statement_parser_optional_generic "range" Arguments.parse_range parse_range_body_statement
+        make_statement_parser_optional_generic "range" parse_range parse_range_body_statement
+        |>> RangeStatement
+
+    let parse_when_body_statement<'a> : Parser<WhenBodyStatement, 'a> =
+            (parse_description_statement    |>> WhenBodyStatement.Description)
+        <|> (parse_reference_statement      |>> WhenBodyStatement.Reference)
+        <|> (parse_unknown_statement        |>> WhenBodyStatement.Unknown)
+
+    let parse_when_statement<'a> : Parser<WhenStatement, 'a> =
+        // [RFC 7950, p. 199]
+        //when-stmt           = when-keyword sep string optsep
+        //                        (";" /
+        //                        "{" stmtsep
+        //                            ;; these stmts can appear in any order
+        //                            [description-stmt]
+        //                            [reference-stmt]
+        //                        "}") stmtsep
+        // TODO: Check and enforce cardinality constraints for when-stmt
+        // TODO: Often the when-stmt contain xpath conditions on the schema; provide support for parsing them.
+        //       E.g. when "../crypto = 'mc:aes'";
+        make_statement_parser_optional_generic "when" Strings.parse_string parse_when_body_statement
+        |>> WhenStatement

@@ -60,6 +60,8 @@
     <Compile Include="Statements.fs" />
     <Compile Include="StatementHelper.fs" />
     <Compile Include="Printer.fs" />
+    <Compile Include="Graph.fs" />
+    <Compile Include="DefUse.fs" />
     <Compile Include="Generator.fs" />
     <None Include="Playground.fsx" />
     <Content Include="packages.config" />
