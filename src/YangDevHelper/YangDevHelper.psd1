@@ -59,7 +59,9 @@
 
     # Functions to export from this module
     FunctionsToExport = @(
+        'Get-UniqueModels',
         'Get-WorkItems',
+        'New-Notes',
         'Show-CodeCoverage',
         'Show-Cloc'
     )

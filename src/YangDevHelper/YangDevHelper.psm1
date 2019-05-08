@@ -37,3 +37,5 @@ if (-not (Test-Path $reportTool -PathType Leaf)) {
 
 . $PSScriptRoot/Work.ps1
 . $PSScriptRoot/Quality.ps1
+. $PSScriptRoot/Models.ps1
+. $PSScriptRoot/Documentation.ps1

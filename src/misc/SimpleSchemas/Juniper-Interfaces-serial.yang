@@ -32,7 +32,6 @@ module configuration {
         }
 
         container system {
-            key name;
             description "Logical systems";
 
             container interfaces {

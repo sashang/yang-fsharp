@@ -7,14 +7,14 @@ namespace Yang.Model
 module Generator =
     open System
 
-    let mkId id = Identifier.Make id
-    let mkIdRef id = IdentifierReference.Make id
+    let mkId    (id : string) = Identifier.Make id
+    let mkIdRef (id : string) = IdentifierReference.Make id
 
     let mkModule name body : ModuleStatement =
-        let version : YangVersionStatement = Version(1, 1), None
-        let ns : NamespaceStatement = Uri("yang://unknown"), None
-        let prefix : PrefixStatement = "this", None
-        let header : ModuleHeaderStatements = version, ns, prefix, None
+        let version = YangVersionStatement (Version(1, 1), None)
+        let ns      = NamespaceStatement (Uri("yang://unknown"), None)
+        let prefix  = PrefixStatement ("this", None)
+        let header  = ModuleHeaderStatements (version, ns, prefix, None)
         {
             Name        = mkId name
             Header      = header
@@ -24,18 +24,18 @@ module Generator =
             Body        = body
         }
 
-    let mkContainer name body = ((mkId name), body)
-    let mkContainerInternal name body = ((mkId name), body) |> ContainerBodyStatement.Container
-    let mkType name body : TypeStatement = (mkIdRef name), body, None
+    let mkContainer name body = ContainerStatement ((mkId name), body)
+    let mkContainerInternal name body = ContainerStatement ((mkId name), body) |> ContainerBodyStatement.Container
+    let mkType name body = TypeStatement ((mkIdRef name), body)
 
     let mkTypeDefFromString name : BodyStatement =
         let body : TypeDefBodyStatement = mkType "string" None |> TypeDefBodyStatement.Type
-        (mkId name, [ body ]) |> BodyStatement.TypeDef
+        TypeDefStatement (mkId name, [ body ]) |> BodyStatement.TypeDef
 
     let mkLeaf name ``type`` : LeafStatement =
-        let t = LeafBodyStatement.Type (mkIdRef ``type``, None, None)
-        let leaf : LeafStatement = mkId name, [ t ]
+        let t = LeafBodyStatement.Type (TypeStatement (mkIdRef ``type``, None))
+        let leaf = LeafStatement (mkId name, [ t ])
         leaf
 
-    let mkList name body : ListStatement = mkId name, body
-    let mkPresence label = ContainerBodyStatement.Presence (label, None)
+    let mkList name body = ListStatement (mkId name, body)
+    let mkPresence label = ContainerBodyStatement.Presence (PresenceStatement (label, None))

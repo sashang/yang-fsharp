@@ -91,3 +91,46 @@ module Module =
     let parse_module_as_statement<'a> : Parser<Statement, 'a> =
         spaces >>. parse_module |>> Statement.Module
 
+    let parse_submodule<'a> : Parser<SubmoduleStatement, 'a> =
+        let parser =
+            skipString "submodule" .>> spaces >>.
+            Identifier.parse_identifier .>> spaces .>>
+            skipChar '{' .>> wse .>>.
+            tuple5 parse_submodule_header Linkage.parse_linkage_section (opt parse_meta) (opt parse_revision_list) BodyStatements.parse_body_statements .>>
+            wse .>> skipChar '}' .>> wse
+
+        parser |>> (
+            fun (identifier, (header, linkage, meta, revision, body)) ->
+                // We need the two adjustments below, because the parsers
+                // are guaranteed to return a value, even if the values are empty.
+
+                let meta' =
+                    match meta with
+                    | None      -> []
+                    | Some m    -> m
+
+                let revision' = match revision with | None -> [] | Some r -> r
+
+                {
+                    Name        = identifier
+                    Header      = header
+                    Linkage     = linkage
+                    Meta        = meta'
+                    Revision    = revision'
+                    Body        = body
+                }
+        )
+
+    let parse_submodule_as_statement<'a> : Parser<Statement, 'a> =
+        spaces >>. parse_submodule |>> Statement.Submodule
+
+    // TODO: Parser of file that results in either a module or submodule.
+    //       Keep the name of the file, as it may contain versioning information.
+
+    type ModelUnit =
+    | ModuleUnit    of ModuleStatement
+    | SubmoduleUnit of SubmoduleStatement
+
+    let parse_module_or_submodule<'a> : Parser<ModelUnit, 'a> =
+            (parse_module       |>> ModuleUnit)
+        <|> (parse_submodule    |>> SubmoduleUnit)

@@ -10,9 +10,11 @@ nuget FSharp.Data.TypeProviders
 nuget FSharp.QueryProvider
 
 nuget FParsec-Big-Data-Edition
+nuget BrightSword.RoslynWrapper
 nuget NLog
 
 nuget OpenCover
+nuget Pandoc.Windows
 nuget ReportGenerator
 nuget TestRunner
 nuget MSTest.TestAdapter

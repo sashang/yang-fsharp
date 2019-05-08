@@ -99,7 +99,10 @@ module Comments =
                             output.Write(char c)
                             ()
                         elif next_c = int '/' then
-                            input.Read() |> ignore
+                            // We don't need to consume this character, as in the next step we will
+                            // consume the entire line; actually, consuming the character here results
+                            // in a bug when the rest of the line is empty, because it also consumes
+                            // the line that follows.
                             advance SingleLineComment
                         elif next_c = int '*' then
                             input.Read() |> ignore

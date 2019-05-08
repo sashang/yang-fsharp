@@ -22,9 +22,9 @@ module MetaTests =
 """
         let meta = FParsecHelper.apply (spaces >>. parse_meta) body
         let _x = MetaStatements.Organization meta
-        Assert.Equal(Some ("Example Inc.", None),       MetaStatements.Organization meta)
-        Assert.Equal(Some ("joe@example.com", None),    MetaStatements.Contact meta)
-        Assert.Equal(Some ("The module for entities implementing the Example system.", None),
+        Assert.Equal(Some (OrganizationStatement ("Example Inc.", None)),       MetaStatements.Organization meta)
+        Assert.Equal(Some (ContactStatement ("joe@example.com", None)),         MetaStatements.Contact meta)
+        Assert.Equal(Some (DescriptionStatement ("The module for entities implementing the Example system.", None)),
                      MetaStatements.Description meta)
         Assert.Equal(None, MetaStatements.Reference meta)
         Assert.Equal(None, MetaStatements.Unknown   meta)

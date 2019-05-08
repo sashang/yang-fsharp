@@ -2,6 +2,7 @@ FSharp.Core
 FSharp.Data
 FSharp.Data.TypeProviders
 FSharp.QueryProvider
+BrightSword.RoslynWrapper
 File:ProvidedTypes.fsi .
 File:ProvidedTypes.fs .
 File:ProvidedTypesTesting.fs .

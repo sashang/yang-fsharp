@@ -37,8 +37,8 @@ module IdentifierTests =
         let expected = identifier.Split(':')
         let id = FParsecHelper.apply Identifier.parse_identifier_with_prefix identifier
         Assert.Equal(2, expected.Length)
-        Assert.Equal(expected.[0], id.Prefix)
-        Assert.Equal(expected.[1], id.Name)
+        Assert.Equal(expected.[0], id._Prefix)
+        Assert.Equal(expected.[1], id._Name)
 
     [<Theory>]
     [<InlineData(":name")>]

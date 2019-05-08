@@ -9,6 +9,7 @@
 // Initialize logging
 #load "Logging.fsx"
 
+#load "Configuration.fs"
 #load "Utilities.fs"
 #load "Errors.fs"
 #load "Comments.fs"
@@ -16,16 +17,24 @@
 #load "Arguments.fs"
 #load "Generic.fs"
 #load "Identifier.fs"
+#load "PathArgument.fs"
+#load "RobustParsers.fs"
 #load "Statements.fs"
+#load "Expressions.fs"
+#load "ExtraStatements.fs"
 #load "Header.fs"
 #load "Linkage.fs"
 #load "Meta.fs"
 #load "Revisions.fs"
 #load "Types.fs"
+#load "Deviation.fs"
 #load "Leaf.fs"
 #load "BodyStatements.fs"
 #load "Module.fs"
+#load "GenericParser.fs"
 #load "Parser.fs"
+
+Yang.Parser.Parser.Initialize ()
 
 [<AutoOpen>]
 module MyEnvironment =
@@ -56,7 +65,28 @@ module MyEnvironment =
         ReadAndClean full_path
 
     let get_all_external_models = lazy (
-        Directory.EnumerateFiles(external_modules_dir, "*.yang", SearchOption.AllDirectories)
+        let index_file = Path.Combine(external_modules_dir, "all_yang_models.txt")
+        let bad_models_file = Path.Combine(external_modules_dir, "bad_models.txt")
+
+        if File.Exists(index_file) then
+            let bad_model_filter =
+                if File.Exists(bad_models_file) then
+                    Some (File.ReadLines(bad_models_file) |> Seq.toList)
+                else None
+
+            File.ReadAllLines(index_file)
+            |> Seq.choose (
+                fun filename ->
+                    let filename =
+                        if filename.StartsWith("\\") then
+                            filename.TrimStart([| '\\'; '/' |])
+                        else filename
+
+                    if bad_model_filter.IsSome && (List.contains filename bad_model_filter.Value) then None
+                    else Some (Path.Combine(external_modules_dir, filename))
+            )
+        else
+            Directory.EnumerateFiles(external_modules_dir, "*.yang", SearchOption.AllDirectories)
     )
 
     let fold_on_all_models<'T> (filter : string -> bool) (initial : unit -> 'T) (apply : 'T -> string -> 'T) =
@@ -74,6 +104,21 @@ module MyEnvironment =
                         state
 
         ) (initial ())
+
+    let try_for_all_models (filter : string -> bool) apply =
+        get_all_external_models.Value
+        |> Seq.filter filter
+        |> Seq.map (
+            fun (filename : string) ->
+                printfn "%A\t\tParsing: %s" (DateTime.Now) (filename.Substring(external_modules_dir.Length))
+
+                try
+                    Some (apply filename)
+                with
+                    | ex ->
+                        printfn "Error parsing: %s\n%A" filename ex
+                        None
+        )
 
     do
         if Directory.Exists(sample_dir) = false then

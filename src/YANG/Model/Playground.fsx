@@ -11,21 +11,15 @@
 #load "Statements.fs"
 #load "StatementHelper.fs"
 #load "Printer.fs"
+#load "Graph.fs"
+#load "DefUse.fs"
 #load "Generator.fs"
 
 open System
 open Yang.Model
-
 open Generator
 
-let address4 =
-    mkList "address" (
-        [
-            mkLeaf "name" "ipv4prefix" |> ListBodyStatement.Leaf
-        ]
-    ) |> ContainerBodyStatement.List
-
-Printer.StatementToStringCompact (ContainerBodyStatement.Translate address4)
+let unknown = Statement.Unknown (UnknownStatement (IdentifierWithPrefix.Make "t:h", None, None))
 
 let family =
     mkContainer "family" (
@@ -69,7 +63,6 @@ let configuration =
                                         Some [
                                             mkLeaf "name" "interface-unit" |> ContainerBodyStatement.Leaf
                                             mkLeaf "description" "string" |> ContainerBodyStatement.Leaf
-                                            mkLeaf "description" "uint32" |> ContainerBodyStatement.Leaf
 
                                             mkList "unit" (
                                                 [
@@ -105,27 +98,27 @@ module ResolveType =
     open System
 
     // [RFC 7950, p. 24]
-    // Name                 Description                         
+    // Name                 Description
     //==========================================================
-    // binary               Any binary data                     
-    // bits                 A set of bits or flags              
-    // boolean              "true" or "false"                   
-    // decimal64            64=bit signed decimal number        
-    // empty                A leaf that does not have any value 
-    // enumeration          One of an enumerated set of strings 
-    // identityref          A reference to an abstract identity 
-    // instance=identifier  A reference to a data tree node     
-    // int8                 8=bit signed integer                
-    // int16                16=bit signed integer               
-    // int32                32=bit signed integer               
-    // int64                64=bit signed integer               
-    // leafref              A reference to a leaf instance      
-    // string               A character string                  
-    // uint8                8=bit unsigned integer              
-    // uint16               16=bit unsigned integer             
-    // uint32               32=bit unsigned integer             
-    // uint64               64=bit unsigned integer             
-    // union                Choice of member types              
+    // binary               Any binary data
+    // bits                 A set of bits or flags
+    // boolean              "true" or "false"
+    // decimal64            64=bit signed decimal number
+    // empty                A leaf that does not have any value
+    // enumeration          One of an enumerated set of strings
+    // identityref          A reference to an abstract identity
+    // instance=identifier  A reference to a data tree node
+    // int8                 8=bit signed integer
+    // int16                16=bit signed integer
+    // int32                32=bit signed integer
+    // int64                64=bit signed integer
+    // leafref              A reference to a leaf instance
+    // string               A character string
+    // uint8                8=bit unsigned integer
+    // uint16               16=bit unsigned integer
+    // uint32               32=bit unsigned integer
+    // uint64               64=bit unsigned integer
+    // union                Choice of member types
     //
     // Example of 'bits' ([RFC 7950, p. 176]):
     //type bits {
@@ -134,23 +127,138 @@ module ResolveType =
     //    bit DISABLED;
     //}
 
-//module NameResolution =
-//    open FSharp.Collections
 
-//    type ResolvedTypeDef = TypeDefStatement
+let xx = DefUse.VisitDefinitions (fun _ -> true) (Statement.Module configuration)
 
-//    type Node = | Node of Label:Identifier * Path:(Identifier list)
+open System.Text
+open System.Collections.Generic
 
-//    type Resolver = {
-//        TypeDefs    : Map<Identifier, Type>
-//        Containers  : Map<Identifier, ContainerStatement>
-//        Parent      : Resolver option
-//        Children    : Map<Identifier, Resolver>
-//    }
+type TypeResolution =
+| TString
+| Unknown
 
-//    let rec resolve (db : Resolver) (id : Identifier) : Type option =
-//        if Map.containsKey id db.Definitions then
-//            Map.find id db.Definitions |> Some
-//        elif db.Parent.IsSome then
-//            resolve db.Parent.Value id
-//        else None
+let (|BuildInType|_|) (identifier : IdentifierReference) =
+    if identifier.Value.Equals("string") then Some TString
+    else None
+
+
+type TypeDefinitions = | TypeDefinitions of Definitions:Dictionary<IdentifierReference, TypeResolution> * Parent:(TypeDefinitions option)
+with
+    static member private create () = Dictionary<IdentifierReference, TypeResolution>()
+
+    static member Empty = TypeDefinitions (TypeDefinitions.create(), None)
+    static member Make(?parent : TypeDefinitions) =
+        let definitions = Dictionary<IdentifierReference, TypeResolution>()
+        TypeDefinitions (definitions, parent)
+
+    member private this._Definitions = let (TypeDefinitions (definitions, _)) = this in definitions
+    member private this._Parent = let (TypeDefinitions (_, parent)) = this in parent
+
+    member this.Search (identifier : IdentifierReference) =
+        if this._Definitions.ContainsKey(identifier) then Some (this._Definitions.Item identifier)
+        elif this._Parent.IsNone then None
+        else this._Parent.Value.Search(identifier)
+
+    member this.Search (identifier : Identifier) = this.Search (Simple identifier)
+
+    member this.Add (identifier : IdentifierReference, resolved) = this._Definitions.Add(identifier, resolved)
+    member this.Add (identifier : Identifier, resolved) = this._Definitions.Add(Simple identifier, resolved)
+
+    member this.Push () = TypeDefinitions (TypeDefinitions.create (), Some this)
+    member this.Pop  () = this._Parent.Value
+
+
+open StatementHelper.Patterns
+
+type CSharpGenerator (``namespace`` : string, root : ModuleStatement) =
+    let sb = StringBuilder()
+    let indent = "    "
+    let mutable indentation = 0
+    let mutable definitions = TypeDefinitions.Empty
+
+    let indent ()   = Printf.bprintf sb "%s" (String.replicate indentation indent)
+    let push ()     = indentation <- indentation + 1
+    let pop ()      = indentation <- indentation - 1
+    let nl ()       = Printf.bprintf sb "\n"
+    let bb ()       = Printf.bprintf sb " {"; nl(); push ()
+    let eb ()       = pop (); indent(); Printf.bprintf sb "}"; nl()
+
+    member this.AppendLines(input : string) =
+        input.Split('\n')
+        |> Array.iter (
+            fun line ->
+                Printf.bprintf sb "line"
+                nl()
+                indent()
+        )
+
+    member this.Append (ContainerStatement (identifier, body)) =
+        nl ()
+        indent ()
+        Printf.bprintf sb "public class %s" identifier.Value
+        bb ()
+        let definitions' = definitions.Push()
+        definitions <- definitions'
+
+        indent ()
+        Printf.bprintf sb "public %s () {}" identifier.Value
+        nl ()
+
+        if body.IsSome then
+            body.Value |> List.map ContainerBodyStatement.Translate |> List.iter this.Append
+        eb ()
+        nl ()
+        indent ()
+        Printf.bprintf sb "public %s %s;" identifier.Value identifier.Value
+        nl ()
+
+    member this.Append (LeafStatement (id, body) as statement) =
+        let ty = body |> List.map LeafBodyStatement.Translate |> List.choose ``|Type|_|``
+        match ty with
+        | [] -> failwithf"Cannot find type for leaf %A" statement
+        | [ (TypeStatement (td, _)) ] ->
+            indent ()
+            // TODO: search for proper type name here
+            Printf.bprintf sb "public %s %s;" td.Value id.Value
+            nl()
+        | _ -> failwithf "too many type definitions for type %A" statement
+
+    member this.Append (statement : ModuleStatement) =
+        let children = StatementHelper.Children (Module statement)
+        children |> List.iter this.Append
+
+    member this.Append (TypeDefStatement (identifier, body)) =
+        let ty = body |> List.map TypeDefBodyStatement.Translate |> List.choose ``|Type|_|``
+        match ty with
+        | []        -> failwithf "Cannot find type for typedef %s" identifier.Value
+        | [ ty ]    ->
+            let (TypeStatement (using_type, _)) = ty
+            match using_type with
+            | BuildInType resolution -> definitions.Add(identifier, resolution)
+            | _     -> failwithf "Don't know how to handle type %s" using_type.Value
+        | _         -> failwithf "Found multiple types for typedef %s" identifier.Value
+        ()
+
+    member this.Append (statement : Statement) =
+        match statement with
+        | Statement.Container     st    -> this.Append st
+        | Statement.Leaf          st    -> this.Append st
+        | Statement.TypeDef       st    -> this.Append st
+        | _ ->
+            printfn "Not parsing %s" (Statement.Keyword statement)
+
+    member this.Evaluate () =
+        Printf.bprintf sb "namespace %s" ``namespace``
+        bb()
+        this.Append root
+        eb()
+        sb.ToString()
+
+    member this.Read () = sb.ToString()
+
+    static member Evaluate(``namespace`` : string, root : ModuleStatement) =
+        let generator = CSharpGenerator(``namespace``, root)
+        generator.Evaluate()
+
+let program = CSharpGenerator.Evaluate("Juniper", configuration)
+printfn "\n%s\n" program

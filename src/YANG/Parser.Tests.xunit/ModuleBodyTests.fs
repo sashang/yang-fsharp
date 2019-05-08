@@ -45,14 +45,14 @@ revision 2007-06-09 {
         Assert.NotNull(meta)
         Assert.NotNull(revisions)
 
-        Assert.Equal((Version (1, 1), None),            version)
-        Assert.Equal((Uri("urn:example:system"), None), ns)
-        Assert.Equal(("sys", None),                     prefix)
+        Assert.Equal(YangVersionStatement (Version (1, 1), None),           version)
+        Assert.Equal(NamespaceStatement(Uri("urn:example:system"), None),   ns)
+        Assert.Equal(PrefixStatement ("sys", None),                         prefix)
         Assert.Equal(None,                              unknown_header)
 
-        Assert.Equal(Some ("Example Inc.", None),       MetaStatements.Organization meta)
-        Assert.Equal(Some ("joe@example.com", None),    MetaStatements.Contact meta)
-        Assert.Equal(Some ("The module for entities implementing the Example system.", None),
+        Assert.Equal(Some (OrganizationStatement ("Example Inc.", None)),   MetaStatements.Organization meta)
+        Assert.Equal(Some (ContactStatement ("joe@example.com", None)),     MetaStatements.Contact meta)
+        Assert.Equal(Some (DescriptionStatement ("The module for entities implementing the Example system.", None)),
                      MetaStatements.Description meta)
         Assert.Equal(None, MetaStatements.Reference meta)
         Assert.Equal(None, MetaStatements.Unknown meta)
@@ -60,11 +60,11 @@ revision 2007-06-09 {
         Assert.NotEmpty(revisions)
         Assert.Equal(1, revisions.Length)
         match revisions with
-        | (date, _) as rev :: [] ->
+        | (RevisionStatement (date, _)) as rev :: [] ->
             Assert.Equal(2007us,    date.Year)
             Assert.Equal(06uy,      date.Month)
             Assert.Equal(09uy,      date.Day)
-            Assert.Equal(Some ("Initial revision.", None), RevisionStatement.Description rev)
+            Assert.Equal(Some (DescriptionStatement ("Initial revision.", None)), RevisionStatement.Description rev)
             Assert.Equal(None, RevisionStatement.Unknown rev)
             Assert.Equal(None, RevisionStatement.Reference rev)
         | _ -> failwith "Internal error: unit test should not have reached this point"
