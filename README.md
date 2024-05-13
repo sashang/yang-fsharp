@@ -4,10 +4,8 @@ Parser and .NET type generator for YANG model.
 
 ## Pre-requisites
 
-Currently, the dev environment is VS 2017 Preview, which means that we require F# compiler version 10.1.1.
-Eventually, we will support the production tools (VS 2017 and F# compiler); hopefully, when we reach that
-point the output binaries should also be of use with the tool-chain shipped with VS 2015. However, we do
-not plan to test and support versions 13.x and earlier of Visual Studio.
+.net 8
+vscode
 
 ## Build instructions
 
