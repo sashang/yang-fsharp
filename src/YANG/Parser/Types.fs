@@ -8,7 +8,7 @@ module Types =
     open FParsec
     open NLog
     open Yang.Model
-    open System.Net.Configuration
+    //open System.Net.Configuration
 
     // [RFC 7950, p.188]
     //   type-stmt           = type-keyword sep identifier-ref-arg-str optsep
@@ -292,7 +292,7 @@ module Types =
                 <|> do_parse "binary"
                 <|> do_parse "bits"
                 <|> do_parse "instance-identifier"
-                <|> (parse_identifier_reference .>> spaces .>>. parse_end_of_unknown_type 
+                <|> (parse_identifier_reference .>> spaces .>>. parse_end_of_unknown_type
                      |>> fun (id, spec) ->
                         if spec.IsNone then id, None
                         else id, Some (TypeBodyStatement.UnknownTypeSpecification spec.Value)

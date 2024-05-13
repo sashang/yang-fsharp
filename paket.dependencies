@@ -3,11 +3,13 @@ generate_load_scripts: true
 source https://nuget.org/api/v2
 license_download: true
 
+nuget FParsec 1.1.1
 nuget System.Collections.Immutable
-nuget FSharp.Core 4.5.0
+nuget FSharp.Core
 nuget FSharp.Data
 nuget FSharp.Data.TypeProviders
 nuget FSharp.QueryProvider
+nuget FSharp.TypeProviders.SDK
 
 nuget FParsec-Big-Data-Edition
 nuget BrightSword.RoslynWrapper
@@ -22,10 +24,6 @@ nuget MSTest.TestFramework
 nuget xunit
 nuget xunit.runner.console
 
-github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi
-github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs
-github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypesTesting.fs
-
 group netcorebuild
     redirects: off
     source https://nuget.org/api/v2
@@ -36,3 +34,5 @@ group netcorebuild
     nuget Fake.DotNet.MsBuild
     nuget Fake.DotNet.Testing.XUnit2
     nuget Fake.DotNet.Testing.MSTest
+
+   

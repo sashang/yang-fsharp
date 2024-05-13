@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Errors.fs" />
+    <Compile Include="Program.fs" />
+    <Compile Include="Yang.Types.fs" />
+    <Compile Include="YangProvider.fs" />
+    <None Include="Playground.fsx" />
+    <Content Include="packages.config" />
+    <ProjectReference Include="..\Model\Model.fsproj" />
+  </ItemGroup>
+  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
+</Project>

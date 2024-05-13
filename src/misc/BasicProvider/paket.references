@@ -2,6 +2,4 @@ FSharp.Core
 FSharp.Data
 FSharp.Data.TypeProviders
 FSharp.QueryProvider
-File:ProvidedTypes.fsi .
-File:ProvidedTypes.fs .
-File:ProvidedTypesTesting.fs .
+FSharp.TypeProviders.SDK

@@ -5,7 +5,7 @@ open System.Diagnostics
 open System.IO
 open System.Text
 open Fake.Core
-open Fake.Core.TargetOperators
+open Fake.Core.ld.TargetOperators
 open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.DotNet
