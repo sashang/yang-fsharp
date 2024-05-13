@@ -4,15 +4,25 @@ Parser and .NET type generator for YANG model.
 
 ## Pre-requisites
 
-.net 8
-vscode
+.net 8 in a Linux host.
+
 
 ## Build instructions
 
-First, run `.\init.ps1` from PowerShell. This will download `paket` and setup a few other
-things. It will also load the `YangDevHelper` PowerShell module that provides some commands
-that are useful during development. It is advised (although not required) to initialize
-your working (Power)shell with this script.
+Install .net 8 in a Linux host.
+
+### One timer
+```
+dotnet tool install paket
+dotnet paket restore
+```
+
+### Repeatable
+
+```
+dotnet build
+```
+
 
 Running the `.\build.bat` should compile the main project and run the unit tests.
 The output is placed in the `.\build` directory.
