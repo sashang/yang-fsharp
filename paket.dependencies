@@ -11,7 +11,6 @@ nuget FSharp.Data.TypeProviders
 nuget FSharp.QueryProvider
 nuget FSharp.TypeProviders.SDK
 
-nuget FParsec-Big-Data-Edition
 nuget BrightSword.RoslynWrapper
 nuget NLog
 
@@ -35,4 +34,3 @@ group netcorebuild
     nuget Fake.DotNet.Testing.XUnit2
     nuget Fake.DotNet.Testing.MSTest
 
-   

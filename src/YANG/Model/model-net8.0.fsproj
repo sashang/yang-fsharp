@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Generic.fs" />
     <Compile Include="Identifier.fs" />

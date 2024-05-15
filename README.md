@@ -9,19 +9,24 @@ platform independent.
 ## Pre-requisites
 
 .net 8 in a Linux host.
-
+paket - install `dotnet tool install paket`
 
 ## Build instructions
 
-Install .net 8 in a Linux host.
 
-### One timer
+### After changing paket.dependencies
+
 ```
-dotnet tool install paket
+dotnet paket install
+```
+
+### After cloning or switching branches
+
+```
 dotnet paket restore
 ```
 
-### Repeatable
+### After changing the source code
 
 ```
 dotnet build

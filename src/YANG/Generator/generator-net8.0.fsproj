@@ -12,7 +12,7 @@
     <Compile Include="YangProvider.fs" />
     <None Include="Playground.fsx" />
     <Content Include="packages.config" />
-    <ProjectReference Include="..\Model\Model.fsproj" />
+    <ProjectReference Include="..\Model\model-net8.0.fsproj" />
   </ItemGroup>
   <Import Project="..\..\..\.paket\Paket.Restore.targets" />
 </Project>
