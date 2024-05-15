@@ -1,6 +1,10 @@
-# YangDotNet: Yang parser and type generator for .NET
+# yang-fsharp: Yang parser and type generator for .NET
 
 Parser and .NET type generator for YANG model.
+
+Fork of YangDotNet. The original project and solution files only worked with Visual Studio and the
+target framework was .NET Framework which targets Windows only. This project targets .NET 8 which is
+platform independent.
 
 ## Pre-requisites
 
@@ -21,28 +25,6 @@ dotnet paket restore
 
 ```
 dotnet build
-```
-
-
-Running the `.\build.bat` should compile the main project and run the unit tests.
-The output is placed in the `.\build` directory.
-This uses the `FAKE` build system (which is based on F\#).
-Alternatively, (if you initialize with the `init.ps1` script) you can also use
-the commands `build` and `qb` for the full build, or a quick build (only the main project)
-respectively.
-
-To run the unit tests, use `.\build.bat Test`.
-To get some statistics on the code coverage of the unit tests use the `Show-YangCodeCoverage`
-command (this is part of `YangDevHelper`). To see a list of the active to-do items
-use the command `Get-YangWorkItems`.
-
-
-You can also open the Visual Studio solution file in `.\src\YANG\Yang.sln`. However, before doing
-so do restore the dependencies if necessary. We use the `paket` system for package management.
-So, you will need to do:
-
-```cmd
-.paket\paket.exe restore
 ```
 
 ## Status
