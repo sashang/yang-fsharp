@@ -1,3 +1,5 @@
 {
-    "dotnet.defaultSolution": "yang-net8.0.sln"
+    "dotnet.defaultSolution": "yang-net8.0.sln",
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "FSharp.inlineValues.enabled": true
 }
