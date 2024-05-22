@@ -3,16 +3,18 @@
 Parser and .NET type generator for YANG model.
 
 Fork of YangDotNet. The original project and solution files only worked with Visual Studio and the
-target framework was .NET Framework which targets Windows only. This project targets .NET 8 which is
-platform independent.
+target framework was .NET Framework which targets Windows only. This project targets .NET 8 and
+above which is platform independent.
 
 ## Pre-requisites
 
-.net 8 in a Linux host.
-paket - install `dotnet tool install paket`
+.net 8 - Download from MS (https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+
+paket can be installed via `dotnet tool install paket`
 
 ## Build instructions
 
+Note that I haven't built this on Windows but in WSL on Windows.
 
 ### After changing paket.dependencies
 
@@ -31,6 +33,12 @@ dotnet paket restore
 ```
 dotnet build
 ```
+
+## Build instructions using the docker .net sdk container
+
+This is an alternative build approach if you don't want to install the dotnet sdk on your machine but would rather it was managed in docker.
+
+https://github.com/dotnet/dotnet-docker/blob/main/samples/build-in-sdk-container.md
 
 ## Status
 
