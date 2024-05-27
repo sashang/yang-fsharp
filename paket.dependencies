@@ -3,7 +3,7 @@ generate_load_scripts: true
 source https://nuget.org/api/v2
 license_download: true
 
-nuget FParsec 1.1.1
+nuget FParsec
 nuget System.Collections.Immutable
 nuget FSharp.Core
 nuget FSharp.Data

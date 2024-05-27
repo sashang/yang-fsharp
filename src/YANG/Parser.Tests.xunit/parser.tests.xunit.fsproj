@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="FParsecHelper.fs" />
+    <Compile Include="Initialize.fs" />
+    <Compile Include="UtilitiesTests.fs" />
+    <Compile Include="CommentsTests.fs" />
+    <Compile Include="StringsTests.fs" />
+    <Compile Include="ArgumentsTests.fs" />
+    <Compile Include="GenericTests.fs" />
+    <Compile Include="IdentifierTests.fs" />
+    <Compile Include="PathArgumentTests.fs" />
+    <Compile Include="StatementsTests.fs" />
+    <Compile Include="ExpressionTests.fs" />
+    <Compile Include="HeaderTests.fs" />
+    <Compile Include="LinkageTests.fs" />
+    <Compile Include="MetaTests.fs" />
+    <Compile Include="RevisionsTests.fs" />
+    <Compile Include="TypesTests.fs" />
+    <Compile Include="DeviateTests.fs" />
+    <Compile Include="LeafTests.fs" />
+    <Compile Include="BodyStatementsTests.fs" />
+    <Compile Include="ModuleBodyTests.fs" />
+    <Compile Include="ModuleTests.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Model/model-net8.0.fsproj">
+      <Name>Model</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="../Parser/parser-net8.0.fsproj">
+      <Name>Parser</Name>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="6.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
+</Project>
