@@ -22,6 +22,7 @@ nuget MSTest.TestAdapter
 nuget MSTest.TestFramework
 nuget xunit
 nuget xunit.runner.console
+nuget Argu
 
 group netcorebuild
     redirects: off
