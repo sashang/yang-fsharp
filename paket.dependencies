@@ -3,6 +3,7 @@ generate_load_scripts: true
 source https://nuget.org/api/v2
 license_download: true
 
+git git@github.com:edgarfgp/Fabulous.AST.git 1.0.0-pre15 build: "dotnet fsi build.fsx"
 nuget FParsec
 nuget System.Collections.Immutable
 nuget FSharp.Core
@@ -34,4 +35,3 @@ group netcorebuild
     nuget Fake.DotNet.MsBuild
     nuget Fake.DotNet.Testing.XUnit2
     nuget Fake.DotNet.Testing.MSTest
-

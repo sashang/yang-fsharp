@@ -273,7 +273,7 @@ module Statements =
     and [<Struct>] ConfigStatement         = ConfigStatement     of bool          * ExtraStatements
     /// Captures the 'contact-stmt' statement from [RFC 7950, p. 186]
     and [<Struct>] ContactStatement        = ContactStatement    of string        * ExtraStatements
-    and ContainerBodyStatement  =
+    and [<RequireQualifiedAccess>] ContainerBodyStatement  =
     | When          of WhenStatement
     | IfFeature     of IfFeatureStatement
     | Must          of MustStatement

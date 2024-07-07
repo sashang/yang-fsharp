@@ -1,4 +1,4 @@
-﻿module DotnetYang
+﻿module DotnetYang.Main
 
 open System
 open System.IO
@@ -6,7 +6,9 @@ open Yang.Model
 open Yang.Parser
 open Yang.Parser.Module
 open Argu
-
+open DotnetYang.Generate
+open Fantomas.Core
+open Fabulous.AST
 
 let validate filenames =
 
@@ -44,7 +46,13 @@ let main argv =
         let results = validate (results.GetResult(Files))
         for result in results do
             match result with
-            | Ok model -> ()
+            | Ok model ->
+                let oak = generateModel model
+                oak
+                |> Gen.mkOak
+                |> CodeFormatter.FormatOakAsync
+                |> Async.RunSynchronously
+                |> printfn "%s"
             | Error filename -> printfn "%s: Error" filename
         ()
     else

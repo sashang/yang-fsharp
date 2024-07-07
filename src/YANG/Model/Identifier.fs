@@ -33,7 +33,7 @@ module Identifier =
         Char.IsLetterOrDigit(c) || c = '_' || c = '-' || c = '.'
 
     /// Checks whether a string is a valid identifier name
-    let is_identifier_valid (input : string) =
+    let isIdValid (input : string) =
         System.String.IsNullOrWhiteSpace(input) = false &&
         isAsciiIdStart (input.Chars 0) &&
         (String.forall isAsciiIdContinue input)
@@ -56,7 +56,7 @@ module Identifier =
         /// </summary>
         /// <param name="name">The input identifier</param>
         static member Make (name : string) =
-            if (is_identifier_valid name) = false then
+            if isIdValid name = false then
                 throw "Invalid identifier: %s" name
             else
                 String name
@@ -69,7 +69,7 @@ module Identifier =
         /// <summary>
         /// Checks whether the identifier has a valid name
         /// </summary>
-        member this.IsValid = is_identifier_valid this.Value
+        member this.IsValid = isIdValid this.Value
 
         /// Checks whether this is an identifier of a well known type.
         member this.IsBuiltIn =
@@ -114,9 +114,9 @@ module Identifier =
         /// <param name="prefix">The prefix of the identifier</param>
         /// <param name="name">The name of the identifier</param>
         static member Make (prefix, name) =
-            if (is_identifier_valid prefix) = false then
+            if (isIdValid prefix) = false then
                 throw "Invalid prefix for identifier: %s" prefix
-            if (is_identifier_valid name) = false then
+            if (isIdValid name) = false then
                 throw "Invalid name of (prefixed) identifier: %s" name
 
             (IdentifierWithPrefix (prefix, name))
@@ -152,7 +152,7 @@ module Identifier =
         /// <summary>
         /// Checks whether the identifier has a valid name
         /// </summary>
-        member this.IsValid = (is_identifier_valid this._Prefix) && (is_identifier_valid this._Name)
+        member this.IsValid = (isIdValid this._Prefix) && (isIdValid this._Name)
 
         override this.ToString() = this.Value
 

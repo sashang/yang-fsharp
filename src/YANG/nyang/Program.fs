@@ -21,6 +21,7 @@ let validate arguments =
             match Parser.ParseFile model with
             | ModelUnit.ModuleUnit m ->
                 printfn "Detected module: %s" m.Name.Value
+                printfn "%s" (Printer.ModuleToString m)
             | ModelUnit.SubmoduleUnit m ->
                 printfn "Detected submodule: %s" m.Name.Value
 

@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>dotnet_yang</RootNamespace>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Model/model-net8.0.fsproj" />
@@ -13,5 +14,5 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-  <Import Project="../../../.paket/Paket.Restore.targets" />
+  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
 </Project>

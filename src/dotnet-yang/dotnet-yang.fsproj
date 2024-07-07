@@ -8,8 +8,10 @@
   <ItemGroup>
     <ProjectReference Include="../YANG/Model/model-net8.0.fsproj" />
     <ProjectReference Include="../YANG/Parser/parser-net8.0.fsproj" />
+    <ProjectReference Include="../../paket-files/github.com/edgarfgp/Fabulous.AST/src/Fabulous.AST/Fabulous.AST.fsproj"/>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Generate.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
