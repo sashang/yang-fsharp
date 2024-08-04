@@ -11,6 +11,7 @@
     <ProjectReference Include="../../paket-files/github.com/edgarfgp/Fabulous.AST/src/Fabulous.AST/Fabulous.AST.fsproj"/>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Intermediate.fs" />
     <Compile Include="Generate.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

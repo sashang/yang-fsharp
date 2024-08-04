@@ -7,6 +7,7 @@ open Yang.Parser
 open Yang.Parser.Module
 open Argu
 open DotnetYang.Generate
+open DotnetYang.Intermediate
 open Fantomas.Core
 open Fabulous.AST
 
@@ -21,7 +22,11 @@ let validate filenames =
                 let result = ParseFile h
                 helper t (Ok(result) :: acc)
             with
-            | :? YangParserException ->
+            | :? YangParserException as yex ->
+                eprintfn "%s" yex.Message
+                helper t (Error(h) :: acc)
+            | ex ->
+                eprintfn "%s" ex.Message
                 helper t (Error(h) :: acc)
 
     helper filenames []
@@ -33,34 +38,39 @@ type CliArguments =
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | Output _ -> "Name of the output assembly"
+            | Output _ -> "Name of the output fsharp file"
             | Files _ -> "List of files to be processed"
 
 [<EntryPoint>]
 let main argv =
     Parser.Initialize()
     let cliParser = ArgumentParser.Create<CliArguments>(programName = "dotnet-yang")
-    let results = cliParser.Parse(argv)
-    if results.Contains(Output) then
+    let cmdLineArgs = cliParser.Parse(argv)
+    if cmdLineArgs.Contains(Output) then
         //parse and generate output
-        let results = validate (results.GetResult(Files))
+        let results = validate (cmdLineArgs.GetResult(Files))
         for result in results do
             match result with
             | Ok model ->
-                let oak = generateModel model
-                oak
+                let intRep = makeIntermediateRepresentation model
+                printfn "intrep: %A" intRep
+                // generateModel model
+                // |> Gen.mkOak
+                // |> CodeFormatter.FormatOakAsync
+                // |> Async.RunSynchronously
+                // |> printfn "%s"
+            | Error filename -> printfn "%s: Error" filename
+    else
+        // parse only
+        let results = validate (cmdLineArgs.GetResult(Files))
+        for result in results do
+            match result with
+            | Ok model ->
+                generateModel model
                 |> Gen.mkOak
                 |> CodeFormatter.FormatOakAsync
                 |> Async.RunSynchronously
                 |> printfn "%s"
-            | Error filename -> printfn "%s: Error" filename
-        ()
-    else
-        // parse only
-        let results = validate (results.GetResult(Files))
-        for result in results do
-            match result with
-            | Ok model -> ()
             | Error filename -> eprintfn "%s: Error" filename
 
     0 // return an integer exit code
