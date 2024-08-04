@@ -53,7 +53,12 @@ let private makeRecordField (leaf: Statements.LeafStatement) =
                 | _ -> None)
 
     let (TypeStatement(idRef, typeBodyStatementOpt)) = typeStatement
-    RecordField ({ Identifier = leafIdentifier.Value; Type = makeFSharpBasicType idRef.Value })
+    let fieldType = makeFSharpBasicType idRef.Value
+
+    // if the field type is undefined promote it so that the entire field is undefined.
+    match fieldType with
+    | BasicType.Undefined -> RecordField.Undefined
+    | _ -> RecordField ({ Identifier = leafIdentifier.Value; Type = fieldType})
 
 // takes a container statement and converts it to a Record
 let private makeRecord (containerStatement: ContainerStatement) =
@@ -94,7 +99,9 @@ let private makeModule (moduleStatement: ModuleStatement) =
 
 
 let makeIntermediateRepresentation (model: ModelUnit) =
-    match model with
-    | ModuleUnit moduleStatement ->
-        makeModule moduleStatement
-    | _ -> []
+    Elements(
+        match model with
+        | ModuleUnit moduleStatement ->
+            makeModule moduleStatement
+        | _ -> []
+    )
